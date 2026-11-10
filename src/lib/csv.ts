@@ -5,12 +5,10 @@ import type { Order } from "./types";
 
 const BOM = "﻿";
 
-/** ISO8601 をサーバーのローカル時刻 "YYYY-MM-DD HH:mm:ss" にする */
+/** ISO8601 を日本時間 "YYYY-MM-DD HH:mm:ss" にする（サーバーPCのタイムゾーン設定に左右されない） */
 export function formatLocal(iso: string | null): string {
   if (!iso) return "";
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  return new Date(Date.parse(iso) + 9 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
 }
 
 function cell(value: string | number): string {

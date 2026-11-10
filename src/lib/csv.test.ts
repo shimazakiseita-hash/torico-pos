@@ -37,7 +37,7 @@ describe("ordersToCsv", () => {
     expect(cols.slice(0, 3)).toEqual(["2026-11-21", "7", "受け渡し済み"]);
     expect(cols.slice(3, 13)).toEqual(["3", "0", "0", "0", "0", "0", "0", "0", "0", "1"]);
     expect(cols.slice(13, 17)).toEqual(["4", "400", "1000", "600"]);
-    expect(cols[17]).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+    expect(cols[17]).toBe("2026-11-21 12:00:00"); // 日本時間
     expect(cols[20]).toBe("");
   });
 });
