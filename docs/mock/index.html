@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>TORI♡CO POS 画面モック</title>
+<style>
+  :root{
+    --space-900:#2a1f5c; --space-700:#3d2f7d; --space-500:#544591;
+    --ink:#4a3f8c; --lav-500:#9374ab; --lav-300:#c9b3e6; --lav-100:#f1eafa;
+    --pink-500:#ed6fb6; --pink-400:#e57bab; --magenta:#c5589d; --pink-200:#f4b0d5; --pink-100:#fde8f3;
+    --cyan:#80f7fd; --comb:#e55a22; --beak:#edd263; --white:#fff;
+    --tare:#b4541c; --tare-bg:#ffe3c7; --shio:#2b8fb3; --shio-bg:#dff6fb;
+    --ok:#2fa56b; --danger:#d93a5b;
+    --r-lg:28px; --r-md:18px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#1b1440;color:var(--ink);font-family:"Zen Maru Gothic","M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Noto Sans CJK JP",sans-serif;font-weight:700}
+  h2.cap{color:#fff;font-size:20px;margin:28px 24px 10px}
+  .screen{width:1280px;height:720px;margin:0 24px 8px;border-radius:12px;overflow:hidden;position:relative}
+  .space{background:
+    radial-gradient(2px 2px at 12% 18%,#fff8,transparent 60%),radial-gradient(2px 2px at 70% 12%,#fff8,transparent 60%),
+    radial-gradient(1.5px 1.5px at 40% 70%,#fff7,transparent 60%),radial-gradient(2px 2px at 88% 62%,#fff7,transparent 60%),
+    radial-gradient(1.5px 1.5px at 25% 88%,#fff6,transparent 60%),
+    radial-gradient(600px 300px at 85% 95%,#ed82a755,transparent 70%),
+    linear-gradient(160deg,var(--space-500),var(--space-700) 55%,var(--space-900));}
+  .candy{background:linear-gradient(180deg,#eba7cb,#a77ab4)}
+  .panel{background:#fff;border-radius:var(--r-lg);box-shadow:0 6px 0 #0002}
+  .bar{height:64px;display:flex;align-items:center;gap:14px;padding:0 20px;color:#fff}
+  .bar img{height:52px;border-radius:12px;background:#fff;padding:2px}
+  .bar .ttl{font-size:24px;letter-spacing:.05em}
+  .bar .st{margin-left:auto;font-size:15px;background:#fff2;padding:6px 14px;border-radius:99px}
+  .grad{background:linear-gradient(180deg,var(--pink-400),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .btn{border:0;border-radius:var(--r-md);font:inherit;font-size:24px;min-height:72px;padding:0 22px;color:#fff;background:linear-gradient(180deg,var(--pink-400),var(--magenta));box-shadow:0 5px 0 #8c2f6e}
+  .btn.ghost{background:#fff;color:var(--ink);border:3px solid var(--lav-300);box-shadow:0 5px 0 var(--lav-300)}
+  .btn.ok{background:linear-gradient(180deg,#48c58a,var(--ok));box-shadow:0 5px 0 #1d7449}
+  .tare{background:var(--tare-bg);color:var(--tare);border:3px solid var(--tare)}
+  .shio{background:var(--shio-bg);color:var(--shio);border:3px solid var(--shio)}
+
+  /* 受付 */
+  .reg{display:grid;grid-template-columns:1fr 400px;gap:16px;padding:0 16px 16px;height:656px}
+  .items{padding:14px;display:grid;grid-template-rows:repeat(5,1fr);gap:10px}
+  .row{display:grid;grid-template-columns:185px 1fr 1fr;gap:10px;align-items:stretch}
+  .row .nm{display:flex;align-items:center;font-size:30px;white-space:nowrap}
+  .row .nm::before{content:"♥";color:var(--pink-200);margin-right:8px}
+  .sku{border-radius:var(--r-md);display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:28px}
+  .sku small{font-size:14px;opacity:.8}
+  .sku b{font-size:34px;background:#fff;border-radius:99px;min-width:54px;text-align:center}
+  .cart{padding:18px;display:flex;flex-direction:column;gap:10px}
+  .cart li{display:flex;justify-content:space-between;font-size:20px;padding:4px 0;border-bottom:2px dashed var(--pink-200)}
+  .cart ul{list-style:none;margin:0;padding:0;flex:1}
+  .total{text-align:right;font-size:64px;line-height:1}
+  .quick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .quick .btn{font-size:20px;min-height:60px;padding:0}
+  .change{background:var(--pink-100);border-radius:var(--r-md);padding:10px 16px;display:flex;justify-content:space-between;align-items:baseline;font-size:20px}
+  .change b{font-size:48px;color:var(--danger)}
+
+  /* 焼き場 */
+  .grill{padding:0 16px 16px;height:656px;display:grid;grid-template-columns:1fr 300px;gap:16px}
+  .gt{padding:14px;display:grid;grid-template-rows:44px repeat(5,1fr);gap:10px}
+  .gh,.gr{display:grid;grid-template-columns:200px 1fr 1fr;gap:10px}
+  .gh div{text-align:center;font-size:24px;border-radius:12px;padding:4px}
+  .gr .nm{font-size:40px;display:flex;align-items:center}
+  .gr .n{border-radius:var(--r-md);font-size:76px;display:flex;align-items:center;justify-content:center;line-height:1}
+  .gr .n.zero{opacity:.3}
+  .side{padding:16px;text-align:center}
+  .side .big{font-size:84px;line-height:1.1}
+
+  /* 渡し場（店員） */
+  .hand{padding:0 16px 16px;height:656px;display:grid;grid-template-columns:1.6fr 1fr;gap:16px}
+  .col{padding:14px;overflow:hidden}
+  .col h3{margin:0 0 10px;font-size:22px}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .card{border:3px solid var(--lav-300);border-radius:var(--r-md);padding:10px;background:var(--lav-100)}
+  .card.late{border-color:var(--danger);background:#ffe9ee}
+  .card .no{font-size:44px;line-height:1}
+  .card .t{float:right;font-size:14px;margin-top:6px}
+  .chip{display:inline-block;border-radius:99px;padding:2px 10px;margin:3px 3px 0 0;font-size:17px;border-width:2px}
+  .card .btn{width:100%;margin-top:8px;min-height:64px}
+  .rdy{display:flex;align-items:center;gap:10px;border:3px solid var(--pink-200);border-radius:var(--r-md);padding:8px 10px;margin-bottom:8px;background:var(--pink-100)}
+  .rdy .no{font-size:44px;width:90px}
+  .rdy .btn{min-height:64px;font-size:20px}
+
+  /* 渡し場（お客さん） */
+  .disp{height:720px;display:grid;grid-template-columns:1fr 360px;gap:24px;padding:24px}
+  .call{padding:20px 28px}
+  .call h3{font-size:44px;margin:0 0 12px;text-align:center}
+  .nums{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .num{font-size:120px;line-height:1.15;text-align:center;border-radius:var(--r-lg);color:#fff;background:linear-gradient(180deg,var(--pink-400),var(--magenta));box-shadow:0 8px 0 #8c2f6e;-webkit-text-stroke:0}
+  .num.new{outline:8px solid var(--cyan)}
+  .right{display:flex;flex-direction:column;gap:16px;color:#fff;text-align:center}
+  .right .logo{background:#fff;border-radius:var(--r-lg);padding:8px}
+  .right .logo img{width:100%;display:block;border-radius:20px}
+  .wait{background:#fff2;border-radius:var(--r-lg);padding:14px;flex:1}
+  .wait h4{margin:0 0 8px;font-size:22px}
+  .wait span{display:inline-block;background:#fff;color:var(--ink);border-radius:12px;font-size:30px;padding:2px 12px;margin:4px}
+  .copy{font-size:22px}.copy b{font-size:30px;color:var(--cyan)}
+  .mascot{position:absolute;left:36px;bottom:20px;width:150px;height:150px;border-radius:50%;background:#fff;border:6px solid var(--pink-200);object-fit:cover}
+
+  .grill{grid-template-columns:1.9fr 1fr}
+  .mr{display:grid;grid-template-columns:1fr 84px 84px;gap:8px;align-items:center;font-size:26px;margin-bottom:8px}
+  .mr .n{border-radius:14px;font-size:44px;text-align:center;line-height:1.5}
+  .mr .n.zero{opacity:.3}
+  .mh div{text-align:center;font-size:18px;border-radius:10px}
+  .rdy.big{padding:14px 16px}.rdy.big .no{font-size:72px;width:130px}.rdy.big .chip{font-size:22px;padding:4px 14px}
+  .rdy.big .btn{min-height:84px;font-size:28px;min-width:170px}.rdy.new{outline:6px solid var(--cyan)}
+  .next span{display:inline-block;background:var(--lav-100);border:3px solid var(--lav-300);border-radius:14px;font-size:34px;padding:2px 14px;margin:4px}
+  .phonewrap{display:flex;gap:28px;margin:0 24px}
+  .phone{width:390px;height:760px;border-radius:36px;border:10px solid #111;overflow:hidden;position:relative;color:#fff;text-align:center;padding:18px}
+  .phone .lg{width:150px;border-radius:20px;background:#fff;padding:4px}
+  .phone .tk{background:#fff;color:var(--ink);border-radius:var(--r-lg);padding:14px;margin-top:10px}
+  .phone .tk .n{font-size:96px;line-height:1.05}
+  .phone .stt{font-size:26px;border-radius:99px;padding:8px;margin:8px 0;color:#fff;background:linear-gradient(180deg,var(--pink-400),var(--magenta))}
+  .phone .stt.go{background:linear-gradient(180deg,#48c58a,var(--ok))}
+  .phone .info{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .phone .info div{background:#fff2;border-radius:var(--r-md);padding:10px;font-size:14px}
+  .phone .info b{display:block;font-size:34px;color:var(--cyan)}
+  .phone .game{display:block;margin-top:14px;border-radius:var(--r-md);padding:16px;font-size:22px;background:var(--cyan);color:var(--space-900);box-shadow:0 5px 0 #3bb9c2}
+  .phone .ms{width:92px;height:92px;border-radius:50%;background:#fff;border:5px solid var(--pink-200);object-fit:cover;margin-top:12px}
+</style>
+</head>
+<body>
+
+<h2 class="cap">① 受付 /register（会計・番号発行）</h2>
+<div class="screen candy">
+  <div class="bar"><img src="../../public/brand/logo.jpg" alt=""><span class="ttl">受付</span><span class="st">1日目 ・ 接続OK</span></div>
+  <div class="reg">
+    <div class="panel items">
+      <div class="row"><div class="nm">もも</div><div class="sku tare"><span>たれ <small>残48</small></span><b>2</b></div><div class="sku shio"><span>塩 <small>残60</small></span><b>0</b></div></div>
+      <div class="row"><div class="nm">かわ</div><div class="sku tare"><span>たれ <small>残31</small></span><b>0</b></div><div class="sku shio"><span>塩 <small>残40</small></span><b>1</b></div></div>
+      <div class="row"><div class="nm">ねぎま</div><div class="sku tare"><span>たれ <small>残52</small></span><b>1</b></div><div class="sku shio"><span>塩 <small>残55</small></span><b>0</b></div></div>
+      <div class="row"><div class="nm">つくね</div><div class="sku tare"><span>たれ <small>残12</small></span><b>0</b></div><div class="sku shio" style="opacity:.35"><span>塩 <small>売り切れ</small></span><b>-</b></div></div>
+      <div class="row"><div class="nm">ぼんじり</div><div class="sku tare"><span>たれ <small>残27</small></span><b>0</b></div><div class="sku shio"><span>塩 <small>残30</small></span><b>1</b></div></div>
+    </div>
+    <div class="panel cart">
+      <ul><li><span>もも たれ ×2</span><span>200</span></li><li><span>かわ 塩 ×1</span><span>100</span></li><li><span>ねぎま たれ ×1</span><span>100</span></li><li><span>ぼんじり 塩 ×1</span><span>100</span></li></ul>
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:22px">5本</span><span class="total grad">¥500</span></div>
+      <div class="quick"><button class="btn ghost">ちょうど</button><button class="btn ghost">¥1,000</button><button class="btn ghost">¥5,000</button><button class="btn ghost">¥10,000</button><button class="btn ghost">テンキー</button><button class="btn ghost">クリア</button></div>
+      <div class="change"><span>お預かり ¥1,000<br>お釣り</span><b>¥500</b></div>
+      <button class="btn ok" style="min-height:84px;font-size:30px">会計確定 → 番号発行</button>
+    </div>
+  </div>
+</div>
+
+<h2 class="cap">② 焼き場 /grill（味付け担当が見る。注文順のカード＋合計本数、「完成」を押す）</h2>
+<div class="screen candy">
+  <div class="bar"><img src="../../public/brand/logo.jpg" alt=""><span class="ttl">焼き場</span><span class="st">待ち 6件 ・ 最長 11分</span></div>
+  <div class="grill">
+    <div class="panel col"><h3>♥ 注文（古い順）</h3><div class="cards"><div class="card late"><span class="t">11分</span><div class="no">24</div><span class="chip tare">もも たれ×2</span><span class="chip shio">かわ 塩×1</span><span class="chip tare">ねぎま たれ×1</span><span class="chip shio">ぼんじり 塩×1</span><button class="btn">完成</button></div><div class="card"><span class="t">4分</span><div class="no">25</div><span class="chip tare">つくね たれ×3</span><button class="btn">完成</button></div><div class="card"><span class="t">3分</span><div class="no">26</div><span class="chip shio">もも 塩×2</span><span class="chip shio">かわ 塩×2</span><button class="btn">完成</button></div><div class="card"><span class="t">2分</span><div class="no">27</div><span class="chip tare">もも たれ×4</span><span class="chip tare">つくね たれ×2</span><button class="btn">完成</button></div><div class="card"><span class="t">1分</span><div class="no">28</div><span class="chip tare">ねぎま たれ×3</span><span class="chip shio">つくね 塩×1</span><button class="btn">完成</button></div><div class="card"><span class="t">0分</span><div class="no">29</div><span class="chip tare">もも たれ×2</span><span class="chip shio">かわ 塩×2</span><button class="btn">完成</button></div></div>
+      <div style="opacity:.6;font-size:18px;margin-top:12px">直近の完成：23 ・ 22 ・ 21　<u>戻す</u></div></div>
+    <div class="panel col"><h3>♥ いま必要な本数</h3>
+      <div class="mr mh"><div></div><div class="tare">たれ</div><div class="shio">塩</div></div><div class="mr"><div>もも</div><div class="n tare">8</div><div class="n shio">4</div></div><div class="mr"><div>かわ</div><div class="n tare zero">0</div><div class="n shio">5</div></div><div class="mr"><div>ねぎま</div><div class="n tare">4</div><div class="n shio zero">0</div></div><div class="mr"><div>つくね</div><div class="n tare">5</div><div class="n shio">1</div></div><div class="mr"><div>ぼんじり</div><div class="n tare zero">0</div><div class="n shio">1</div></div>
+      <div style="text-align:center;margin-top:10px">合計 <span class="grad" style="font-size:44px">28</span> 本</div></div>
+  </div>
+</div>
+
+<h2 class="cap">③ 渡し場・店員用 /handoff（完成した注文を呼んで渡す、「渡した」を押す）</h2>
+<div class="screen candy">
+  <div class="bar"><img src="../../public/brand/logo.jpg" alt=""><span class="ttl">渡し場</span><span class="st">接続OK</span></div>
+  <div class="hand">
+    <div class="panel col"><h3>♥ 呼び出し中（完成した順）</h3>
+      <div class="rdy big"><div class="no grad">21</div><div style="flex:1"><span class="chip tare">もも たれ×1</span><span class="chip shio">もも 塩×1</span></div><button class="btn ok">渡した</button></div>
+      <div class="rdy big"><div class="no grad">22</div><div style="flex:1"><span class="chip tare">ぼんじり たれ×5</span></div><button class="btn ok">渡した</button></div>
+      <div class="rdy big new"><div class="no grad">23</div><div style="flex:1"><span class="chip shio">ねぎま 塩×2</span><span class="chip tare">つくね たれ×2</span></div><button class="btn ok">渡した</button></div>
+    </div>
+    <div class="panel col"><h3>♥ このあと来る番号</h3>
+      <div class="next"><span>24</span><span>25</span><span>26</span><span>27</span><span>28</span><span>29</span></div>
+      <h3 style="margin-top:22px;opacity:.6">受け渡し済み（直近）</h3>
+      <div style="opacity:.6;font-size:18px">20 ・ 19 ・ 18　<u>戻す</u></div>
+    </div>
+  </div>
+</div>
+
+<h2 class="cap">④ 渡し場・お客さん用 /display（呼び出し番号）</h2>
+<div class="screen space">
+  <div class="disp">
+    <div class="panel call"><h3><span class="grad">できあがりました！</span></h3>
+      <div class="nums"><div class="num new">23</div><div class="num">22</div><div class="num">21</div></div>
+      <p style="text-align:center;font-size:24px;margin:22px 0 0 150px">整理券をお持ちのうえ、お渡し口へどうぞ ♥</p>
+    </div>
+    <div class="right">
+      <div class="logo"><img src="../../public/brand/logo.jpg" alt="やきとり TORI♡CO"></div>
+      <div class="wait"><h4>ただいま焼いています</h4><span>24</span><span>25</span><span>26</span><span>27</span><span>28</span><span>29</span></div>
+      <div class="copy">一本食べたら もう、<b>トリコ</b></div>
+    </div>
+  </div>
+  <img class="mascot" src="../../public/brand/mascot.jpg" alt="">
+</div>
+<h2 class="cap">⑤ お客さんのスマホ（整理券のQRから開くページ。インターネット経由）</h2>
+<div class="phonewrap"><div class="phone space"><img class="lg" src="../../public/brand/logo.jpg" alt="">
+  <div class="tk"><div style="font-size:16px">あなたの番号</div><div class="n grad">24</div><div class="stt ">ただいま焼いています</div><div style="font-size:15px">できあがったらこの画面が変わります</div></div>
+  <div class="info"><div>前に待っている人<b>3組</b></div><div>待ち時間のめやす<b>約5分</b></div></div>
+  <a class="game">▶ 待っている間にミニゲーム</a><img class="ms" src="../../public/brand/mascot.jpg" alt="">
+  <div style="font-size:13px;opacity:.8;margin-top:6px">この画面は自動で更新されます</div></div><div class="phone space"><img class="lg" src="../../public/brand/logo.jpg" alt="">
+  <div class="tk"><div style="font-size:16px">あなたの番号</div><div class="n grad">24</div><div class="stt go">できあがりました！</div><div style="font-size:15px">整理券を持ってお渡し口へどうぞ ♥</div></div>
+  <div class="info"><div>前に待っている人<b>0組</b></div><div>待ち時間のめやす<b>—</b></div></div>
+  <a class="game">▶ 待っている間にミニゲーム</a><img class="ms" src="../../public/brand/mascot.jpg" alt="">
+  <div style="font-size:13px;opacity:.8;margin-top:6px">この画面は自動で更新されます</div></div></div>
+<div style="height:30px"></div>
+</body>
+</html>

@@ -1,0 +1,18 @@
+[Unit]
+Description=TORI-CO POS (yakitori stall order app)
+After=network.target
+
+[Service]
+Type=simple
+# ↓ 2行を本番機のユーザー名とパスに書き換える
+User=CHANGE_ME
+WorkingDirectory=/home/CHANGE_ME/torico-pos
+Environment=NODE_ENV=production
+Environment=TZ=Asia/Tokyo
+# nvm などで Node を入れた場合は npm の絶対パスに書き換える（`which npm` で確認）
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
