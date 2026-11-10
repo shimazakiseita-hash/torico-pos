@@ -31,7 +31,7 @@ export const SEASONINGS: readonly Seasoning[] = [
 export const ITEM_BY_ID = Object.fromEntries(ITEMS.map((i) => [i.id, i])) as Record<ItemId, Item>;
 export const SEASONING_BY_ID = Object.fromEntries(SEASONINGS.map((s) => [s.id, s])) as Record<SeasoningId, Seasoning>;
 
-/** SKU＝串と味付けの組。キーは "momo:tare" の形（day_settings の capacity と同じ） */
+/** SKU＝串と味付けの組。キーは "momo:tare" の形（day_settings の soldout と同じ） */
 export type SkuKey = `${ItemId}:${SeasoningId}`;
 export type Sku = { key: SkuKey; item: ItemId; seasoning: SeasoningId };
 
@@ -59,5 +59,8 @@ export function emptySkuCounts(): SkuCounts {
 /** 1本の値段（円）。全品同じ */
 export const UNIT_PRICE = 100;
 
-/** 管理画面の進捗バーの目標本数（営業日ごとに変更可。値は仮） */
-export const DEFAULT_TARGET_QTY = 300;
+/** 1日の販売上限（本、たれ・塩の合計）。営業日ごとに変更可 */
+export const DEFAULT_CAPACITY: Record<ItemId, number> = { momo: 500, kawa: 250, negima: 250, tsukune: 250, bonjiri: 250 };
+
+/** 管理画面の進捗バーの目標本数（営業日ごとに変更可。初期値は上限の合計） */
+export const DEFAULT_TARGET_QTY = Object.values(DEFAULT_CAPACITY).reduce((a, b) => a + b, 0);

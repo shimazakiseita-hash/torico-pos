@@ -41,11 +41,13 @@ describe("cartItems", () => {
 });
 
 describe("availability", () => {
-  it("残りはカートの分を引く。使い切ったら足せないが、売り切れ表示にはしない", () => {
-    const a = availability(cart({ "momo:tare": 2 }), { "momo:tare": 3, "kawa:tare": 2 }, []);
+  it("串の残りからカートの分（たれ・塩の合計）を引く。使い切ったら足せないが、売り切れ表示にはしない", () => {
+    const a = availability(cart({ "momo:tare": 1, "momo:shio": 1 }), { momo: 3, kawa: 2 }, []);
     expect(a["momo:tare"]).toEqual({ remaining: 1, soldOut: false, canAdd: true });
-    const b = availability(cart({ "momo:tare": 3 }), { "momo:tare": 3 }, []);
-    expect(b["momo:tare"]).toEqual({ remaining: 0, soldOut: false, canAdd: false });
+    expect(a["momo:shio"]).toEqual({ remaining: 1, soldOut: false, canAdd: true });
+    const b = availability(cart({ "momo:tare": 2, "momo:shio": 1 }), { momo: 3 }, []);
+    expect(b["momo:shio"]).toEqual({ remaining: 0, soldOut: false, canAdd: false });
+    expect(b["kawa:tare"].canAdd).toBe(true);
   });
 
   it("仕込み数が未設定なら残りは null で、いくらでも足せる", () => {
@@ -53,7 +55,7 @@ describe("availability", () => {
   });
 
   it("売り切れ（サーバーの集計）は足せない", () => {
-    expect(availability(emptySkuCounts(), { "tsukune:shio": 0 }, ["tsukune:shio"])["tsukune:shio"]).toEqual({
+    expect(availability(emptySkuCounts(), { tsukune: 0 }, ["tsukune:shio"])["tsukune:shio"]).toEqual({
       remaining: 0,
       soldOut: true,
       canAdd: false,

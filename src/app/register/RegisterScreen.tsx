@@ -43,7 +43,7 @@ export function RegisterScreen() {
 
   const totalQty = sum(cart);
   const co = checkout(cart, tender);
-  const avail = availability(cart, summary.data?.remainingBySku ?? {}, summary.data?.soldOut ?? []);
+  const avail = availability(cart, summary.data?.remainingByItem ?? {}, summary.data?.soldOut ?? []);
   const connError = orders.error || summary.error;
 
   const add = (key: SkuKey) => {
@@ -104,7 +104,12 @@ export function RegisterScreen() {
                   <span className="mr-2 text-pink-200" aria-hidden>
                     ♥
                   </span>
-                  {item.name}
+                  <span className="flex flex-col leading-tight">
+                    {item.name}
+                    {avail[skuKey(item.id, "tare")].remaining !== null && (
+                      <small className="text-sm font-bold text-lav-500">残{Math.max(0, avail[skuKey(item.id, "tare")].remaining!)}</small>
+                    )}
+                  </span>
                 </div>
                 {SEASONINGS.map((s) => {
                   const key = skuKey(item.id, s.id);
@@ -304,7 +309,7 @@ function SkuCell({
         <span className="text-2xl font-black">
           {s.name}
           <small className="ml-2 text-sm font-bold opacity-80">
-            {avail.soldOut ? "売り切れ" : avail.remaining === null ? "" : `残${avail.remaining}`}
+            {avail.soldOut ? "売り切れ" : ""}
           </small>
         </span>
         <span

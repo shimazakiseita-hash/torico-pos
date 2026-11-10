@@ -30,7 +30,7 @@ export const updateStatusSchema = z.object({
 export const statusListSchema = z.array(z.enum(ORDER_STATUSES));
 
 export const putSettingsSchema = z.object({
-  capacity: z.partialRecord(z.enum(SKU_KEYS), z.number().int().min(0).max(99999).nullable()).optional(),
+  capacity: z.partialRecord(z.enum(ITEM_IDS), z.number().int().min(0).max(99999).nullable()).optional(),
   soldout: z.array(z.enum(SKU_KEYS)).max(SKU_KEYS.length).optional(),
   cashFloat: z.number().int().min(0).max(MAX_TENDERED * 10).optional(),
   targetQty: z.number().int().min(1).max(99999).optional(),

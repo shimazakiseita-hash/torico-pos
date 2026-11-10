@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { emptySkuCounts, type SkuKey } from "./menu";
 import { calcAmount } from "./pricing";
 import type { OrderStatus } from "./status";
 import { averageWaitSeconds, computeSummary, secondsPerOrder } from "./summary";
@@ -29,7 +28,7 @@ function order(status: OrderStatus, items: OrderItem[], opts: Partial<Order> = {
 }
 
 function settings(patch: Partial<DaySettings> = {}): DaySettings {
-  const capacity = Object.fromEntries(Object.keys(emptySkuCounts()).map((k) => [k, null])) as Record<SkuKey, number | null>;
+  const capacity = { momo: null, kawa: null, negima: null, tsukune: null, bonjiri: null };
   return { businessDay: "2026-11-21", capacity, soldout: [], cashFloat: 0, targetQty: 300, ...patch };
 }
 
@@ -44,7 +43,7 @@ describe("computeSummary", () => {
     order("waiting", [momoTare(1)]), // 1本 100円
   ];
   const cap = settings().capacity;
-  const s = computeSummary(orders, settings({ cashFloat: 20000, capacity: { ...cap, "momo:tare": 10, "kawa:shio": 1 } }));
+  const s = computeSummary(orders, settings({ cashFloat: 20000, capacity: { ...cap, momo: 10, kawa: 1 } }));
 
   it("cancelled を除いた販売本数（SKU別・串別・味付け別・全体）と売上", () => {
     expect(s.soldTotal).toBe(9);
@@ -68,11 +67,20 @@ describe("computeSummary", () => {
     expect(s.readyCount).toBe(1);
   });
 
-  it("残り販売可能数 = 仕込み数 − 販売本数。仕込み数が未設定なら null、0以下は売り切れ", () => {
-    expect(s.remainingBySku["momo:tare"]).toBe(3);
-    expect(s.remainingBySku["kawa:shio"]).toBe(0);
-    expect(s.remainingBySku["negima:shio"]).toBeNull();
-    expect(s.soldOut).toEqual(["kawa:shio"]);
+  it("残り販売可能数 = 串の上限 − たれ・塩合計の販売本数。上限なしなら null、0以下は両方の味が売り切れ", () => {
+    expect(s.remainingByItem.momo).toBe(3);
+    expect(s.remainingByItem.kawa).toBe(0);
+    expect(s.remainingByItem.negima).toBeNull();
+    expect(s.soldOut).toEqual(["kawa:tare", "kawa:shio"]);
+  });
+
+  it("たれ・塩のどちらが売れても同じ上限から減る", () => {
+    const t = computeSummary(
+      [order("waiting", [momoTare(3), { item: "momo", seasoning: "shio", qty: 2 }])],
+      settings({ capacity: { ...cap, momo: 5 } }),
+    );
+    expect(t.remainingByItem.momo).toBe(0);
+    expect(t.soldOut).toEqual(["momo:tare", "momo:shio"]);
   });
 
   it("手動の売り切れも soldOut に入る（メニュー順）", () => {

@@ -153,22 +153,20 @@ describe("listOrders", () => {
 });
 
 describe("day_settings", () => {
-  it("初期値：仕込み数なし（上限なし）・売り切れなし・準備金0円", () => {
+  it("初期値：上限は もも500・ほか250（たれ・塩の合計）、目標はその合計、売り切れなし・準備金0円", () => {
     const s = getDaySettings(db, "2026-11-21");
-    expect(Object.values(s.capacity).every((v) => v === null)).toBe(true);
-    expect(s).toMatchObject({ businessDay: "2026-11-21", soldout: [], cashFloat: 0 });
+    expect(s.capacity).toEqual({ momo: 500, kawa: 250, negima: 250, tsukune: 250, bonjiri: 250 });
+    expect(s).toMatchObject({ businessDay: "2026-11-21", soldout: [], cashFloat: 0, targetQty: 1500 });
   });
 
-  it("営業日ごとに保存され、capacity は SKU ごとに上書き・null で解除", () => {
-    putDaySettings(db, "2026-11-21", { capacity: { "momo:tare": 60, "kawa:shio": 40 }, cashFloat: 30000, soldout: ["kawa:shio"] });
-    const s = putDaySettings(db, "2026-11-21", { capacity: { "kawa:shio": null, "bonjiri:tare": 20 } });
-    expect(s.capacity["momo:tare"]).toBe(60);
-    expect(s.capacity["kawa:shio"]).toBeNull();
-    expect(s.capacity["bonjiri:tare"]).toBe(20);
+  it("営業日ごとに保存され、capacity は串ごとに上書き・null で上限なし", () => {
+    putDaySettings(db, "2026-11-21", { capacity: { momo: 60, kawa: 40 }, cashFloat: 30000, soldout: ["kawa:shio"] });
+    const s = putDaySettings(db, "2026-11-21", { capacity: { kawa: null, bonjiri: 20 } });
+    expect(s.capacity).toEqual({ momo: 60, kawa: null, negima: 250, tsukune: 250, bonjiri: 20 });
     expect(s).toMatchObject({ cashFloat: 30000, soldout: ["kawa:shio"] });
 
     const other = getDaySettings(db, "2026-11-22");
-    expect(other.capacity["momo:tare"]).toBeNull();
+    expect(other.capacity.momo).toBe(500);
     expect(other.cashFloat).toBe(0);
   });
 });

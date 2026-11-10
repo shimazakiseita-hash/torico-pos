@@ -1,4 +1,4 @@
-import { ITEMS, SEASONINGS, SKU_KEYS, emptySkuCounts, skuKey, type ItemId, type SeasoningId, type SkuCounts, type SkuKey } from "./menu";
+import { ITEMS, SEASONINGS, SKUS, SKU_KEYS, emptySkuCounts, skuKey, type ItemId, type SeasoningId, type SkuCounts, type SkuKey } from "./menu";
 import type { DaySettings, Order, OrderItem } from "./types";
 
 const AVG_WAIT_SAMPLE = 10;
@@ -20,9 +20,9 @@ export type Summary = {
   /** 焼くべき本数（waiting の本数） */
   toGrillTotal: number;
   toGrillBySku: SkuCounts;
-  /** 残り販売可能数（仕込み数 − 販売本数）。仕込み数が未設定なら null */
-  remainingBySku: Record<SkuKey, number | null>;
-  /** 受付で押せないSKU（残り0以下、または手動の売り切れ） */
+  /** 串ごとの残り販売可能数（上限 − 販売本数、たれ・塩の合計）。上限なしなら null */
+  remainingByItem: Record<ItemId, number | null>;
+  /** 受付で押せないSKU（串の残りが0以下、または手動の売り切れ） */
   soldOut: SkuKey[];
   waitingCount: number;
   readyCount: number;
@@ -76,26 +76,30 @@ export function computeSummary(orders: readonly Order[], settings: DaySettings):
     else if (o.status === "ready") readyCount++;
   }
 
-  const remainingBySku = Object.fromEntries(
-    SKU_KEYS.map((k) => {
-      const cap = settings.capacity[k];
-      return [k, cap === null ? null : cap - sold[k]];
+  const soldByItem = byItem(sold);
+  const remainingByItem = Object.fromEntries(
+    ITEMS.map(({ id }) => {
+      const cap = settings.capacity[id];
+      return [id, cap === null ? null : cap - soldByItem[id]];
     }),
-  ) as Record<SkuKey, number | null>;
-  const soldOut = SKU_KEYS.filter((k) => settings.soldout.includes(k) || (remainingBySku[k] !== null && remainingBySku[k] <= 0));
+  ) as Record<ItemId, number | null>;
+  const soldOut = SKUS.filter(({ key, item }) => {
+    const left = remainingByItem[item];
+    return settings.soldout.includes(key) || (left !== null && left <= 0);
+  }).map((s) => s.key);
 
   return {
     businessDay: settings.businessDay,
     soldTotal: sum(sold),
     soldBySku: sold,
-    soldByItem: byItem(sold),
+    soldByItem,
     soldBySeasoning: bySeasoning(sold),
     revenue,
     cashFloat: settings.cashFloat,
     expectedCash: settings.cashFloat + revenue,
     toGrillTotal: sum(toGrill),
     toGrillBySku: toGrill,
-    remainingBySku,
+    remainingByItem,
     soldOut,
     waitingCount,
     readyCount,

@@ -19,10 +19,10 @@ export type Order = {
   items: OrderItem[];
 };
 
-/** 営業日ごとの設定。capacity が null の SKU は上限なし */
+/** 営業日ごとの設定。capacity は串ごとの上限（たれ・塩の合計）で、null は上限なし */
 export type DaySettings = {
   businessDay: string;
-  capacity: Record<SkuKey, number | null>;
+  capacity: Record<ItemId, number | null>;
   soldout: SkuKey[];
   cashFloat: number;
   targetQty: number;

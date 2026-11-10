@@ -1,4 +1,4 @@
-import { SKUS, type SkuCounts, type SkuKey } from "./menu";
+import { SKUS, skuKey, SEASONING_IDS, type ItemId, type SkuCounts, type SkuKey } from "./menu";
 import { MAX_ORDER_QTY, MAX_TENDERED, calcAmount } from "./pricing";
 import { sum } from "./summary";
 import type { OrderItem } from "./types";
@@ -37,7 +37,7 @@ export function cartItems(cart: SkuCounts): OrderItem[] {
 }
 
 export type SkuAvailability = {
-  /** カートの分を引いた残り。仕込み数が未設定なら null */
+  /** 串の残り（たれ・塩の合計）からカートの分を引いたもの。上限なしなら null */
   remaining: number | null;
   /** 売り切れ（サーバーの集計で残り0以下、または手動の売り切れ） */
   soldOut: boolean;
@@ -47,14 +47,15 @@ export type SkuAvailability = {
 
 export function availability(
   cart: SkuCounts,
-  remainingBySku: Partial<Record<SkuKey, number | null>>,
+  remainingByItem: Partial<Record<ItemId, number | null>>,
   soldOut: readonly SkuKey[],
 ): Record<SkuKey, SkuAvailability> {
   const full = sum(cart) >= MAX_ORDER_QTY;
   return Object.fromEntries(
-    SKUS.map(({ key }) => {
-      const base = remainingBySku[key] ?? null;
-      const remaining = base === null ? null : base - cart[key];
+    SKUS.map(({ key, item }) => {
+      const base = remainingByItem[item] ?? null;
+      const inCart = SEASONING_IDS.reduce((n, s) => n + cart[skuKey(item, s)], 0);
+      const remaining = base === null ? null : base - inCart;
       const out = soldOut.includes(key);
       return [key, { remaining, soldOut: out, canAdd: !out && !full && (remaining === null || remaining > 0) }];
     }),

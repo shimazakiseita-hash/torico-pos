@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { businessDayOf } from "./businessDay";
 import { DomainError } from "./errors";
-import { DEFAULT_TARGET_QTY, ITEM_IDS, SEASONING_IDS, SKU_KEYS, SKUS, skuKey, type SkuKey } from "./menu";
+import { DEFAULT_CAPACITY, DEFAULT_TARGET_QTY, ITEM_IDS, SEASONING_IDS, SKU_KEYS, SKUS, skuKey, type ItemId, type SkuKey } from "./menu";
 import { normalizeItems } from "./order";
 import { calcAmount, calcChange } from "./pricing";
 import { STATUS_LABELS, canTransition, type OrderStatus } from "./status";
@@ -194,26 +194,22 @@ export function updateStatus(db: DB, id: number, to: OrderStatus, now: Date = ne
 }
 
 export type DaySettingsPatch = {
-  capacity?: Partial<Record<SkuKey, number | null>>;
+  capacity?: Partial<Record<ItemId, number | null>>;
   soldout?: SkuKey[];
   cashFloat?: number;
   targetQty?: number;
 };
 
-function emptyCapacity(): Record<SkuKey, number | null> {
-  return Object.fromEntries(SKU_KEYS.map((k) => [k, null])) as Record<SkuKey, number | null>;
-}
-
-/** 営業日の設定。未設定の項目は初期値（仕込み数なし＝上限なし、売り切れなし、準備金0円） */
+/** 営業日の設定。未設定の項目は初期値（上限は DEFAULT_CAPACITY、売り切れなし、準備金0円） */
 export function getDaySettings(db: DB, day: string): DaySettings {
   const rows = db.prepare("SELECT key, value FROM day_settings WHERE business_day = ?").all(day) as {
     key: string;
     value: string;
   }[];
   const map = new Map(rows.map((r) => [r.key, JSON.parse(r.value) as unknown]));
-  const capacity = emptyCapacity();
+  const capacity: Record<ItemId, number | null> = { ...DEFAULT_CAPACITY };
   const saved = (map.get("capacity") ?? {}) as Partial<Record<string, number | null>>;
-  for (const k of SKU_KEYS) if (typeof saved[k] === "number") capacity[k] = saved[k];
+  for (const k of ITEM_IDS) if (typeof saved[k] === "number" || saved[k] === null) capacity[k] = saved[k];
   const soldout = ((map.get("soldout") ?? []) as string[]).filter((k): k is SkuKey => SKU_KEYS.includes(k as SkuKey));
   return {
     businessDay: day,
@@ -224,7 +220,7 @@ export function getDaySettings(db: DB, day: string): DaySettings {
   };
 }
 
-/** 渡された項目だけ更新する。capacity は SKU ごとに上書き（null で上限なしに戻す） */
+/** 渡された項目だけ更新する。capacity は串ごとに上書き（null で上限なし） */
 export function putDaySettings(db: DB, day: string, patch: DaySettingsPatch): DaySettings {
   const upsert = db.prepare(
     `INSERT INTO day_settings (business_day, key, value) VALUES (?, ?, ?)
