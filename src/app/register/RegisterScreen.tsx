@@ -97,7 +97,7 @@ export function RegisterScreen() {
         <ConnectionBanner error={connError} />
         <main className="grid min-h-0 flex-1 grid-cols-1 gap-4 p-4 lg:grid-cols-[1fr_26rem]">
           {/* 串5種 × 味付け2種 */}
-          <section aria-label="品目" className="flex flex-col gap-2.5 rounded-[28px] bg-white p-4 shadow-[0_6px_0_rgb(0_0_0/0.12)]">
+          <section aria-label="品目" className="flex flex-col gap-2.5 panel p-4">
             {ITEMS.map((item) => (
               <div key={item.id} className="grid min-h-16 flex-1 grid-cols-[9.5rem_1fr_1fr] gap-2.5">
                 <div className="flex items-center text-[1.75rem] font-black whitespace-nowrap">
@@ -125,7 +125,7 @@ export function RegisterScreen() {
           </section>
 
           {/* 会計 */}
-          <aside aria-label="会計" className="flex flex-col gap-2.5 rounded-[28px] bg-white p-4 shadow-[0_6px_0_rgb(0_0_0/0.12)]">
+          <aside aria-label="会計" className="flex flex-col gap-2.5 panel p-4">
             <ul className="min-h-0 flex-1 overflow-y-auto text-xl">
               {SKUS.filter((s) => cart[s.key] > 0).map((s) => (
                 <li key={s.key} className="flex justify-between border-b-2 border-dashed border-pink-200 py-1">
@@ -184,7 +184,7 @@ export function RegisterScreen() {
         </main>
       </div>
 
-      <section aria-labelledby="recent-h" className="mx-4 mb-4 rounded-[28px] bg-white p-4 shadow-[0_6px_0_rgb(0_0_0/0.12)]">
+      <section aria-labelledby="recent-h" className="mx-4 mb-4 panel p-4">
         <h2 id="recent-h" className="mb-2 text-xl font-black">
           <Heart />
           直近の注文

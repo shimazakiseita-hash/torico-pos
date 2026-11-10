@@ -20,7 +20,7 @@ export function Toast({ message, onClose }: { message: string | null; onClose: (
     <button
       type="button"
       onClick={onClose}
-      className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-2xl rounded-2xl bg-gray-900 px-6 py-4 text-left text-lg font-bold text-white shadow-2xl"
+      className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-2xl rounded-2xl bg-space-900 px-6 py-4 text-left text-lg font-bold text-white shadow-2xl"
     >
       {message}
     </button>

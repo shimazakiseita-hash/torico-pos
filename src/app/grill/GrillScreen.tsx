@@ -17,7 +17,7 @@ import { useMove } from "@/lib/useMove";
 import { useNow } from "@/lib/useNow";
 import { usePolling } from "@/lib/usePolling";
 
-const panel = "flex min-h-0 flex-col rounded-[28px] bg-white p-4 shadow-[0_6px_0_rgb(0_0_0/0.12)]";
+const panel = "panel flex min-h-0 flex-col p-4";
 
 export function GrillScreen() {
   const orders = usePolling<Order[]>("/api/orders?status=waiting,ready");
@@ -112,7 +112,7 @@ export function GrillScreen() {
             <Heart />
             いま必要な本数
           </h2>
-          <div className="grid min-h-0 flex-1 grid-cols-[auto_1fr_1fr] gap-x-3 gap-y-2">
+          <div className="grid min-h-0 flex-1 grid-cols-[auto_1fr_1fr] grid-rows-[auto_repeat(5,1fr)] gap-x-3 gap-y-2">
             <span />
             {SEASONINGS.map((s) => (
               <span key={s.id} className={`rounded-full border-2 text-center text-lg font-black ${s.bg} ${s.text} ${s.border}`}>
@@ -137,17 +137,21 @@ export function GrillScreen() {
               </div>
             ))}
           </div>
-          <p className="mt-2 text-center text-2xl">
-            合計 <b className="text-grad text-6xl font-black tabular-nums">{sum(need)}</b> 本
-          </p>
-          <button
-            type="button"
-            onClick={() => setSoundOn((on) => !on)}
-            aria-pressed={soundOn}
-            className="btn-ghost mt-2 min-h-16 text-lg"
-          >
-            新しい注文の音：{soundOn ? "オン" : "オフ"}
-          </button>
+          <div className="mt-3 flex items-center gap-3">
+            <p className="flex-1 text-center text-2xl leading-none">
+              合計 <b className="text-grad text-6xl leading-none font-black tabular-nums">{sum(need)}</b> 本
+            </p>
+            <button
+              type="button"
+              onClick={() => setSoundOn((on) => !on)}
+              aria-pressed={soundOn}
+              className="btn-ghost min-h-16 px-3 text-base leading-tight"
+            >
+              注文の音
+              <br />
+              {soundOn ? "オン" : "オフ"}
+            </button>
+          </div>
         </aside>
       </main>
       <Toast message={toast.message} onClose={toast.clear} />

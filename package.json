@@ -19,6 +19,7 @@
     "closing": "tsx scripts/closing.ts"
   },
   "dependencies": {
+    "@fontsource/zen-maru-gothic": "^5.3.1",
     "better-sqlite3": "^13.0.3",
     "next": "16.3.6",
     "nosleep.js": "^0.12.0",

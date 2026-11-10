@@ -20,7 +20,7 @@ export function ConfirmDialog({ open, title, children, confirmLabel, busy, onCon
       <div
         role="dialog"
         aria-modal="true"
-        className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl"
+        className="w-full max-w-lg rounded-[28px] bg-white p-6 text-ink shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="mb-3 text-2xl font-bold">{title}</h2>
@@ -29,7 +29,7 @@ export function ConfirmDialog({ open, title, children, confirmLabel, busy, onCon
           <button
             type="button"
             onClick={onCancel}
-            className="min-h-16 rounded-2xl border-2 border-gray-400 bg-white text-xl font-bold active:bg-gray-100"
+            className="btn-ghost min-h-16 text-xl"
           >
             やめる
           </button>
@@ -37,7 +37,7 @@ export function ConfirmDialog({ open, title, children, confirmLabel, busy, onCon
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className="min-h-16 rounded-2xl bg-danger text-xl font-bold text-white active:brightness-90 disabled:opacity-50"
+            className="min-h-16 rounded-[18px] bg-danger text-xl font-black text-white shadow-[0_5px_0_#9c2440] active:translate-y-1 active:shadow-none disabled:opacity-50"
           >
             {confirmLabel}
           </button>

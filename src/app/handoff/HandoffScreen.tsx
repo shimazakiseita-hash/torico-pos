@@ -13,7 +13,7 @@ import { useKiosk } from "@/lib/useKiosk";
 import { useMove } from "@/lib/useMove";
 import { usePolling } from "@/lib/usePolling";
 
-const panel = "flex min-h-0 flex-col rounded-[28px] bg-white p-4 shadow-[0_6px_0_rgb(0_0_0/0.12)]";
+const panel = "panel flex min-h-0 flex-col p-4";
 
 export function HandoffScreen() {
   const orders = usePolling<Order[]>("/api/orders?status=waiting,ready,served");

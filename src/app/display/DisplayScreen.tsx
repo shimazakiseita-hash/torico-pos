@@ -1,159 +1,123 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
 import { ConnectionBanner } from "@/components/ConnectionBanner";
 import { KioskBar } from "@/components/KioskBar";
 import { ITEMS, UNIT_PRICE } from "@/lib/menu";
+import { grillQueue } from "@/lib/queues";
 import type { Order } from "@/lib/types";
+import { useFresh } from "@/lib/useFresh";
 import { useKiosk } from "@/lib/useKiosk";
 import { usePolling } from "@/lib/usePolling";
 
-const HIGHLIGHT_MS = 6000;
+/** 呼び出し中の件数に応じた列数（多いときはタイルを小さくして全部出す） */
+const columns = (n: number) => (n <= 6 ? "grid-cols-3" : n <= 12 ? "grid-cols-4" : "grid-cols-5");
 
 export function DisplayScreen() {
   const orders = usePolling<Order[]>("/api/orders?status=waiting,ready");
   const kiosk = useKiosk();
   const all = orders.data ?? [];
+  // 新しく完成したものが左上
   const ready = all
     .filter((o) => o.status === "ready")
-    .sort((a, b) => Date.parse(b.readyAt ?? "") - Date.parse(a.readyAt ?? ""));
-  const waiting = all.filter((o) => o.status === "waiting");
-
-  // 新しく ready になった番号を数秒間ハイライトする（画面を開いた時点の番号は対象外）
-  const known = useRef<Set<number> | null>(null);
-  const [highlighted, setHighlighted] = useState<Set<number>>(new Set());
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const readyKey = ready.map((o) => o.id).join(",");
-
-  useEffect(() => {
-    if (!orders.data) return;
-    const ids = readyKey ? readyKey.split(",").map(Number) : [];
-    if (known.current === null) {
-      known.current = new Set(ids);
-      return;
-    }
-    const fresh = ids.filter((id) => !known.current!.has(id));
-    known.current = new Set(ids);
-    if (fresh.length === 0) return;
-    setHighlighted((s) => new Set([...s, ...fresh]));
-    // 続けて別の番号が ready になっても消えるよう、タイマーは effect のやり直しで止めない
-    timers.current.push(
-      setTimeout(() => {
-        setHighlighted((s) => new Set([...s].filter((id) => !fresh.includes(id))));
-      }, HIGHLIGHT_MS),
-    );
-  }, [readyKey, orders.data]);
-
-  useEffect(() => {
-    const list = timers.current;
-    return () => list.forEach(clearTimeout);
-  }, []);
+    .sort((a, b) => Date.parse(b.readyAt ?? "") - Date.parse(a.readyAt ?? "") || b.number - a.number);
+  const waiting = grillQueue(all);
+  const fresh = useFresh(orders.data ? ready.map((o) => o.id) : null);
 
   return (
-    <div className="bg-space flex min-h-dvh flex-1 flex-col text-white">
+    <div className="bg-space flex min-h-dvh flex-1 flex-col text-white lg:h-dvh">
       <ConnectionBanner error={orders.error} />
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 p-4 md:p-6">
-        <Image
-          src="/brand/logo.jpg"
-          alt="やきとり TORI♡CO"
-          width={800}
-          height={795}
-          priority
-          className="mx-auto h-auto w-[min(62vw,18rem)] rounded-[28px] bg-white p-3 shadow-[0_0.5rem_0_rgb(0_0_0/0.35)] md:w-[20rem] xl:w-[22rem]"
-        />
-
-        <section aria-labelledby="ready-heading" className="flex flex-1 flex-col">
-          <h1
-            id="ready-heading"
-            className="mx-auto mb-2 rounded-full bg-danger px-8 py-2 text-center text-4xl font-black tracking-wider shadow-[0_0.3rem_0_rgb(0_0_0/0.3)] md:text-5xl"
-          >
-            お呼び出し中
+      <main className="grid min-h-0 flex-1 grid-cols-1 gap-6 p-6 lg:grid-cols-[1fr_22.5rem]">
+        {/* できあがりました！ */}
+        <section aria-labelledby="ready-h" className="panel relative flex min-h-0 flex-col px-7 pt-5 pb-6 text-ink">
+          <h1 id="ready-h" className="mb-4 text-center text-[2.75rem] leading-tight font-black tracking-wider">
+            <span className="text-grad">できあがりました！</span>
           </h1>
-          <p className="mb-5 text-center text-lg font-bold text-white/90 md:text-xl">
-            整理券をお持ちのうえ、お渡し口へどうぞ
-          </p>
-
           {ready.length === 0 ? (
-            <IdlePanel baking={waiting.length > 0} />
+            <IdleMessage baking={waiting.length > 0} />
           ) : (
-            <ul
-              aria-live="polite"
-              className="flex flex-wrap justify-center gap-x-[4%] gap-y-6 px-1"
-            >
-              {ready.map((o) => {
-                const isNew = highlighted.has(o.id);
-                const label = String(o.number);
-                return (
-                  <li key={o.id} className="num-tile-wrap relative w-[30%] sm:w-[22%] lg:w-[16%] xl:w-[13%]">
-                    <div className={`num-tile ${isNew ? "num-tile-new" : ""}`} data-digits={label.length}>
-                      {label}
-                    </div>
-                    {isNew && (
-                      <p className="mt-2 text-center text-base font-black text-cyan md:text-lg">できあがり！</p>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-
-        <section aria-labelledby="baking-heading" className="rounded-3xl bg-white/10 p-4 backdrop-blur-[1px]">
-          <h2 id="baking-heading" className="mb-3 text-center text-xl font-bold text-white/80">
-            焼いています
-            {waiting.length > 0 && <span className="ml-2 text-base font-normal">（{waiting.length}件）</span>}
-          </h2>
-          {waiting.length === 0 ? (
-            <p className="text-center text-lg text-white/60">ただいま焼き待ちはありません</p>
-          ) : (
-            <ul className="flex flex-wrap justify-center gap-2">
-              {waiting.map((o) => (
-                <li
-                  key={o.id}
-                  className="min-w-14 rounded-xl bg-white/15 px-3 py-1 text-center text-2xl font-bold text-white/75 md:text-3xl"
-                >
-                  {o.number}
+            <ul aria-live="polite" className={`-m-3 grid min-h-0 flex-1 content-start gap-4 overflow-hidden p-3 ${columns(ready.length)}`}>
+              {ready.map((o) => (
+                <li key={o.id} className="num-tile-wrap">
+                  <div
+                    className={`num-tile ${fresh.has(o.id) ? "num-tile-new" : ""}`}
+                    data-digits={String(o.number).length}
+                  >
+                    {o.number}
+                  </div>
                 </li>
               ))}
             </ul>
           )}
+          <p className="mt-4 pl-40 text-center text-2xl">
+            整理券をお持ちのうえ、お渡し口へどうぞ <span className="text-pink-500">♥</span>
+          </p>
+          <Image
+            src="/brand/mascot.jpg"
+            alt=""
+            width={549}
+            height={526}
+            priority
+            className="drift absolute -bottom-2 -left-2 h-36 w-36 rounded-full border-[6px] border-pink-200 bg-white object-cover"
+          />
         </section>
+
+        {/* ロゴ・焼いている番号・キャッチコピー */}
+        <aside className="flex min-h-0 flex-col gap-4 text-center">
+          <div className="panel shrink-0 p-2">
+            <Image
+              src="/brand/logo.jpg"
+              alt="やきとり TORI♡CO"
+              width={800}
+              height={795}
+              priority
+              className="mx-auto h-auto max-h-[38dvh] w-auto rounded-[20px]"
+            />
+          </div>
+          <section aria-labelledby="baking-h" className="flex min-h-0 flex-1 flex-col rounded-[28px] bg-white/15 p-4">
+            <h2 id="baking-h" className="mb-2 text-[1.375rem] font-black">
+              ただいま焼いています
+            </h2>
+            {waiting.length === 0 ? (
+              <p className="text-lg text-white/70">焼き待ちはありません</p>
+            ) : (
+              <ul className="flex min-h-0 flex-wrap content-start justify-center gap-2 overflow-hidden">
+                {waiting.map((o) => (
+                  <li
+                    key={o.id}
+                    className="min-w-14 rounded-xl bg-white px-3 text-[1.875rem] leading-snug font-black text-ink tabular-nums"
+                  >
+                    {o.number}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+          <p className="shrink-0 text-[1.375rem]">
+            一本食べたら もう、<b className="text-[1.875rem] font-black text-cyan">トリコ</b>
+          </p>
+        </aside>
       </main>
       <KioskBar awake={kiosk.awake} />
     </div>
   );
 }
 
-/** 呼び出し中の番号がない時間の案内：キャラクターとメニューのおすすめ */
-function IdlePanel({ baking }: { baking: boolean }) {
+/** 呼び出し中の番号がない時間の案内 */
+function IdleMessage({ baking }: { baking: boolean }) {
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-5 rounded-[2rem] bg-white p-5 text-ink shadow-[0_0.5rem_0_rgb(0_0_0/0.3)] sm:flex-row sm:p-6">
-      <Image
-        src="/brand/mascot.jpg"
-        alt=""
-        width={549}
-        height={526}
-        className="drift w-36 shrink-0 sm:w-44"
-      />
-      <div className="flex w-full flex-col gap-3 text-center sm:text-left">
-        <p className="text-2xl font-black text-ink">
-          {baking ? "いっしょうけんめい焼いています！" : "いらっしゃいませ！"}
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:justify-start">
-          <span className="text-xl font-bold">
-            1本 <span className="text-3xl font-black text-danger">{UNIT_PRICE}</span>円
-          </span>
-        </div>
-        <p className="text-lg font-bold">たれ・塩から選べます！</p>
-        <ul className="flex flex-wrap justify-center gap-2 sm:justify-start">
-          {ITEMS.map((i) => (
-            <li key={i.id} className="rounded-full bg-white px-3 py-1 text-base font-bold text-ink">
-              {i.name}
-            </li>
-          ))}
-        </ul>
-      </div>
+    <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-[18px] bg-pink-100 p-6 text-center">
+      <p className="text-4xl font-black">{baking ? "いっしょうけんめい焼いています！" : "いらっしゃいませ！"}</p>
+      <p className="text-2xl">
+        1本 <b className="text-grad text-6xl font-black">{UNIT_PRICE}</b> 円・たれ／塩から選べます
+      </p>
+      <ul className="flex flex-wrap justify-center gap-2">
+        {ITEMS.map((i) => (
+          <li key={i.id} className="rounded-full border-[3px] border-pink-200 bg-white px-4 py-1 text-2xl font-black">
+            {i.name}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

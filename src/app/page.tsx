@@ -26,10 +26,10 @@ export default function Home() {
             <li key={l.href}>
               <Link
                 href={l.href}
-                className="press flex min-h-24 flex-col items-center justify-center rounded-3xl bg-white px-6 text-ink shadow-[0_0.4rem_0_rgb(0_0_0/0.3)]"
+                className="btn-ghost flex min-h-24 flex-col items-center justify-center px-6"
               >
                 <span className="text-3xl font-black">{l.label}</span>
-                <span className="text-base text-gray-600">{l.note}</span>
+                <span className="text-base text-lav-500">{l.note}</span>
               </Link>
             </li>
           ))}

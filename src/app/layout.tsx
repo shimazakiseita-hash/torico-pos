@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { PracticeBanner } from "@/components/PracticeBanner";
+import "@fontsource/zen-maru-gothic/700.css";
+import "@fontsource/zen-maru-gothic/900.css";
 import "./globals.css";
 
 export const metadata: Metadata = {

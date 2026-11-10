@@ -31,9 +31,8 @@
 
 /* Tailwind から bg-space-700 / text-ink / border-danger などで参照する */
 @theme inline {
-  /* 外部フォントは使わない（オフライン運用）。Zen Maru Gothic の同梱はフェーズ4 */
-  --font-sans: "Noto Sans JP", "Noto Sans CJK JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
-    "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+  /* Zen Maru Gothic は @fontsource で同梱（layout.tsx で読み込む）。外部フォントは使わない */
+  --font-sans: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Noto Sans CJK JP", system-ui, sans-serif;
   --color-space-900: var(--space-900);
   --color-space-700: var(--space-700);
   --color-space-500: var(--space-500);
@@ -66,6 +65,7 @@ body {
   background: var(--lav-100);
   color: var(--ink);
   font-family: var(--font-sans);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
@@ -78,9 +78,18 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* ── 宇宙の背景（お客さんに見せる画面） ─────────────── */
+/* ── 宇宙の背景（お客さんに見せる画面）：星と、右下にピンクのもや ── */
 .bg-space {
-  background: linear-gradient(180deg, var(--space-500), var(--space-700) 45%, var(--space-900));
+  background:
+    radial-gradient(2px 2px at 12% 18%, #fff8, transparent 60%),
+    radial-gradient(2px 2px at 70% 12%, #fff8, transparent 60%),
+    radial-gradient(1.5px 1.5px at 40% 70%, #fff7, transparent 60%),
+    radial-gradient(2px 2px at 88% 62%, #fff7, transparent 60%),
+    radial-gradient(1.5px 1.5px at 25% 88%, #fff6, transparent 60%),
+    radial-gradient(1.5px 1.5px at 55% 35%, #fff6, transparent 60%),
+    radial-gradient(2px 2px at 6% 55%, #fff7, transparent 60%),
+    radial-gradient(40rem 20rem at 85% 95%, #ed82a755, transparent 70%),
+    linear-gradient(160deg, var(--space-500), var(--space-700) 55%, var(--space-900));
 }
 
 /* ── 店員画面の部品（docs/design.md「形」）。utilities で上書きできるよう components 層に置く ── */
@@ -88,6 +97,13 @@ button:disabled {
   /* キャンディの背景（メニュー表の縁） */
   .bg-candy {
     background: linear-gradient(180deg, var(--candy-from), var(--candy-to));
+  }
+
+  /* 白パネル（角丸28px、下に薄い影） */
+  .panel {
+    border-radius: 28px;
+    background: #fff;
+    box-shadow: 0 6px 0 rgb(0 0 0 / 0.12);
   }
 
   /* ピンクの縦グラデ文字（大きい見出し・金額だけ） */
@@ -138,35 +154,33 @@ button:disabled {
 }
 .num-tile {
   display: flex;
-  aspect-ratio: 1;
+  aspect-ratio: 8 / 5;
   align-items: center;
   justify-content: center;
-  border-radius: 18px;
+  border-radius: 28px;
   background: linear-gradient(180deg, var(--pink-400), var(--magenta));
-  box-shadow: 0 5px 0 rgb(0 0 0 / 0.25);
+  box-shadow: 0 8px 0 #8c2f6e;
   color: #fff;
   font-weight: 900;
   line-height: 1;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.02em;
 }
 
-/* 桁数に応じてタイルに収まる大きさにする（コンテナ幅基準） */
+/* 桁数に応じてタイルに収まる大きさにする（コンテナ幅基準。3列なら2桁で約150px） */
 .num-tile[data-digits="1"],
 .num-tile[data-digits="2"] {
-  font-size: 52cqw;
+  font-size: 50cqw;
 }
 .num-tile[data-digits="3"] {
-  font-size: 38cqw;
+  font-size: 42cqw;
 }
 .num-tile[data-digits="4"] {
-  font-size: 28cqw;
+  font-size: 32cqw;
 }
 
 /* 新しく完成した番号：シアンの太枠 */
 .num-tile-new {
-  box-shadow:
-    0 0 0 0.4rem var(--cyan),
-    0 5px 0 0.4rem rgb(0 0 0 / 0.25);
+  outline: 8px solid var(--cyan);
 }
 
 /* マスコットがゆらゆら漂う */
