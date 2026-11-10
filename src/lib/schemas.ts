@@ -39,11 +39,18 @@ export const putSettingsSchema = z.object({
 const orderNumbersSchema = z.array(z.number().int().min(1)).max(1000);
 
 export const publicStatusSchema = z.object({
+  businessDay: businessDaySchema,
   ready: orderNumbersSchema,
   waiting: orderNumbersSchema,
+  served: orderNumbersSchema,
   avgWaitSeconds: z.number().int().min(0).max(86400).nullable(),
-  // 古い public-sync（目安を送らない）からでも受け付ける
-  secondsPerOrder: z.number().int().min(0).max(86400).nullable().default(null),
+  secondsPerOrder: z.number().int().min(0).max(86400).nullable(),
+});
+
+/** public-sync がサーバーPCに知らせる、公開ページへの送信結果 */
+export const publicSyncReportSchema = z.object({
+  ok: z.boolean(),
+  error: z.string().max(300).optional(),
 });
 
 export const rankingSubmitSchema = z.object({

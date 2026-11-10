@@ -34,6 +34,30 @@ npm test
 当日は `npm run event`（本番サーバー・お客さん用ページへの送信・自動バックアップをまとめて起動）。
 DB は `data/torico.db`。呼び出し番号は営業日（日本時間の日付）ごとに1から振り直す。
 
+## お客さん用ページ（整理券のQR）
+
+Cloudflare Workers の `torico-status`（[cloud/](cloud/)）。保存先は Worker に付属する Durable Objects。
+サーバーPCの `npm run public-sync`（`npm run event` に含まれる）が、今日の番号・状態・待ち時間の目安だけを数秒おきに送る。
+送れているかどうかは管理画面の「公開ページ」に出る（60秒以上送れていなければ赤）。
+
+```bash
+cd cloud
+npm install
+npx wrangler whoami                 # 責任者のアカウントか確認
+npx wrangler secret put PUSH_TOKEN  # サーバーPCからの送信の合言葉（長いランダムな文字列）
+npx wrangler secret put SESSION_SECRET
+npm run deploy                      # name が torico-status であることを確認してから
+```
+
+サーバーPCのリポジトリ直下に `.env.public` を置く（コミットしない）。
+
+```
+PUBLIC_STATUS_URL=https://torico-status.<サブドメイン>.workers.dev
+PUBLIC_STATUS_TOKEN=<PUSH_TOKEN と同じ値>
+```
+
+整理券は `npm run tickets -- 1 300` で `print/tickets.html` を作り、ブラウザで A4・倍率100%・背景のグラフィックありで印刷する（1枚目は屋台に貼るポスター）。
+
 ## ドキュメント
 
 - [docs/spec.md](docs/spec.md) — 仕様

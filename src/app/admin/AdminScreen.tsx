@@ -5,6 +5,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { Heart } from "@/components/Heart";
 import { ConnectionBanner } from "@/components/ConnectionBanner";
 import { SKUS, skuName } from "@/lib/menu";
+import type { PublicSyncHealth } from "@/lib/publicSync";
 import type { ServerInfo } from "@/lib/serverInfo";
 import type { Summary } from "@/lib/summary";
 import { usePolling } from "@/lib/usePolling";
@@ -36,9 +37,48 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
+const clock = (iso: string) => new Date(iso).toLocaleTimeString("ja-JP", { timeZone: "Asia/Tokyo" });
+
+/** 整理券のQRから開く公開ページへの送信状況。送れていないときは赤で警告する */
+function PublicSyncCard({ health }: { health: PublicSyncHealth | null | undefined }) {
+  if (!health) return null;
+  const warn = health.state !== "ok";
+  return (
+    <section
+      role={warn ? "alert" : undefined}
+      className={`panel p-4 ${warn ? "border-[3px] border-danger bg-danger-bg" : ""}`}
+    >
+      <h2 className="mb-2 text-lg font-black text-ink">
+        <Heart />
+        公開ページ（整理券のQR）
+      </h2>
+      {health.state === "ok" && (
+        <p className="text-xl tabular-nums">
+          <span className="mr-2 inline-block h-3 w-3 rounded-full bg-ok" aria-hidden />
+          最終更新 {clock(health.lastSuccessAt)}（{health.ageSeconds}秒前）
+        </p>
+      )}
+      {health.state === "never" && (
+        <p className="text-xl font-black text-danger">送信していません（.env.public を置いて npm run event で起動すると送ります）</p>
+      )}
+      {health.state === "stale" && (
+        <>
+          <p className="text-xl font-black text-danger tabular-nums">
+            ⚠ 公開ページを更新できていません
+            {health.lastSuccessAt ? `（最終更新 ${clock(health.lastSuccessAt)}）` : "（まだ一度も送れていません）"}
+          </p>
+          {health.error && <p className="mt-1 text-sm break-all text-danger">{health.error}</p>}
+          <p className="mt-1 text-sm">受付〜渡し場はこのまま使えます。インターネットがつながると自動で追いつきます</p>
+        </>
+      )}
+    </section>
+  );
+}
+
 export function AdminScreen() {
   const summary = usePolling<Summary>("/api/summary");
   const server = usePolling<ServerInfo>("/api/server-info", 10_000);
+  const sync = usePolling<PublicSyncHealth>("/api/public-sync", 5_000);
   const s = summary.data;
 
   const ratio = s ? s.soldTotal / s.targetQty : 0;
@@ -49,6 +89,7 @@ export function AdminScreen() {
       <AppHeader title="管理" error={summary.status} />
       <ConnectionBanner error={summary.error} />
       <main className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4">
+        <PublicSyncCard health={sync.data} />
         <Card title="売上">
           <p className="text-5xl font-black tabular-nums">{s ? `${s.revenue.toLocaleString()}円` : "…"}</p>
           <p className="mt-1 text-2xl font-black text-ink tabular-nums">

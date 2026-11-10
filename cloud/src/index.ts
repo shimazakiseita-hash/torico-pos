@@ -1,10 +1,10 @@
 /**
  * お客さん向け呼び出し状況ページ（Cloudflare Workers）。
- * サーバーPCの public-sync が番号だけを PUT し、お客さんのスマホが GET で読む。
+ * サーバーPCの public-sync が今日の番号と状態だけを PUT し、お客さんのスマホが GET で読む。
  * ミニゲームのランキング（今日・歴代）と、営業終了の表示の設定もここに置く
  */
 import { DurableObject } from "cloudflare:workers";
-import { lookupNumber, type PublicStatus } from "../../src/lib/publicStatus";
+import { isToday, lookupNumber, type PublicStatus } from "../../src/lib/publicStatus";
 import {
   RANKING_SIZE,
   allowSubmission,
@@ -186,7 +186,9 @@ export default {
 
     if (url.pathname === "/api/status") {
       if (request.method === "GET") {
-        const status = await store.read();
+        // 前の営業日の状況は返さない（番号は毎日1からなので、今日の整理券と混ざる）
+        const saved = await store.read();
+        const status = saved && isToday(saved) ? saved : null;
         const n = Number(url.searchParams.get("n"));
         const lookup = status && Number.isInteger(n) && n >= 1 ? lookupNumber(status, n) : null;
         return json({ status, lookup, config: await store.config() });

@@ -9,71 +9,83 @@ export const PAGE_HTML = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#2a1f5c">
 <title>呼び出し状況｜やきとり TORI♡CO</title>
+<link rel="icon" href="/brand/mascot.webp">
 <style>
   @font-face { font-family: "Zen Maru Gothic"; font-weight: 700; font-display: swap; src: url("/fonts/zen-maru-gothic-700.woff2") format("woff2"); }
   @font-face { font-family: "Zen Maru Gothic"; font-weight: 900; font-display: swap; src: url("/fonts/zen-maru-gothic-900.woff2") format("woff2"); }
   :root {
     --space-900: #2a1f5c; --space-700: #3d2f7d; --space-500: #544591; --ink: #4a3f8c;
-    --lav-300: #c9b3e6; --lav-100: #f1eafa; --pink-400: #e57bab; --magenta: #c5589d; --pink-100: #fde8f3;
+    --lav-500: #9374ab; --lav-300: #c9b3e6; --lav-100: #f1eafa;
+    --pink-400: #e57bab; --magenta: #c5589d; --pink-200: #f4b0d5; --pink-100: #fde8f3;
     --cyan: #80f7fd; --ok: #2fa56b; --danger: #d93a5b;
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; background: var(--space-900); }
+  html:has(body.done) { background: #1d6b45; }
   body {
     margin: 0; min-height: 100dvh; color: #fff; font-family: ${FONT}; font-weight: 700; font-variant-numeric: tabular-nums;
-    background: linear-gradient(180deg, var(--space-500), var(--space-700) 45%, var(--space-900)) fixed;
-    transition: background 0.6s;
+    background:
+      radial-gradient(2px 2px at 12% 18%, #fff8, transparent 60%), radial-gradient(2px 2px at 78% 9%, #fff8, transparent 60%),
+      radial-gradient(1.5px 1.5px at 40% 62%, #fff7, transparent 60%), radial-gradient(2px 2px at 88% 48%, #fff7, transparent 60%),
+      radial-gradient(1.5px 1.5px at 20% 86%, #fff6, transparent 60%), radial-gradient(1.5px 1.5px at 62% 30%, #fff6, transparent 60%),
+      radial-gradient(30rem 18rem at 85% 100%, #ed82a755, transparent 70%),
+      linear-gradient(160deg, var(--space-500), var(--space-700) 55%, var(--space-900));
   }
-  body.done { background: linear-gradient(180deg, #4cc38a, var(--ok) 50%, #1d6b45) fixed; }
-  main { max-width: 30rem; margin: 0 auto; padding: 1rem 1rem 2rem; display: flex; flex-direction: column; gap: 1rem; }
-  header { text-align: center; }
-  .logo { display: inline-block; width: 9rem; padding: 0.5rem; border-radius: 28px; background: #fff; }
-  .logo img { display: block; width: 100%; height: auto; }
-  h1 { margin: 0.5rem 0 0; font-size: 1.25rem; font-weight: 900; }
-  .card { padding: 1.25rem; border-radius: 28px; background: #fff; color: var(--ink); text-align: center; }
-  label { display: block; margin-bottom: 0.5rem; font-weight: 900; }
+  /* できあがったら画面全体の色を変えて気づけるようにする */
+  body.done { background: linear-gradient(180deg, #5fd39b, var(--ok) 55%, #1d6b45); }
+  main { max-width: 26rem; margin: 0 auto; padding: 1rem 1rem 2rem; display: flex; flex-direction: column; gap: 0.875rem; text-align: center; }
+  .logo { display: block; width: 9.5rem; margin: 0 auto; padding: 0.25rem; border-radius: 20px; background: #fff; }
+  .logo img { display: block; width: 100%; height: auto; border-radius: 16px; }
+  .card { padding: 1rem 1rem 1.125rem; border-radius: 28px; background: #fff; color: var(--ink); box-shadow: 0 6px 0 rgb(0 0 0 / 0.15); }
+  label, .my-label { display: block; margin: 0 0 0.5rem; font-size: 1rem; }
   .row { display: flex; gap: 0.5rem; }
-  input { flex: 1; min-width: 0; height: 3.5rem; padding: 0 1rem; border: 3px solid var(--lav-300); border-radius: 18px; font: inherit; font-size: 1.75rem; color: var(--ink); text-align: center; }
-  button { font: inherit; cursor: pointer; }
-  .primary { min-width: 5.5rem; border: 0; border-radius: 18px; background: linear-gradient(180deg, var(--pink-400), var(--magenta)); box-shadow: 0 5px 0 #8f3a72; color: #fff; font-size: 1.25rem; font-weight: 900; }
-  .primary:active { transform: translateY(3px); box-shadow: 0 2px 0 #8f3a72; }
-  .hint { margin: 0.75rem 0 0; font-size: 0.9rem; }
-  .my-label { margin: 0; font-size: 0.95rem; }
-  .my-number { margin: 0; font-size: 5rem; font-weight: 900; line-height: 1.1; color: var(--magenta); }
-  .state { display: inline-block; margin: 0.25rem 0 0; padding: 0.4rem 1.25rem; border-radius: 999px; background: var(--magenta); color: #fff; font-size: 1.2rem; font-weight: 900; }
-  .state.done { background: var(--ok); }
-  .state.plain { background: var(--lav-100); color: var(--ink); }
-  .detail { margin: 0.5rem 0 0; font-size: 0.9rem; }
-  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-  .stat { padding: 0.75rem; border-radius: 18px; background: rgb(255 255 255 / 0.15); text-align: center; }
-  .stat p { margin: 0; font-size: 0.85rem; }
-  .stat b { display: block; font-size: 1.6rem; font-weight: 900; }
-  .link { display: block; margin: 1rem auto 0; border: 0; background: none; color: var(--ink); text-decoration: underline; }
-  #stale { margin: 0; padding: 0.75rem 1rem; border-radius: 18px; background: var(--danger); text-align: center; }
-  section h2 { margin: 0 0 0.5rem; font-size: 1.1rem; font-weight: 900; text-align: center; }
+  input { flex: 1; min-width: 0; height: 3.75rem; padding: 0 1rem; border: 3px solid var(--lav-300); border-radius: 18px; font: inherit; font-size: 2rem; font-weight: 900; color: var(--ink); text-align: center; }
+  input:focus { outline: 3px solid var(--pink-400); outline-offset: 1px; }
+  button { font: inherit; cursor: pointer; touch-action: manipulation; }
+  .primary { min-width: 5.5rem; border: 0; border-radius: 18px; background: linear-gradient(180deg, var(--pink-400), var(--magenta)); box-shadow: 0 5px 0 #8c2f6e; color: #fff; font-size: 1.375rem; font-weight: 900; }
+  .primary:active { transform: translateY(4px); box-shadow: 0 1px 0 #8c2f6e; }
+  .hint { margin: 0.75rem 0 0; font-size: 0.875rem; color: var(--lav-500); }
+  .my-label { margin: 0; }
+  .my-number {
+    margin: 0; font-size: 6rem; font-weight: 900; line-height: 1.05; letter-spacing: -0.02em;
+    background: linear-gradient(180deg, var(--pink-400), var(--magenta)); -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .state { margin: 0.5rem 0; padding: 0.5rem; border-radius: 999px; background: linear-gradient(180deg, var(--pink-400), var(--magenta)); color: #fff; font-size: 1.625rem; font-weight: 900; }
+  .state.done { background: linear-gradient(180deg, #48c58a, var(--ok)); }
+  .state.plain { background: var(--lav-100); color: var(--ink); font-size: 1.375rem; }
+  .detail { margin: 0; font-size: 0.95rem; }
+  .link { display: block; min-height: 2.75rem; margin: 0.5rem auto 0; padding: 0 1rem; border: 0; background: none; color: var(--lav-500); text-decoration: underline; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; }
+  .stat { padding: 0.625rem; border-radius: 18px; background: rgb(255 255 255 / 0.15); }
+  .stat p { margin: 0; font-size: 0.875rem; }
+  .stat b { display: block; font-size: 2.125rem; font-weight: 900; line-height: 1.3; color: var(--cyan); }
+  #stale { margin: 0; padding: 0.75rem 1rem; border-radius: 18px; background: var(--danger); }
+  .list { padding: 0.875rem; border-radius: 28px; background: rgb(255 255 255 / 0.12); }
+  .list h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 900; }
   .nums { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
-  .nums li { min-width: 3.25rem; padding: 0.35rem 0.6rem; border-radius: 14px; background: #fff; color: var(--ink); font-size: 1.5rem; font-weight: 900; text-align: center; }
-  .ready li { background: linear-gradient(180deg, var(--pink-400), var(--magenta)); color: #fff; font-size: 2rem; }
-  .nums li.me { outline: 4px solid var(--cyan); }
-  .empty { margin: 0; text-align: center; opacity: 0.75; }
-  #updated { margin: 0; font-size: 0.85rem; text-align: center; opacity: 0.8; }
+  .nums li { min-width: 3.25rem; padding: 0.125rem 0.625rem; border-radius: 12px; background: #fff; color: var(--ink); font-size: 1.625rem; font-weight: 900; }
+  .ready li { background: linear-gradient(180deg, var(--pink-400), var(--magenta)); box-shadow: 0 4px 0 #8c2f6e; color: #fff; font-size: 2rem; }
+  .nums li.me { outline: 4px solid var(--cyan); outline-offset: 2px; }
+  .empty { margin: 0; opacity: 0.75; }
+  .mascot { display: block; width: 5.75rem; height: 5.75rem; margin: 0.25rem auto 0; border: 5px solid var(--pink-200); border-radius: 50%; background: #fff; object-fit: cover; }
+  #updated { margin: 0; font-size: 0.8125rem; opacity: 0.85; }
+  .closed h2 { margin: 0 0 0.5rem; font-size: 1.5rem; }
+  .closed p { margin: 0; }
 </style>
 </head>
 <body>
 <main>
-  <header>
-    <span class="logo"><img src="/brand/logo.webp" alt="やきとり TORI♡CO" width="480" height="477"></span>
-    <h1>呼び出し状況</h1>
-  </header>
+  <span class="logo"><img src="/brand/logo.webp" alt="やきとり TORI♡CO" width="480" height="477"></span>
 
-  <section id="closed" class="card" hidden>
+  <section id="closed" class="card closed" hidden>
     <h2>ありがとうございました！</h2>
-    <p>本日の営業は終了しました。<br>ご来店ありがとうございました。</p>
+    <p>本日の営業は終了しました。<br>ご来店ありがとうございました ♥</p>
   </section>
 
   <section id="mine" class="card" aria-label="あなたの番号">
     <form id="form">
-      <label for="n">整理券の番号</label>
+      <label for="n">整理券の番号を入れてください</label>
       <div class="row">
         <input id="n" name="n" type="number" inputmode="numeric" min="1" max="9999" placeholder="例：12" autocomplete="off">
         <button class="primary" type="submit">見る</button>
@@ -96,18 +108,19 @@ export const PAGE_HTML = `<!doctype html>
 
   <p id="stale" hidden>最新の状況を取得できていません。店頭の画面をご確認ください</p>
 
-  <section id="ready-sec" aria-labelledby="ready-h">
+  <section id="ready-sec" class="list" aria-labelledby="ready-h">
     <h2 id="ready-h">お呼び出し中</h2>
     <ul id="ready" class="nums ready" aria-live="polite"></ul>
     <p id="ready-empty" class="empty" hidden>いまはありません</p>
   </section>
 
-  <section id="baking-sec" aria-labelledby="baking-h">
+  <section id="baking-sec" class="list" aria-labelledby="baking-h">
     <h2 id="baking-h">ただいま焼いています<span id="baking-count"></span></h2>
     <ul id="waiting" class="nums"></ul>
     <p id="waiting-empty" class="empty" hidden>いまはありません</p>
   </section>
 
+  <img class="mascot" src="/brand/mascot.webp" alt="" width="240" height="230">
   <p id="updated"></p>
 </main>
 <script>
@@ -121,6 +134,7 @@ export const PAGE_HTML = `<!doctype html>
   var form = document.getElementById("form");
   var view = document.getElementById("mine-view");
   var updatedAt = null;
+  var hasStatus = false;
   var myNumber = null;
   var lastState = null;
   var closed = false;
@@ -146,34 +160,33 @@ export const PAGE_HTML = `<!doctype html>
     input.value = "";
   }
 
+  var TEXT = {
+    ready: ["state done", "できあがりました！", "整理券を持ってお渡し口へどうぞ ♥"],
+    waiting: ["state", "ただいま焼いています", "できあがったらこの画面が変わります"],
+    served: ["state plain", "お渡し済み", "ご来店ありがとうございました ♥"],
+    notFound: ["state plain", "この番号は使われていません", "整理券の番号をご確認ください"],
+    none: ["state plain", "準備中です", "受付が始まると、ここに状況が出ます"],
+    unknown: ["state plain", "状況を確認できません", "店頭の呼び出し画面をご確認ください"]
+  };
+
   function renderMine(lookup) {
     var s = myNumber && lookup ? lookup.state : null;
-    var done = s === "ready";
+    var done = s === "ready" && !closed;
     document.body.classList.toggle("done", done);
     $("stats").hidden = s !== "waiting" || closed;
     document.title = done ? "【できあがりました！】" + BASE_TITLE : BASE_TITLE;
     if (!myNumber) return;
 
     $("my-number").textContent = String(myNumber);
-    var state = $("my-state"), detail = $("my-detail");
-    if (done) {
-      state.className = "state done";
-      state.textContent = "できあがりました！";
-      detail.textContent = "整理券を持ってお渡し口へどうぞ";
-    } else if (s === "waiting") {
-      state.className = "state";
-      state.textContent = "ただいま焼いています";
-      detail.textContent = "できあがったらこの画面が変わります";
+    // 更新が止まっている間に発行された番号を「使われていません」と言わないように
+    var stale = updatedAt !== null && Date.now() - updatedAt >= STALE_MS;
+    var t = TEXT[s === "notFound" && stale ? "unknown" : s || (hasStatus ? "notFound" : "none")];
+    $("my-state").className = t[0];
+    $("my-state").textContent = t[1];
+    $("my-detail").textContent = t[2];
+    if (s === "waiting") {
       $("ahead").textContent = lookup.ahead + "組";
       $("eta").textContent = lookup.etaSeconds === null ? "—" : "約" + Math.max(1, Math.ceil(lookup.etaSeconds / 60)) + "分";
-    } else if (s === "notFound") {
-      state.className = "state plain";
-      state.textContent = "呼び出し中・調理中にありません";
-      detail.textContent = "お渡し済みか、番号をご確認ください";
-    } else {
-      state.className = "state plain";
-      state.textContent = "準備中です";
-      detail.textContent = "";
     }
     // 見ている間にできあがったら、震えて知らせる（対応している端末だけ）
     if (done && lastState === "waiting" && navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 300]);
@@ -194,9 +207,9 @@ export const PAGE_HTML = `<!doctype html>
 
   function renderUpdated() {
     var el = $("updated");
-    if (!updatedAt) { el.textContent = "準備中です"; $("stale").hidden = true; return; }
+    if (!updatedAt) { el.textContent = "この画面は自動で更新されます"; $("stale").hidden = true; return; }
     var sec = Math.max(0, Math.round((Date.now() - updatedAt) / 1000));
-    el.textContent = "最終更新：" + (sec < 60 ? sec + "秒前" : Math.floor(sec / 60) + "分前") + "（自動で更新されます）";
+    el.textContent = "最終更新：" + (sec < 60 ? sec + "秒前" : Math.floor(sec / 60) + "分前") + "（この画面は自動で更新されます）";
     $("stale").hidden = closed || Date.now() - updatedAt < STALE_MS;
   }
 
@@ -213,6 +226,7 @@ export const PAGE_HTML = `<!doctype html>
       .then(function (res) { return res.json(); })
       .then(function (data) {
         var s = data.status;
+        hasStatus = !!s;
         updatedAt = s ? Date.parse(s.updatedAt) : null;
         applyConfig(data.config);
         renderList("ready", s ? s.ready : []);
