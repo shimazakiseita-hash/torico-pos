@@ -16,7 +16,7 @@ export function PracticeBanner() {
 
   if (!practice) return null;
   return (
-    <p role="status" className="shrink-0 bg-custard px-3 py-1 text-center text-base font-black text-ink">
+    <p role="status" className="shrink-0 bg-beak px-3 py-1 text-center text-base font-black text-ink">
       練習モード：ここでの注文は本番のデータに残りません
     </p>
   );

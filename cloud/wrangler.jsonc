@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "taiyaki-status",
+  "name": "torico-status",
   "main": "src/index.ts",
   "compatibility_date": "2026-09-30",
   // 画像とフォント（npm run assets で作る）。それ以外のパスは Worker が返す

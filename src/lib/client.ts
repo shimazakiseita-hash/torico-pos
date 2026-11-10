@@ -17,7 +17,7 @@ export async function sendJson<T>(method: "POST" | "PATCH" | "PUT", url: string,
     }
     return { ok: true, data: json as T };
   } catch {
-    return { ok: false, error: "サーバーにつながりません。テザリングの接続を確認してください" };
+    return { ok: false, error: "サーバーにつながりません。Wi-Fi「TORICO-POS」の接続を確認してください" };
   }
 }
 

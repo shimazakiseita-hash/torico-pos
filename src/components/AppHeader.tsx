@@ -11,9 +11,9 @@ type Props = {
 /** 共通ヘッダー：紺の帯に小さいロゴと画面名、右端に接続状態 */
 export function AppHeader({ title, error }: Props) {
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 bg-navy px-3 text-white shadow-md">
+    <header className="flex h-14 shrink-0 items-center gap-3 bg-space-700 px-3 text-white shadow-md">
       <Link href="/" className="flex items-center gap-2" aria-label="トップへ">
-        <Image src="/brand/character.png" alt="" width={40} height={40} className="rounded-full bg-white" priority />
+        <Image src="/brand/mascot.jpg" alt="" width={40} height={40} className="rounded-full bg-white" priority />
         <span className="hidden text-sm font-bold leading-tight sm:block">
           やきとり
           <br />
@@ -34,7 +34,7 @@ export function ConnectionStatus({ error, className = "" }: { error: boolean | n
     <span
       role="status"
       className={`flex items-center gap-2 rounded-full px-3 py-1 text-base font-bold ${
-        error ? "bg-white text-red" : "bg-white/10 text-white"
+        error ? "bg-white text-danger" : "bg-white/10 text-white"
       } ${className}`}
     >
       <span className={`inline-block h-3 w-3 rounded-full ${dot}`} aria-hidden />

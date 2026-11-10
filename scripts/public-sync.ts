@@ -32,7 +32,7 @@ let failing = false;
 
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(`${local}${path}`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
-  if (!res.ok) throw new Error(`レジPCのAPI ${path}: ${res.status}`);
+  if (!res.ok) throw new Error(`サーバーPCのAPI ${path}: ${res.status}`);
   return (await res.json()) as T;
 }
 

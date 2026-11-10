@@ -1,8 +1,7 @@
 # torico-pos
 
 津田沼祭（2026年11月21日・22日）の焼き鳥屋台「やきとり TORI♡CO」（寮友会執行役員会）で使う注文・会計アプリ。
-受付で現金会計をして呼び出し番号を発行し、焼き場で「完成」、渡し場で「渡した」を押す。
-寮祭のたい焼き屋台で使った [taiyaki-pos](https://github.com/shimazakiseita-hash/taiyaki-pos) を改修している（作業中）。
+受付で現金会計をして呼び出し番号を発行し、焼き場で「完成」、渡し場で「渡した」を押す（作業中）。
 
 注文・会計はインターネットなしで動く。サーバーPC（Ubuntu）が Wi-Fi の親機になり、ほかの端末はブラウザでつなぐ。
 整理券のQRから開くお客さん用ページ（`cloud/`、Cloudflare Workers）だけがインターネットを使う。
@@ -50,6 +49,6 @@ DB は `data/torico.db`。呼び出し番号は営業日（日本時間の日付
 ただし次のものは MIT の対象外で、権利者の許可なく利用できない。
 
 - `public/brand/`・`cloud/public/brand/`・`src/app/icon.png` のロゴ・キャラクター画像
-- `docs/design-reference/`・`docs/mock/` の広報物の画像
+- `docs/mock/` の画像
 
 `cloud/public/fonts/` のフォントは、それぞれの OFL ファイルに従う。

@@ -73,19 +73,19 @@ export function RegisterScreen() {
   if (issued) {
     const label = String(issued.number);
     return (
-      <main className="bg-seigaiha flex flex-1 flex-col items-center justify-center gap-6 p-6 text-center text-white">
+      <main className="bg-space flex flex-1 flex-col items-center justify-center gap-6 p-6 text-center text-white">
         <p className="text-4xl font-black tracking-wider">呼び出し番号</p>
         <div className="relative w-[min(52vh,78vw)]">
-          <div className="issued-circle">
+          <div className="issued-tile">
             <div className="issued-number tabular-nums" data-digits={label.length}>
               {label}
             </div>
           </div>
           <Image
-            src="/brand/character.png"
+            src="/brand/mascot.jpg"
             alt=""
-            width={512}
-            height={512}
+            width={549}
+            height={526}
             className="drift absolute -right-[22%] -bottom-[4%] w-[38%] rounded-full shadow-[0_0.4rem_0_rgb(0_0_0/0.3)]"
           />
         </div>
@@ -96,7 +96,7 @@ export function RegisterScreen() {
           type="button"
           autoFocus
           onClick={next}
-          className="press min-h-24 w-full max-w-xl rounded-3xl bg-white text-4xl font-black text-navy shadow-[0_0.4rem_0_rgb(0_0_0/0.3)]"
+          className="press min-h-24 w-full max-w-xl rounded-3xl bg-white text-4xl font-black text-ink shadow-[0_0.4rem_0_rgb(0_0_0/0.3)]"
         >
           次のお客さん
         </button>
@@ -144,7 +144,7 @@ export function RegisterScreen() {
           </div>
 
           <div className="rounded-3xl bg-white p-4 shadow-sm">
-            <h2 className="mb-2 text-xl font-bold text-navy">直近の注文</h2>
+            <h2 className="mb-2 text-xl font-bold text-ink">直近の注文</h2>
             {recent.length === 0 ? (
               <p className="text-lg text-gray-500">まだ注文はありません</p>
             ) : (
@@ -163,7 +163,7 @@ export function RegisterScreen() {
                       <button
                         type="button"
                         onClick={() => setCancelTarget(o)}
-                        className="min-h-16 w-28 rounded-2xl border-2 border-red text-lg font-bold text-red active:bg-red-50"
+                        className="min-h-16 w-28 rounded-2xl border-2 border-danger text-lg font-bold text-danger active:bg-red-50"
                       >
                         取り消し
                       </button>
@@ -178,7 +178,7 @@ export function RegisterScreen() {
         </section>
 
         <section className="flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-[0_0.3rem_1rem_rgb(0_0_0/0.08)] lg:sticky lg:top-4 lg:self-start">
-          <h2 className="text-2xl font-black text-navy">ご注文</h2>
+          <h2 className="text-2xl font-black text-ink">ご注文</h2>
           <ul className="min-h-28 space-y-1 text-2xl">
             {SKUS.filter((sku) => cart[sku.key] > 0).map((sku) => (
               <li key={sku.key} className="flex items-center gap-3">
@@ -188,10 +188,10 @@ export function RegisterScreen() {
             ))}
             {totalQty === 0 && <li className="text-gray-500">串のボタンを押してください</li>}
           </ul>
-          <div className="flex items-baseline justify-between border-t-2 border-paper pt-4 text-2xl">
+          <div className="flex items-baseline justify-between border-t-2 border-lav-100 pt-4 text-2xl">
             <span>
               合計 <span className="font-black tabular-nums">{totalQty}</span>本
-              {totalQty >= MAX_ORDER_QTY && <span className="ml-2 text-base font-bold text-red">（上限）</span>}
+              {totalQty >= MAX_ORDER_QTY && <span className="ml-2 text-base font-bold text-danger">（上限）</span>}
             </span>
             <span className="text-4xl font-black tabular-nums">{amount.toLocaleString()}円</span>
           </div>
@@ -199,7 +199,7 @@ export function RegisterScreen() {
             type="button"
             onClick={submit}
             disabled={totalQty === 0 || submitting}
-            className="press min-h-24 w-full rounded-3xl bg-red text-4xl font-black text-white shadow-[0_0.3rem_0_rgb(0_0_0/0.25)] disabled:opacity-40"
+            className="press min-h-24 w-full rounded-3xl bg-danger text-4xl font-black text-white shadow-[0_0.3rem_0_rgb(0_0_0/0.25)] disabled:opacity-40"
           >
             {submitting ? "送信中…" : "確定"}
           </button>
@@ -225,7 +225,7 @@ export function RegisterScreen() {
         {cancelTarget && (
           <>
             <p>{itemsText(cancelTarget.items)}（{cancelTarget.amount}円）</p>
-            <p className="mt-2 font-bold text-red">{cancelTarget.amount.toLocaleString()}円をお客さんに返してください。</p>
+            <p className="mt-2 font-bold text-danger">{cancelTarget.amount.toLocaleString()}円をお客さんに返してください。</p>
           </>
         )}
       </ConfirmDialog>

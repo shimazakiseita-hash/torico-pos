@@ -8,7 +8,7 @@ const v6 = (address: string) =>
   ({ address, family: "IPv6", internal: false, netmask: "", mac: "", cidr: null, scopeid: 0 }) as os.NetworkInterfaceInfo;
 
 describe("pickLanAddresses", () => {
-  it("テザリングのIPv4だけを返し、Docker・ループバック・IPv6は除く", () => {
+  it("LANのIPv4だけを返し、Docker・ループバック・IPv6は除く", () => {
     expect(
       pickLanAddresses({
         lo: [v4("127.0.0.1", true)],

@@ -14,7 +14,7 @@ function order(number: number, status: OrderStatus, readyAt: string | null = nul
     amount: 100,
     tendered: 100,
     changeDue: 0,
-    createdAt: "2026-10-01T03:00:00.000Z",
+    createdAt: "2026-11-21T03:00:00.000Z",
     readyAt,
     servedAt: null,
     cancelledAt: null,
@@ -26,8 +26,8 @@ describe("toPublicStatus", () => {
   it("呼び出し中は新しく呼んだ順、焼き待ちは番号順で、それ以外は含めない", () => {
     const s = toPublicStatus([
       order(5, "waiting"),
-      order(1, "ready", "2026-10-01T03:05:00.000Z"),
-      order(2, "ready", "2026-10-01T03:07:00.000Z"),
+      order(1, "ready", "2026-11-21T03:05:00.000Z"),
+      order(2, "ready", "2026-11-21T03:07:00.000Z"),
       order(3, "served"),
       order(4, "cancelled"),
       order(6, "waiting"),

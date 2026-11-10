@@ -11,9 +11,9 @@ const order: Order = {
   amount: 400,
   tendered: 1000,
   changeDue: 600,
-  createdAt: "2026-10-01T03:00:00.000Z",
-  readyAt: "2026-10-01T03:05:00.000Z",
-  servedAt: "2026-10-01T03:06:00.000Z",
+  createdAt: "2026-11-21T03:00:00.000Z",
+  readyAt: "2026-11-21T03:05:00.000Z",
+  servedAt: "2026-11-21T03:06:00.000Z",
   cancelledAt: null,
   items: [
     { item: "momo", seasoning: "tare", qty: 3 },

@@ -79,7 +79,7 @@ export function KitchenScreen() {
             </div>
           </div>
         ))}
-        <div className="rounded-2xl bg-navy px-3 py-2 text-center text-white shadow-[0_0.25rem_0_rgb(0_0_0/0.2)]">
+        <div className="rounded-2xl bg-space-700 px-3 py-2 text-center text-white shadow-[0_0.25rem_0_rgb(0_0_0/0.2)]">
           <div className="text-2xl font-black">焼くべき数</div>
           <div className="text-7xl leading-tight font-black tabular-nums">{sum(toBake)}</div>
         </div>
@@ -88,7 +88,7 @@ export function KitchenScreen() {
       <main className="grid flex-1 grid-cols-[2fr_1fr] gap-4 p-3">
         <section>
           <div className="mb-3 flex items-center gap-3">
-            <h2 className="text-2xl font-black text-navy">
+            <h2 className="text-2xl font-black text-ink">
               焼き待ち <span className="tabular-nums">{waiting.length}</span>件
               <span className="ml-3 text-base font-normal text-gray-600">古い順</span>
             </h2>
@@ -97,7 +97,7 @@ export function KitchenScreen() {
               onClick={() => setSoundOn((on) => !on)}
               aria-pressed={soundOn}
               className={`press ml-auto min-h-12 rounded-full border-2 px-4 text-lg font-bold ${
-                soundOn ? "border-navy bg-navy text-white" : "border-gray-400 bg-white text-gray-600"
+                soundOn ? "border-space-700 bg-space-700 text-white" : "border-gray-400 bg-white text-gray-600"
               }`}
             >
               新しい注文の音：{soundOn ? "オン" : "オフ"}
@@ -112,14 +112,14 @@ export function KitchenScreen() {
                 const late = elapsed >= LATE_MS;
                 return (
                   <li key={o.id} className="flex overflow-hidden rounded-2xl bg-white shadow-sm">
-                    {/* 左端の帯：焼き待ち＝紺、10分以上＝warn */}
-                    <span className={`w-4 shrink-0 ${late ? "bg-warn" : "bg-navy"}`} aria-hidden />
+                    {/* 左端の帯：焼き待ち＝紫、10分以上＝黄 */}
+                    <span className={`w-4 shrink-0 ${late ? "bg-beak" : "bg-space-700"}`} aria-hidden />
                     <div className="flex flex-1 flex-col gap-3 p-4">
                       <div className="flex items-center gap-3">
-                        <span className="text-6xl leading-none font-black text-navy tabular-nums">{o.number}</span>
+                        <span className="text-6xl leading-none font-black text-ink tabular-nums">{o.number}</span>
                         <span className="flex-1">
                           {late ? (
-                            <span className="rounded-full bg-warn px-3 py-1 text-lg font-black text-ink">10分以上待ち</span>
+                            <span className="rounded-full bg-beak px-3 py-1 text-lg font-black text-ink">10分以上待ち</span>
                           ) : (
                             <span className="text-lg font-bold text-gray-600">焼き待ち</span>
                           )}
@@ -155,11 +155,11 @@ export function KitchenScreen() {
             ) : (
               <ul className="flex flex-col gap-3">
                 {ready.map((o) => (
-                  <li key={o.id} className="flex overflow-hidden rounded-xl bg-paper">
+                  <li key={o.id} className="flex overflow-hidden rounded-xl bg-lav-100">
                     <span className="w-3 shrink-0 bg-ok" aria-hidden />
                     <div className="flex-1 p-3">
                       <div className="mb-2 flex items-center gap-3">
-                        <span className="text-5xl leading-none font-black text-navy tabular-nums">{o.number}</span>
+                        <span className="text-5xl leading-none font-black text-ink tabular-nums">{o.number}</span>
                         <ItemBadges items={o.items} size="sm" />
                       </div>
                       <div className="grid grid-cols-[2fr_1fr] gap-2">

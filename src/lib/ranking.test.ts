@@ -16,7 +16,7 @@ import {
 } from "./ranking";
 import { rankingSubmitSchema, siteConfigSchema } from "./schemas";
 
-const entry = (player: string, score: number, name = `${player}さん`, at = "2026-10-10T03:00:00.000Z"): RankingEntry => ({
+const entry = (player: string, score: number, name = `${player}さん`, at = "2026-11-21T03:00:00.000Z"): RankingEntry => ({
   player,
   name,
   score,
@@ -29,8 +29,8 @@ describe("normalizeName", () => {
   });
 
   it("1〜10文字だけ受け付ける（絵文字も1文字）", () => {
-    expect(normalizeName("たいやきだいすきくん")).toBe("たいやきだいすきくん");
-    expect(normalizeName("たいやきだいすきくんだ")).toBeNull();
+    expect(normalizeName("やきとりだいすきくん")).toBe("やきとりだいすきくん");
+    expect(normalizeName("やきとりだいすきくんだ")).toBeNull();
     expect(normalizeName("🐟🐟")).toBe("🐟🐟");
     expect(normalizeName("   ")).toBeNull();
   });
@@ -44,9 +44,9 @@ describe("containsNgWord", () => {
   });
 
   it("ふつうの名前は通す", () => {
-    expect(containsNgWord("たいやき名人")).toBe(false);
+    expect(containsNgWord("やきとり名人")).toBe(false);
     expect(containsNgWord("Seita")).toBe(false);
-    expect(containsNgWord("カスタード大好き")).toBe(false);
+    expect(containsNgWord("カステラ大好き")).toBe(false);
     expect(containsNgWord("skill")).toBe(false);
   });
 });
@@ -71,13 +71,13 @@ describe("upsertBest / sortRanking", () => {
     let board = upsertBest([], entry("aaaa1111", 20, "あ"));
     board = upsertBest(board, entry("aaaa1111", 10, "い"));
     expect(board).toEqual([entry("aaaa1111", 20, "い")]);
-    board = upsertBest(board, entry("aaaa1111", 30, "う", "2026-10-10T04:00:00.000Z"));
-    expect(board).toEqual([entry("aaaa1111", 30, "う", "2026-10-10T04:00:00.000Z")]);
+    board = upsertBest(board, entry("aaaa1111", 30, "う", "2026-11-21T04:00:00.000Z"));
+    expect(board).toEqual([entry("aaaa1111", 30, "う", "2026-11-21T04:00:00.000Z")]);
     expect(upsertBest(board, entry("bbbb2222", 5))).toHaveLength(2);
   });
 
   it("点数の高い順、同点なら先に出した人が上", () => {
-    const board = [entry("p1", 10, "a", "2026-10-10T03:02:00.000Z"), entry("p2", 30), entry("p3", 10, "c", "2026-10-10T03:01:00.000Z")];
+    const board = [entry("p1", 10, "a", "2026-11-21T03:02:00.000Z"), entry("p2", 30), entry("p3", 10, "c", "2026-11-21T03:01:00.000Z")];
     expect(sortRanking(board).map((e) => e.player)).toEqual(["p2", "p3", "p1"]);
   });
 
@@ -88,8 +88,8 @@ describe("upsertBest / sortRanking", () => {
 
 describe("jstDateKey", () => {
   it("日本時間で日付が変わる", () => {
-    expect(jstDateKey(new Date("2026-10-10T14:59:00.000Z"))).toBe("2026-10-10");
-    expect(jstDateKey(new Date("2026-10-10T15:00:00.000Z"))).toBe("2026-10-11");
+    expect(jstDateKey(new Date("2026-11-21T14:59:00.000Z"))).toBe("2026-11-21");
+    expect(jstDateKey(new Date("2026-11-21T15:00:00.000Z"))).toBe("2026-11-22");
   });
 });
 
@@ -118,20 +118,20 @@ describe("allowSubmission", () => {
 
 describe("mergeBoards", () => {
   it("日ごとのランキングを重ねて、プレイヤーごとの最高点（名前は最後に使ったもの）にする", () => {
-    const day1 = [entry("aaaa1111", 149, "フロマス", "2026-10-04T05:00:00.000Z"), entry("bbbb2222", 30, "たろう", "2026-10-04T06:00:00.000Z")];
-    const day2 = [entry("aaaa1111", 80, "フロマス2", "2026-10-05T05:00:00.000Z"), entry("cccc3333", 60, "はなこ", "2026-10-05T06:00:00.000Z")];
+    const day1 = [entry("aaaa1111", 149, "とりこ", "2026-11-21T05:00:00.000Z"), entry("bbbb2222", 30, "たろう", "2026-11-21T06:00:00.000Z")];
+    const day2 = [entry("aaaa1111", 80, "とりこ2", "2026-11-22T05:00:00.000Z"), entry("cccc3333", 60, "はなこ", "2026-11-22T06:00:00.000Z")];
     const all = mergeBoards([day1, day2]);
     expect(all).toHaveLength(3);
-    expect(all.find((e) => e.player === "aaaa1111")).toEqual({ player: "aaaa1111", name: "フロマス2", score: 149, at: "2026-10-04T05:00:00.000Z" });
+    expect(all.find((e) => e.player === "aaaa1111")).toEqual({ player: "aaaa1111", name: "とりこ2", score: 149, at: "2026-11-21T05:00:00.000Z" });
     expect(sortRanking(all).map((e) => e.score)).toEqual([149, 60, 30]);
   });
 });
 
 describe("siteConfigSchema", () => {
-  it("営業終了のオン／オフと寮祭の日付（YYYY-MM-DD）", () => {
-    expect(siteConfigSchema.safeParse({ closed: true, eventDate: "2026-10-04" }).success).toBe(true);
-    expect(siteConfigSchema.safeParse({ closed: false, eventDate: null }).success).toBe(true);
-    expect(siteConfigSchema.safeParse({ closed: true, eventDate: "10/4" }).success).toBe(false);
+  it("営業終了のオン／オフ", () => {
+    expect(siteConfigSchema.safeParse({ closed: true }).success).toBe(true);
+    expect(siteConfigSchema.safeParse({ closed: false }).success).toBe(true);
+    expect(siteConfigSchema.safeParse({ closed: "yes" }).success).toBe(false);
   });
 });
 

@@ -1,45 +1,61 @@
 @import "tailwindcss";
 
-/* ── デザイントークン（docs/design.md 2章） ───────────────── */
+/* ── デザイントークン（docs/design.md） ───────────────── */
 :root {
-  --navy: #1b2a4a;
-  --navy-light: #2e4a7a;
-  --paper: #faf6ee;
-  --ink: #1a1a1a;
-  --red: #c8322b;
-  --anko: #9e3232;
-  --custard: #e3ae2f;
-  --matcha: #5a8a3a;
-  --choco: #6b4226;
-  --ok: #2f7d4f;
-  --warn: #d9822b;
-  /* 味付けの機能色（docs/design.md） */
+  --space-900: #2a1f5c;
+  --space-700: #3d2f7d;
+  --space-500: #544591;
+  --ink: #4a3f8c;
+  --lav-500: #9374ab;
+  --lav-300: #c9b3e6;
+  --lav-100: #f1eafa;
+  --pink-500: #ed6fb6;
+  --pink-400: #e57bab;
+  --magenta: #c5589d;
+  --pink-200: #f4b0d5;
+  --pink-100: #fde8f3;
+  --cyan: #80f7fd;
+  --comb: #e55a22;
+  --beak: #edd263;
+  --candy-from: #eba7cb;
+  --candy-to: #a77ab4;
+  /* 機能色 */
   --tare: #b4541c;
   --tare-bg: #ffe3c7;
   --shio: #2b8fb3;
   --shio-bg: #dff6fb;
+  --ok: #2fa56b;
+  --danger: #d93a5b;
+  --danger-bg: #ffe9ee;
 }
 
-/* Tailwind から bg-navy / text-red / border-warn などで参照する */
+/* Tailwind から bg-space-700 / text-ink / border-danger などで参照する */
 @theme inline {
-  /* 外部フォントは使わない（オフライン運用）。システムの太いゴシック */
+  /* 外部フォントは使わない（オフライン運用）。Zen Maru Gothic の同梱はフェーズ4 */
   --font-sans: "Noto Sans JP", "Noto Sans CJK JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
     "Yu Gothic UI", Meiryo, system-ui, sans-serif;
-  --color-navy: var(--navy);
-  --color-navy-light: var(--navy-light);
-  --color-paper: var(--paper);
+  --color-space-900: var(--space-900);
+  --color-space-700: var(--space-700);
+  --color-space-500: var(--space-500);
   --color-ink: var(--ink);
-  --color-red: var(--red);
-  --color-anko: var(--anko);
-  --color-custard: var(--custard);
-  --color-matcha: var(--matcha);
-  --color-choco: var(--choco);
-  --color-ok: var(--ok);
-  --color-warn: var(--warn);
+  --color-lav-500: var(--lav-500);
+  --color-lav-300: var(--lav-300);
+  --color-lav-100: var(--lav-100);
+  --color-pink-500: var(--pink-500);
+  --color-pink-400: var(--pink-400);
+  --color-magenta: var(--magenta);
+  --color-pink-200: var(--pink-200);
+  --color-pink-100: var(--pink-100);
+  --color-cyan: var(--cyan);
+  --color-comb: var(--comb);
+  --color-beak: var(--beak);
   --color-tare: var(--tare);
   --color-tare-bg: var(--tare-bg);
   --color-shio: var(--shio);
   --color-shio-bg: var(--shio-bg);
+  --color-ok: var(--ok);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
 }
 
 html {
@@ -47,7 +63,7 @@ html {
 }
 
 body {
-  background: var(--paper);
+  background: var(--lav-100);
   color: var(--ink);
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
@@ -62,113 +78,50 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* ── 青海波（画像を使わず radial-gradient の重ねで描く） ─────────
-   --sg-bg が地の色、--sg-line が波の線。既定は紺地に少し明るい紺で控えめに */
-.bg-seigaiha {
-  --sg-bg: var(--navy);
-  --sg-line: color-mix(in srgb, var(--navy-light) 70%, var(--navy));
-  --sg-size: 96px;
-  background-color: var(--sg-bg);
-  background-image:
-    radial-gradient(circle at 100% 150%, var(--sg-bg) 24%, var(--sg-line) 24% 28%, var(--sg-bg) 28% 36%, var(--sg-line) 36% 40%, transparent 40%),
-    radial-gradient(circle at 0 150%, var(--sg-bg) 24%, var(--sg-line) 24% 28%, var(--sg-bg) 28% 36%, var(--sg-line) 36% 40%, transparent 40%),
-    radial-gradient(circle at 50% 100%, var(--sg-line) 10%, var(--sg-bg) 10% 23%, var(--sg-line) 23% 30%, var(--sg-bg) 30% 43%, var(--sg-line) 43% 50%, var(--sg-bg) 50% 63%, var(--sg-line) 63% 71%, transparent 71%),
-    radial-gradient(circle at 100% 50%, var(--sg-line) 5%, var(--sg-bg) 5% 15%, var(--sg-line) 15% 20%, var(--sg-bg) 20% 29%, var(--sg-line) 29% 34%, var(--sg-bg) 34% 44%, var(--sg-line) 44% 49%, transparent 49%),
-    radial-gradient(circle at 0 50%, var(--sg-line) 5%, var(--sg-bg) 5% 15%, var(--sg-line) 15% 20%, var(--sg-bg) 20% 29%, var(--sg-line) 29% 34%, var(--sg-bg) 34% 44%, var(--sg-line) 44% 49%, transparent 49%);
-  background-size: var(--sg-size) calc(var(--sg-size) / 2);
+/* ── 宇宙の背景（お客さんに見せる画面） ─────────────── */
+.bg-space {
+  background: linear-gradient(180deg, var(--space-500), var(--space-700) 45%, var(--space-900));
 }
 
-/* ── 呼び出し表示 /display ─────────────────────────── */
-
-/* 浮き輪：赤白のしま模様の輪の中に白い円、赤い番号 */
-.ukiwa {
+/* ── 呼び出し番号のタイル（/display） ───────────────── */
+/* 文字の大きさの基準（cqw）にする外枠。タイル自身ではなく親に置く */
+.num-tile-wrap {
   container-type: inline-size;
-  position: relative;
-  aspect-ratio: 1;
-  border-radius: 9999px;
-  padding: 11%;
-  background: repeating-conic-gradient(from -15deg, var(--red) 0 30deg, #fff 30deg 60deg);
-  box-shadow:
-    0 0.4rem 0 rgb(0 0 0 / 0.25),
-    inset 0 0 0 2px rgb(0 0 0 / 0.15);
 }
-
-.ukiwa-inner {
+.num-tile {
   display: flex;
-  height: 100%;
+  aspect-ratio: 1;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px;
-  background: #fff;
-  box-shadow: inset 0 0.25rem 0.5rem rgb(0 0 0 / 0.18);
-  color: var(--red);
+  border-radius: 18px;
+  background: linear-gradient(180deg, var(--pink-400), var(--magenta));
+  box-shadow: 0 5px 0 rgb(0 0 0 / 0.25);
+  color: #fff;
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.04em;
 }
 
-/* 桁数に応じて円に収まる大きさにする（コンテナ幅基準） */
-.ukiwa-inner[data-digits="1"],
-.ukiwa-inner[data-digits="2"] {
-  font-size: 44cqw;
+/* 桁数に応じてタイルに収まる大きさにする（コンテナ幅基準） */
+.num-tile[data-digits="1"],
+.num-tile[data-digits="2"] {
+  font-size: 52cqw;
 }
-.ukiwa-inner[data-digits="3"] {
-  font-size: 32cqw;
+.num-tile[data-digits="3"] {
+  font-size: 38cqw;
 }
-.ukiwa-inner[data-digits="4"] {
-  font-size: 24cqw;
-}
-
-/* 新しく完成した番号：ぷかぷか揺れる */
-@keyframes bob {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  25% {
-    transform: translateY(-9%) rotate(-5deg);
-  }
-  75% {
-    transform: translateY(3%) rotate(4deg);
-  }
+.num-tile[data-digits="4"] {
+  font-size: 28cqw;
 }
 
-.ukiwa-new {
-  animation: bob 1.6s ease-in-out infinite;
+/* 新しく完成した番号：シアンの太枠 */
+.num-tile-new {
   box-shadow:
-    0 0 0 0.35rem rgb(255 255 255 / 0.9),
-    0 0 2.5rem 0.5rem rgb(255 255 255 / 0.45);
+    0 0 0 0.4rem var(--cyan),
+    0 5px 0 0.4rem rgb(0 0 0 / 0.25);
 }
 
-/* 水しぶき：輪のまわりに飛び散るしずく */
-@keyframes splash {
-  0% {
-    transform: translate(-50%, -50%) rotate(var(--a)) translateY(0) scale(0.4);
-    opacity: 0;
-  }
-  15% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -50%) rotate(var(--a)) translateY(-72cqw) scale(1);
-    opacity: 0;
-  }
-}
-
-.splash-drop {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 11cqw;
-  height: 15cqw;
-  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-  background: radial-gradient(circle at 35% 35%, #fff 0 20%, #9fd3ff 21% 100%);
-  pointer-events: none;
-  animation: splash 1.4s ease-out infinite;
-  animation-delay: var(--d);
-}
-
-/* キャラクターがゆらゆら漂う（注文がない時間） */
+/* マスコットがゆらゆら漂う */
 @keyframes drift {
   0%,
   100% {
@@ -183,9 +136,9 @@ button:disabled {
   animation: drift 4s ease-in-out infinite;
 }
 
-/* ── レジ /register ─────────────────────────────── */
+/* ── 受付 /register ─────────────────────────────── */
 
-/* 味ボタン：押したら一瞬縮む */
+/* ボタン：押したら一瞬縮む */
 .press {
   transition: transform 80ms ease-out;
 }
@@ -193,7 +146,7 @@ button:disabled {
   transform: scale(0.95);
 }
 
-/* 個数が増えたときに数字が弾む（key を変えて付け直すと再生される） */
+/* 本数が増えたときに数字が弾む（key を変えて付け直すと再生される） */
 @keyframes pop {
   0% {
     transform: scale(1.5);
@@ -206,12 +159,12 @@ button:disabled {
   animation: pop 180ms ease-out;
 }
 
-/* 番号発行画面：赤い円に白抜きの巨大な番号（文字の大きさは円の幅を基準にする） */
-.issued-circle {
+/* 番号発行画面：ピンクのタイルに白抜きの巨大な番号（文字の大きさはタイルの幅を基準にする） */
+.issued-tile {
   container-type: inline-size;
   aspect-ratio: 1;
-  border-radius: 9999px;
-  background: var(--red);
+  border-radius: 28px;
+  background: linear-gradient(180deg, var(--pink-400), var(--magenta));
   box-shadow:
     0 0 0 0.6rem #fff,
     0 0.9rem 0 0.6rem rgb(0 0 0 / 0.3);
@@ -237,30 +190,10 @@ button:disabled {
   font-size: 32cqw;
 }
 
-/* ── 管理 /admin：進捗バーを泳ぐたい焼き（右向きにして、上下にゆらゆら） ── */
-@keyframes swim {
-  0%,
-  100% {
-    transform: translate(-50%, -50%) scaleX(-1) rotate(-6deg);
-  }
-  50% {
-    transform: translate(-50%, -62%) scaleX(-1) rotate(6deg);
-  }
-}
-.swim {
-  transform: translate(-50%, -50%) scaleX(-1);
-  animation: swim 2.4s ease-in-out infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .ukiwa-new,
   .drift,
-  .pop,
-  .swim {
+  .pop {
     animation: none;
-  }
-  .splash-drop {
-    display: none;
   }
   .press {
     transition: none;

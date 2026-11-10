@@ -1,14 +1,14 @@
 /**
  * お客さん向けページを営業終了の表示にする・戻す（スタッフ用。.env.public の URL と合言葉を使う）。
  * 使い方: npm run closing（いまの設定を見る）
- *         npm run closing -- on 2026-10-04（営業終了にする。日付は寮祭の日。その日とれきだいのランキングを backups/ に保存）
- *         npm run closing -- off（番号の表示に戻す。寮祭の日付はそのまま）
- * 営業終了のあとも、ミニゲームとランキング（きょう・れきだい・寮祭の日）は使える
+ *         npm run closing -- on（営業終了にする。今日と歴代のランキングを backups/ に保存）
+ *         npm run closing -- off（番号の表示に戻す）
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { businessDayOf } from "../src/lib/businessDay";
 
-type Config = { closed: boolean; eventDate: string | null };
+type Config = { closed: boolean };
 
 try {
   process.loadEnvFile(".env.public");
@@ -49,27 +49,24 @@ async function main() {
     console.error(".env.public に PUBLIC_STATUS_URL と PUBLIC_STATUS_TOKEN を設定してください");
     process.exit(1);
   }
-  const [command, date] = process.argv.slice(2);
-  const current = await getConfig();
+  const [command] = process.argv.slice(2);
 
   if (command === "on") {
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      console.error("寮祭の日付を指定してください（例：npm run closing -- on 2026-10-04）");
-      process.exit(1);
-    }
-    const day = await saveRanking(date, `ranking-${date}.json`);
-    const all = await saveRanking("all", `ranking-all-${new Date().toISOString().slice(0, 10)}.json`);
-    await putConfig({ closed: true, eventDate: date });
-    console.log(`営業終了の表示にしました（寮祭の日：${date}）`);
-    console.log(`ランキングを backups/ に保存しました（寮祭の日 ${day}件・れきだい ${all}件）`);
+    const day = businessDayOf();
+    const today = await saveRanking(day, `ranking-${day}.json`);
+    const all = await saveRanking("all", `ranking-all-${day}.json`);
+    await putConfig({ closed: true });
+    console.log("営業終了の表示にしました");
+    console.log(`ランキングを backups/ に保存しました（今日 ${today}件・歴代 ${all}件）`);
     return;
   }
   if (command === "off") {
-    await putConfig({ closed: false, eventDate: current.eventDate });
+    await putConfig({ closed: false });
     console.log("番号の表示に戻しました");
     return;
   }
-  console.log(`いまの設定：${current.closed ? "営業終了の表示" : "番号の表示"}／寮祭の日：${current.eventDate ?? "（未設定）"}`);
+  const current = await getConfig();
+  console.log(`いまの設定：${current.closed ? "営業終了の表示" : "番号の表示"}`);
 }
 
 main().catch((e) => {

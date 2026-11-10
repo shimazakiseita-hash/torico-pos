@@ -53,11 +53,7 @@ export const rankingSubmitSchema = z.object({
   session: z.string().max(200), // ゲーム開始時にサーバーが発行する、その場かぎりの合言葉（遊んだ時間はサーバーが測る）
 });
 
-/** お客さん向けページの設定：営業終了の表示と、寮祭当日（ランキングの「寮祭の日」）の日付 */
+/** お客さん向けページの設定：営業終了の表示 */
 export const siteConfigSchema = z.object({
   closed: z.boolean(),
-  eventDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .nullable(),
 });

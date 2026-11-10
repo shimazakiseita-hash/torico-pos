@@ -48,7 +48,7 @@ next-env.d.ts
 /cloud/.wrangler/
 /cloud/.dev.vars
 
-# 印刷用の番号札（npm run tickets で作る）
+# 印刷用の整理券（npm run tickets で作る）
 /print/
 
 # 自動バックアップ（npm run event / npm run backup）

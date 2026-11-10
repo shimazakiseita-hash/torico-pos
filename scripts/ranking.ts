@@ -1,12 +1,12 @@
 /**
  * ミニゲームのランキングを見る・消す（スタッフ用。.env.public の URL と合言葉を使う）。
- * 使い方: npm run ranking（きょう） / npm run ranking -- all（れきだい） / npm run ranking -- event（寮祭の日）
- *         npm run ranking -- 2026-10-04（その日） / npm run ranking -- remove a1b2c3（そのIDの記録を、きょう・れきだい・過去の日すべてから消す）
+ * 使い方: npm run ranking（今日） / npm run ranking -- all（歴代）
+ *         npm run ranking -- 2026-11-21（その日） / npm run ranking -- remove a1b2c3（そのIDの記録を、今日・歴代・過去の日すべてから消す）
  *         npm run ranking -- add 名前 4520 [a1b2c3]（記録を手で載せる。IDを付けると、その人の記録にする）
  */
 type Row = { rank: number; name: string; tag: string; score: number };
 
-const LABELS: Record<string, string> = { today: "きょう", all: "れきだい", event: "寮祭の日" };
+const LABELS: Record<string, string> = { today: "今日", all: "歴代" };
 
 try {
   process.loadEnvFile(".env.public");
@@ -28,7 +28,7 @@ async function main() {
   if (command === "add") {
     const [score, tag] = rest;
     if (!arg || !/^\d+$/.test(score ?? "")) {
-      console.error("名前と点数を指定してください（例：npm run ranking -- add たいやき 4520 a1b2c3。IDはなくてもよい）");
+      console.error("名前と点数を指定してください（例：npm run ranking -- add とりこ 4520 a1b2c3。IDはなくてもよい）");
       process.exit(1);
     }
     const res = await fetch(`${base}/api/ranking/add`, {
@@ -37,7 +37,7 @@ async function main() {
       body: JSON.stringify({ name: arg, score: Number(score), tag }),
     });
     const body = (await res.json()) as { rank?: number; allRank?: number; error?: string };
-    console.log(body.error ?? `${arg} さんの ${score}点 を載せました（きょう ${body.rank}位 ／ れきだい ${body.allRank}位）`);
+    console.log(body.error ?? `${arg} さんの ${score}点 を載せました（今日 ${body.rank}位 ／ 歴代 ${body.allRank}位）`);
     return;
   }
 
@@ -53,8 +53,8 @@ async function main() {
   }
 
   const board = command ?? "today";
-  if (!/^(today|all|event|\d{4}-\d{2}-\d{2})$/.test(board)) {
-    console.error("today・all・event か、日付（例：2026-10-04）を指定してください");
+  if (!/^(today|all|\d{4}-\d{2}-\d{2})$/.test(board)) {
+    console.error("today・all か、日付（例：2026-11-21）を指定してください");
     process.exit(1);
   }
   const res = await fetch(`${base}/api/ranking?all=1&board=${board}`, { headers });

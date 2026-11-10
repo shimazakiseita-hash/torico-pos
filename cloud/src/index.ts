@@ -1,7 +1,7 @@
 /**
  * お客さん向け呼び出し状況ページ（Cloudflare Workers）。
- * レジPCの public-sync が番号だけを PUT し、お客さんのスマホが GET で読む。
- * ミニゲームのランキング（きょう・れきだい・寮祭の日）と、営業終了の表示の設定もここに置く
+ * サーバーPCの public-sync が番号だけを PUT し、お客さんのスマホが GET で読む。
+ * ミニゲームのランキング（今日・歴代）と、営業終了の表示の設定もここに置く
  */
 import { DurableObject } from "cloudflare:workers";
 import { lookupNumber, type PublicStatus } from "../../src/lib/publicStatus";
@@ -34,11 +34,11 @@ export type RankingRow = { rank: number; name: string; tag: string; score: numbe
 export type SubmitResult =
   | { ok: true; rank: number; allRank: number; top: RankingRow[] }
   | { ok: false; error: string };
-export type SiteConfig = { closed: boolean; eventDate: string | null };
-/** today：きょう（日ごと）、all：れきだい（これまでの最高点）、event：寮祭の日（当日の最終結果） */
-export type BoardName = "today" | "all" | "event";
+export type SiteConfig = { closed: boolean };
+/** today：今日（日ごと）、all：歴代（これまでの最高点） */
+export type BoardName = "today" | "all";
 
-const DAY_PREFIX = "ranking:2"; // ranking:2026-10-04 のような日ごとのキー
+const DAY_PREFIX = "ranking:2"; // ranking:2026-11-21 のような日ごとのキー
 const ALL_KEY = "ranking:all";
 
 function toRows(entries: readonly RankingEntry[]): RankingRow[] {
@@ -64,7 +64,7 @@ export class StatusStore extends DurableObject<Env> {
   }
 
   async config(): Promise<SiteConfig> {
-    return (await this.ctx.storage.get<SiteConfig>("config")) ?? { closed: false, eventDate: null };
+    return (await this.ctx.storage.get<SiteConfig>("config")) ?? { closed: false };
   }
 
   async setConfig(config: SiteConfig): Promise<void> {
@@ -75,7 +75,7 @@ export class StatusStore extends DurableObject<Env> {
     return (await this.ctx.storage.get<RankingEntry[]>(`ranking:${date}`)) ?? [];
   }
 
-  /** れきだい。まだなければ、これまでの日ごとのランキングから作る（れきだいを入れる前の記録も入るように） */
+  /** 歴代。まだなければ、これまでの日ごとのランキングから作る */
   private async allTime(): Promise<RankingEntry[]> {
     const saved = await this.ctx.storage.get<RankingEntry[]>(ALL_KEY);
     if (saved) return saved;
@@ -87,10 +87,6 @@ export class StatusStore extends DurableObject<Env> {
 
   private async entries(board: BoardName | string): Promise<RankingEntry[]> {
     if (board === "all") return this.allTime();
-    if (board === "event") {
-      const { eventDate } = await this.config();
-      return eventDate ? this.day(eventDate) : [];
-    }
     return this.day(board === "today" ? jstDateKey() : board);
   }
 
@@ -103,7 +99,7 @@ export class StatusStore extends DurableObject<Env> {
     return toRows(await this.entries(board));
   }
 
-  /** きょう と れきだい の両方に記録する。合言葉は1回きり（使った番号は期限まで覚えておく） */
+  /** 今日 と 歴代 の両方に記録する。合言葉は1回きり（使った番号は期限まで覚えておく） */
   async submit(entry: RankingEntry, ip: string, sessionId: string): Promise<SubmitResult> {
     const now = Date.now();
     const allowed = allowSubmission(this.submissions.get(ip) ?? [], now);
@@ -140,7 +136,7 @@ export class StatusStore extends DurableObject<Env> {
     if (expired.length) await this.ctx.storage.delete(expired);
   }
 
-  /** 不適切な名前などは、きょう・れきだい・過去の日のどこからでも消す。消した記録の数を返す */
+  /** 不適切な名前などは、今日・歴代・過去の日のどこからでも消す。消した記録の数を返す */
   async remove(tag: string): Promise<number> {
     await this.allTime();
     const boards = await this.ctx.storage.list<RankingEntry[]>({ prefix: "ranking:" });
@@ -242,10 +238,10 @@ export default {
         // スタッフ用（?all=1 は認証つき）：全員分を見る。board=YYYY-MM-DD でその日も
         if (url.searchParams.has("all")) {
           if (!authorized(request, env.PUSH_TOKEN)) return json({ error: "認証に失敗しました" }, 401);
-          if (!/^(today|all|event|\d{4}-\d{2}-\d{2})$/.test(param)) return json({ error: "board が不正です" }, 400);
+          if (!/^(today|all|\d{4}-\d{2}-\d{2})$/.test(param)) return json({ error: "board が不正です" }, 400);
           return json({ rows: await store.rows(param) });
         }
-        const board: BoardName = param === "all" || param === "event" ? param : "today";
+        const board: BoardName = param === "all" ? "all" : "today";
         return json({ board, top: await store.ranking(board) });
       }
       if (request.method === "POST") {
