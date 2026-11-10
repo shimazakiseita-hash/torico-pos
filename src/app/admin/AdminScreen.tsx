@@ -9,7 +9,7 @@ import type { Summary } from "@/lib/summary";
 import { usePolling } from "@/lib/usePolling";
 
 const PAGES = [
-  { path: "/register", label: "レジ" },
+  { path: "/register", label: "受付" },
   { path: "/kitchen", label: "キッチン" },
   { path: "/display", label: "呼び出し表示" },
   { path: "/admin", label: "管理" },

@@ -2,14 +2,16 @@ import Image from "next/image";
 import Link from "next/link";
 
 type Props = {
-  /** 画面名（「レジ」「キッチン」など） */
+  /** 画面名（「受付」「焼き場」など） */
   title: string;
+  /** 右上に出す補足（営業日など） */
+  note?: string;
   /** 通信エラー中なら true。まだ一度も取得していない間は null */
   error: boolean | null;
 };
 
 /** 共通ヘッダー：紺の帯に小さいロゴと画面名、右端に接続状態 */
-export function AppHeader({ title, error }: Props) {
+export function AppHeader({ title, note, error }: Props) {
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 bg-space-700 px-3 text-white shadow-md">
       <Link href="/" className="flex items-center gap-2" aria-label="トップへ">
@@ -21,7 +23,8 @@ export function AppHeader({ title, error }: Props) {
         </span>
       </Link>
       <h1 className="ml-1 border-l-2 border-white/30 pl-3 text-2xl font-black">{title}</h1>
-      <ConnectionStatus error={error} className="ml-auto" />
+      {note && <span className="ml-auto rounded-full bg-white/15 px-3 py-1 text-base font-bold">{note}</span>}
+      <ConnectionStatus error={error} className={note ? "" : "ml-auto"} />
     </header>
   );
 }

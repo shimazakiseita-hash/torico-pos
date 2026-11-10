@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 const LINKS = [
-  { href: "/register", label: "レジ", note: "レジPC" },
+  { href: "/register", label: "受付", note: "受付PC（サーバー）" },
   { href: "/kitchen", label: "キッチン", note: "キッチンPC" },
   { href: "/display", label: "呼び出し表示", note: "お客さん向け" },
   { href: "/admin", label: "管理", note: "責任者のスマホ" },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { businessDayOf, isBusinessDay } from "./businessDay";
+import { businessDayOf, dayLabel, isBusinessDay } from "./businessDay";
 
 describe("businessDayOf", () => {
   it.each([
@@ -20,5 +20,13 @@ describe("isBusinessDay", () => {
     expect(isBusinessDay("2026-02-29")).toBe(false);
     expect(isBusinessDay("2026-11-1")).toBe(false);
     expect(isBusinessDay("all")).toBe(false);
+  });
+});
+
+describe("dayLabel", () => {
+  it("祭りの日は1日目・2日目、それ以外は月/日", () => {
+    expect(dayLabel("2026-11-21")).toBe("1日目");
+    expect(dayLabel("2026-11-22")).toBe("2日目");
+    expect(dayLabel("2026-11-10")).toBe("11/10");
   });
 });

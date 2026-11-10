@@ -37,7 +37,7 @@ export function ConfirmDialog({ open, title, children, confirmLabel, busy, onCon
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className="min-h-16 rounded-2xl bg-red-600 text-xl font-bold text-white active:bg-red-700 disabled:opacity-50"
+            className="min-h-16 rounded-2xl bg-danger text-xl font-bold text-white active:brightness-90 disabled:opacity-50"
           >
             {confirmLabel}
           </button>

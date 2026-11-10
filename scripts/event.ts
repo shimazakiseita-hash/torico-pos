@@ -117,7 +117,7 @@ async function main() {
     log("⚠ LANのIPアドレスが見つかりません。Wi-Fi（TORICO-POS）が動いていないと、他の端末からは開けません");
   }
   for (const base of [LOCAL, ...urls]) {
-    console.log(`  ${base}  → /register（レジ） /kitchen（キッチン） /display（呼び出し） /admin（管理）`);
+    console.log(`  ${base}  → /register（受付） /kitchen（キッチン） /display（呼び出し） /admin（管理）`);
   }
   console.log("");
 

@@ -83,6 +83,54 @@ button:disabled {
   background: linear-gradient(180deg, var(--space-500), var(--space-700) 45%, var(--space-900));
 }
 
+/* ── 店員画面の部品（docs/design.md「形」）。utilities で上書きできるよう components 層に置く ── */
+@layer components {
+  /* キャンディの背景（メニュー表の縁） */
+  .bg-candy {
+    background: linear-gradient(180deg, var(--candy-from), var(--candy-to));
+  }
+
+  /* ピンクの縦グラデ文字（大きい見出し・金額だけ） */
+  .text-grad {
+    background: linear-gradient(180deg, var(--pink-400), var(--magenta));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ボタン：下に濃い色の厚み。押したら沈む */
+  .btn-pink,
+  .btn-ghost,
+  .btn-ok {
+    border-radius: 18px;
+    font-weight: 900;
+    transition: transform 80ms ease-out, box-shadow 80ms ease-out;
+  }
+  .btn-pink {
+    background: linear-gradient(180deg, var(--pink-400), var(--magenta));
+    box-shadow: 0 5px 0 #8c2f6e;
+    color: #fff;
+  }
+  .btn-ghost {
+    border: 3px solid var(--lav-300);
+    background: #fff;
+    box-shadow: 0 5px 0 var(--lav-300);
+    color: var(--ink);
+  }
+  .btn-ok {
+    background: linear-gradient(180deg, #48c58a, var(--ok));
+    box-shadow: 0 5px 0 #1d7449;
+    color: #fff;
+  }
+  :is(.btn-pink, .btn-ghost, .btn-ok):not(:disabled):active {
+    transform: translateY(4px);
+    box-shadow: 0 1px 0 rgb(0 0 0 / 0.2);
+  }
+  :is(.btn-pink, .btn-ghost, .btn-ok):disabled {
+    opacity: 0.4;
+  }
+}
+
 /* ── 呼び出し番号のタイル（/display） ───────────────── */
 /* 文字の大きさの基準（cqw）にする外枠。タイル自身ではなく親に置く */
 .num-tile-wrap {

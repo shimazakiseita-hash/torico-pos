@@ -11,3 +11,14 @@ export function isBusinessDay(value: string): boolean {
   const d = new Date(`${value}T00:00:00Z`);
   return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === value;
 }
+
+/** 津田沼祭の営業日（1日目・2日目） */
+export const EVENT_DAYS = ["2026-11-21", "2026-11-22"] as const;
+
+/** 画面に出す営業日の名前。祭りの日なら「1日目」、それ以外は「11/10」 */
+export function dayLabel(day: string): string {
+  const i = (EVENT_DAYS as readonly string[]).indexOf(day);
+  if (i >= 0) return `${i + 1}日目`;
+  const [, m, d] = day.split("-").map(Number);
+  return `${m}/${d}`;
+}
