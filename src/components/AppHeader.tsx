@@ -15,9 +15,9 @@ export function AppHeader({ title, error }: Props) {
       <Link href="/" className="flex items-center gap-2" aria-label="トップへ">
         <Image src="/brand/character.png" alt="" width={40} height={40} className="rounded-full bg-white" priority />
         <span className="hidden text-sm font-bold leading-tight sm:block">
-          およげない！
+          やきとり
           <br />
-          <span className="text-[#ff8a80]">たいやきくん</span>
+          TORI♡CO
         </span>
       </Link>
       <h1 className="ml-1 border-l-2 border-white/30 pl-3 text-2xl font-black">{title}</h1>

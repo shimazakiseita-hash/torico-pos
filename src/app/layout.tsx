@@ -3,8 +3,8 @@ import { PracticeBanner } from "@/components/PracticeBanner";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "およげない！たいやきくん", template: "%s｜およげない！たいやきくん" },
-  description: "寮祭たい焼き屋台の注文管理",
+  title: { default: "やきとり TORI♡CO", template: "%s｜やきとり TORI♡CO" },
+  description: "津田沼祭 焼き鳥屋台の注文・会計",
 };
 
 export const viewport: Viewport = {

@@ -1,16 +1,18 @@
-import { handle, parseBody } from "@/lib/api";
-import { getDb, getSettings, putSettings } from "@/lib/db";
+import type { NextRequest } from "next/server";
+import { handle, parseBody, parseDayParam } from "@/lib/api";
+import { getDaySettings, getDb, putDaySettings } from "@/lib/db";
 import { putSettingsSchema } from "@/lib/schemas";
 
 export const dynamic = "force-dynamic";
 
-export function GET() {
-  return handle(() => Response.json(getSettings(getDb())));
+export function GET(request: NextRequest) {
+  return handle(() => Response.json(getDaySettings(getDb(), parseDayParam(request.nextUrl.searchParams)!)));
 }
 
-export function PUT(request: Request) {
+export function PUT(request: NextRequest) {
   return handle(async () => {
+    const day = parseDayParam(request.nextUrl.searchParams)!;
     const patch = await parseBody(request, putSettingsSchema);
-    return Response.json(putSettings(getDb(), patch));
+    return Response.json(putDaySettings(getDb(), day, patch));
   });
 }

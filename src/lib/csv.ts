@@ -1,6 +1,6 @@
-import { FLAVORS, emptyCounts } from "./menu";
-import { calcTickets } from "./pricing";
+import { SKUS, skuName } from "./menu";
 import { STATUS_LABELS } from "./status";
+import { countBySku } from "./summary";
 import type { Order } from "./types";
 
 const BOM = "﻿";
@@ -18,30 +18,33 @@ function cell(value: string | number): string {
   return /[",\r\n]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
 }
 
-/** 1行＝1注文、味別個数を列に持つCSV。Excel で文字化けしないよう BOM 付き */
+/** 1行＝1注文、SKU別本数を列に持つCSV。Excel で文字化けしないよう BOM 付き */
 export function ordersToCsv(orders: readonly Order[]): string {
   const header = [
+    "営業日",
     "番号",
     "状態",
-    ...FLAVORS.map((f) => f.name),
-    "個数",
+    ...SKUS.map((s) => skuName(s.item, s.seasoning)),
+    "本数",
     "金額",
-    "金券枚数",
+    "預かり",
+    "お釣り",
     "注文時刻",
     "完成時刻",
     "受け渡し時刻",
     "取り消し時刻",
   ];
   const rows = orders.map((o) => {
-    const counts = emptyCounts();
-    for (const i of o.items) counts[i.flavor] += i.qty;
+    const counts = countBySku([o]);
     return [
+      o.businessDay,
       o.number,
       STATUS_LABELS[o.status],
-      ...FLAVORS.map((f) => counts[f.id]),
+      ...SKUS.map((s) => counts[s.key]),
       o.totalQty,
       o.amount,
-      calcTickets(o.amount),
+      o.tendered,
+      o.changeDue,
       formatLocal(o.createdAt),
       formatLocal(o.readyAt),
       formatLocal(o.servedAt),

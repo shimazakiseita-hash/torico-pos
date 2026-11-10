@@ -17,5 +17,5 @@ export function pickLanAddresses(interfaces: NodeJS.Dict<os.NetworkInterfaceInfo
 /** LAN上のIPv4アドレスと、各端末で開くURL。practice は練習モード（npm run practice）で起動中か */
 export function getServerInfo(port = Number(process.env.PORT ?? 3000)): ServerInfo {
   const ips = pickLanAddresses(os.networkInterfaces());
-  return { ips, port, urls: ips.map((ip) => `http://${ip}:${port}`), practice: process.env.TAIYAKI_PRACTICE === "1" };
+  return { ips, port, urls: ips.map((ip) => `http://${ip}:${port}`), practice: process.env.TORICO_PRACTICE === "1" };
 }

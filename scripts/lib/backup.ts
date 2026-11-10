@@ -16,14 +16,14 @@ function stamp(d = new Date()): string {
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 }
 
-/** 全注文のCSV（サーバーから）とDBのコピーを保存する。片方が失敗してももう片方は保存する */
+/** 全営業日の注文のCSV（サーバーから）とDBのコピーを保存する。片方が失敗してももう片方は保存する */
 export async function takeBackup({ baseUrl, dbPath, dir }: BackupOptions): Promise<BackupResult> {
   fs.mkdirSync(dir, { recursive: true });
-  const name = `taiyaki-${stamp()}`;
+  const name = `torico-${stamp()}`;
   const result: BackupResult = { errors: [] };
 
   try {
-    const res = await fetch(`${baseUrl}/api/export.csv`, { signal: AbortSignal.timeout(10000) });
+    const res = await fetch(`${baseUrl}/api/export.csv?day=all`, { signal: AbortSignal.timeout(10000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     // text() だと Excel 用の BOM が落ちるので、届いたバイト列のまま保存する
     const bytes = Buffer.from(await res.arrayBuffer());
@@ -55,7 +55,7 @@ export async function takeBackup({ baseUrl, dbPath, dir }: BackupOptions): Promi
 export function defaultBackupOptions(): BackupOptions {
   return {
     baseUrl: process.env.LOCAL_URL ?? "http://localhost:3000",
-    dbPath: process.env.TAIYAKI_DB_PATH ?? path.join(process.cwd(), "data", "taiyaki.db"),
+    dbPath: process.env.TORICO_DB_PATH ?? path.join(process.cwd(), "data", "torico.db"),
     dir: process.env.BACKUP_DIR ?? path.join(process.cwd(), "backups"),
   };
 }

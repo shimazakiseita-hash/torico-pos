@@ -1,21 +1,21 @@
 import { DomainError } from "./errors";
-import { FLAVOR_IDS, emptyCounts } from "./menu";
+import { SKUS, emptySkuCounts, skuKey } from "./menu";
 import { MAX_ORDER_QTY, MIN_ORDER_QTY } from "./pricing";
 import type { OrderItem } from "./types";
 
-/** 同じ味をまとめ、0個の行を除き、メニュー順に並べる。総個数が範囲外なら INVALID_INPUT */
+/** 同じSKUをまとめ、0本の行を除き、メニュー順に並べる。総本数が範囲外なら INVALID_INPUT */
 export function normalizeItems(items: readonly OrderItem[]): { items: OrderItem[]; totalQty: number } {
-  const counts = emptyCounts();
-  for (const item of items) {
-    if (!Number.isInteger(item.qty) || item.qty < 0) {
-      throw new DomainError("INVALID_INPUT", "個数が不正です");
+  const counts = emptySkuCounts();
+  for (const i of items) {
+    if (!Number.isInteger(i.qty) || i.qty < 0) {
+      throw new DomainError("INVALID_INPUT", "本数が不正です");
     }
-    counts[item.flavor] += item.qty;
+    counts[skuKey(i.item, i.seasoning)] += i.qty;
   }
-  const merged = FLAVOR_IDS.filter((id) => counts[id] > 0).map((id) => ({ flavor: id, qty: counts[id] }));
+  const merged = SKUS.filter((s) => counts[s.key] > 0).map((s) => ({ item: s.item, seasoning: s.seasoning, qty: counts[s.key] }));
   const totalQty = merged.reduce((acc, i) => acc + i.qty, 0);
   if (totalQty < MIN_ORDER_QTY || totalQty > MAX_ORDER_QTY) {
-    throw new DomainError("INVALID_INPUT", `1注文の個数は${MIN_ORDER_QTY}〜${MAX_ORDER_QTY}個です`);
+    throw new DomainError("INVALID_INPUT", `1注文の本数は${MIN_ORDER_QTY}〜${MAX_ORDER_QTY}本です`);
   }
   return { items: merged, totalQty };
 }

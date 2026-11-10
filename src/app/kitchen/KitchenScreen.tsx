@@ -7,9 +7,9 @@ import { KioskBar } from "@/components/KioskBar";
 import { ItemBadges } from "@/components/ItemBadges";
 import { Toast, useToast } from "@/components/Toast";
 import { setOrderStatus } from "@/lib/client";
-import { FLAVORS } from "@/lib/menu";
+import { SEASONING_BY_ID, SKUS, skuName } from "@/lib/menu";
 import type { OrderStatus } from "@/lib/status";
-import { countByFlavor, sum } from "@/lib/summary";
+import { countBySku, sum } from "@/lib/summary";
 import type { Order } from "@/lib/types";
 import { useKiosk } from "@/lib/useKiosk";
 import { formatElapsed, useNow } from "@/lib/useNow";
@@ -49,7 +49,7 @@ export function KitchenScreen() {
     .filter((o) => o.status === "served")
     .sort((a, b) => Date.parse(b.servedAt ?? "") - Date.parse(a.servedAt ?? ""))
     .slice(0, RECENT_SERVED);
-  const toBake = countByFlavor(waiting);
+  const toBake = countBySku(waiting);
 
   async function move(order: Order, to: OrderStatus) {
     setPending((s) => new Set(s).add(order.id));
@@ -67,15 +67,15 @@ export function KitchenScreen() {
     <>
       <AppHeader title="キッチン" error={orders.status} />
       <ConnectionBanner error={orders.error} />
-      <section aria-label="焼くべき数" className="grid grid-cols-5 gap-3 p-3 pb-0">
-        {FLAVORS.map((f) => (
+      <section aria-label="焼くべき数" className="grid grid-cols-6 gap-3 p-3 pb-0">
+        {SKUS.map((sku) => (
           <div
-            key={f.id}
-            className={`rounded-2xl px-3 py-2 text-center shadow-[0_0.25rem_0_rgb(0_0_0/0.2)] ${f.bg} ${f.fg}`}
+            key={sku.key}
+            className={`rounded-2xl border-2 px-3 py-2 text-center ${SEASONING_BY_ID[sku.seasoning].bg} ${SEASONING_BY_ID[sku.seasoning].text} ${SEASONING_BY_ID[sku.seasoning].border}`}
           >
-            <div className="text-2xl font-black">{f.name}</div>
-            <div className={`text-7xl leading-tight font-black tabular-nums ${toBake[f.id] === 0 ? "opacity-40" : ""}`}>
-              {toBake[f.id]}
+            <div className="text-xl font-black">{skuName(sku.item, sku.seasoning)}</div>
+            <div className={`text-5xl leading-tight font-black tabular-nums ${toBake[sku.key] === 0 ? "opacity-40" : ""}`}>
+              {toBake[sku.key]}
             </div>
           </div>
         ))}

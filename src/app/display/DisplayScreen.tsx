@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 import { ConnectionBanner } from "@/components/ConnectionBanner";
 import { KioskBar } from "@/components/KioskBar";
-import { FLAVORS } from "@/lib/menu";
+import { ITEMS, UNIT_PRICE } from "@/lib/menu";
 import type { Order } from "@/lib/types";
 import { useKiosk } from "@/lib/useKiosk";
 import { usePolling } from "@/lib/usePolling";
@@ -164,17 +164,14 @@ function IdlePanel({ baking }: { baking: boolean }) {
         </p>
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:justify-start">
           <span className="text-xl font-bold">
-            1個 <span className="text-3xl font-black text-red">200</span>円
-          </span>
-          <span className="-rotate-3 rounded-xl bg-red px-3 py-1 text-xl font-black text-white shadow">
-            3個セットがお得！ <span className="text-3xl">500</span>円
+            1本 <span className="text-3xl font-black text-red">{UNIT_PRICE}</span>円
           </span>
         </div>
-        <p className="text-lg font-bold">4種類から自由に選べます！</p>
+        <p className="text-lg font-bold">たれ・塩から選べます！</p>
         <ul className="flex flex-wrap justify-center gap-2 sm:justify-start">
-          {FLAVORS.map((f) => (
-            <li key={f.id} className={`rounded-full px-3 py-1 text-base font-bold ${f.bg} ${f.fg}`}>
-              {f.name}
+          {ITEMS.map((i) => (
+            <li key={i.id} className="rounded-full bg-white px-3 py-1 text-base font-bold text-ink">
+              {i.name}
             </li>
           ))}
         </ul>

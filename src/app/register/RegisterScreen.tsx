@@ -9,8 +9,8 @@ import { KioskBar } from "@/components/KioskBar";
 import { ItemBadges, itemsText } from "@/components/ItemBadges";
 import { Toast, useToast } from "@/components/Toast";
 import { sendJson, setOrderStatus } from "@/lib/client";
-import { FLAVORS, emptyCounts, type FlavorCounts } from "@/lib/menu";
-import { MAX_ORDER_QTY, calcAmount, calcTickets } from "@/lib/pricing";
+import { SKUS, emptySkuCounts, skuName, SEASONING_BY_ID, type SkuCounts, type SkuKey } from "@/lib/menu";
+import { MAX_ORDER_QTY, calcAmount } from "@/lib/pricing";
 import { STATUS_LABELS } from "@/lib/status";
 import { sum } from "@/lib/summary";
 import type { CreatedOrder, Order } from "@/lib/types";
@@ -24,7 +24,7 @@ export function RegisterScreen() {
   const toast = useToast();
   const kiosk = useKiosk();
 
-  const [cart, setCart] = useState<FlavorCounts>(emptyCounts);
+  const [cart, setCart] = useState<SkuCounts>(emptySkuCounts);
   const [submitting, setSubmitting] = useState(false);
   const [issued, setIssued] = useState<CreatedOrder | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Order | null>(null);
@@ -32,17 +32,17 @@ export function RegisterScreen() {
 
   const totalQty = sum(cart);
   const amount = calcAmount(totalQty);
-  const tickets = calcTickets(amount);
 
-  const add = (id: keyof FlavorCounts) => setCart((c) => ({ ...c, [id]: c[id] + 1 }));
-  const sub = (id: keyof FlavorCounts) => setCart((c) => ({ ...c, [id]: Math.max(0, c[id] - 1) }));
-  const clear = () => setCart(emptyCounts());
+  const add = (key: SkuKey) => setCart((c) => ({ ...c, [key]: c[key] + 1 }));
+  const sub = (key: SkuKey) => setCart((c) => ({ ...c, [key]: Math.max(0, c[key] - 1) }));
+  const clear = () => setCart(emptySkuCounts());
 
   async function submit() {
     if (submitting || totalQty === 0) return;
     setSubmitting(true);
-    const items = FLAVORS.filter((f) => cart[f.id] > 0).map((f) => ({ flavor: f.id, qty: cart[f.id] }));
-    const res = await sendJson<CreatedOrder>("POST", "/api/orders", { items });
+    const items = SKUS.filter((s) => cart[s.key] > 0).map((s) => ({ item: s.item, seasoning: s.seasoning, qty: cart[s.key] }));
+    // 預かり金額の入力はフェーズ2で作る。それまでは「ちょうど」で確定する
+    const res = await sendJson<CreatedOrder>("POST", "/api/orders", { items, tendered: amount });
     setSubmitting(false);
     if (res.ok) {
       setIssued(res.data);
@@ -90,7 +90,7 @@ export function RegisterScreen() {
           />
         </div>
         <p className="text-3xl font-bold">
-          {issued.amount.toLocaleString()}円（金券 {issued.tickets}枚）
+          {issued.amount.toLocaleString()}円（お釣り {issued.changeDue.toLocaleString()}円）
         </p>
         <button
           type="button"
@@ -110,35 +110,31 @@ export function RegisterScreen() {
       <ConnectionBanner error={orders.error} />
       <main className="grid flex-1 grid-cols-1 gap-4 p-4 lg:grid-cols-[3fr_2fr]">
         <section className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-4">
-            {FLAVORS.map((f) => {
+          <div className="grid grid-cols-2 gap-3">
+            {SKUS.map((sku) => {
               const canAdd = totalQty < MAX_ORDER_QTY;
+              const name = skuName(sku.item, sku.seasoning);
+              const se = SEASONING_BY_ID[sku.seasoning];
               return (
-                <div key={f.id} className="flex flex-col gap-2">
+                <div key={sku.key} className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => add(f.id)}
+                    onClick={() => add(sku.key)}
                     disabled={!canAdd}
-                    aria-label={`${f.name}を1つ追加`}
-                    className={`press flex min-h-44 flex-col justify-between rounded-3xl p-4 text-left shadow-[0_0.3rem_0_rgb(0_0_0/0.2)] disabled:opacity-40 ${f.bg} ${f.fg}`}
+                    aria-label={`${name}を1本追加`}
+                    className={`press flex min-h-16 flex-1 items-center justify-between rounded-2xl border-2 px-4 text-left disabled:opacity-40 ${se.bg} ${se.text} ${se.border}`}
                   >
-                    <span className="text-4xl font-black">{f.name}</span>
-                    <span className="flex items-end justify-end">
-                      <span
-                        key={cart[f.id]}
-                        className={`text-7xl leading-none font-black tabular-nums ${cart[f.id] > 0 ? "pop" : "opacity-40"}`}
-                      >
-                        {cart[f.id]}
-                        <span className="ml-1 text-2xl">個</span>
-                      </span>
+                    <span className="text-2xl font-black">{name}</span>
+                    <span key={cart[sku.key]} className={`text-4xl font-black tabular-nums ${cart[sku.key] > 0 ? "pop" : "opacity-40"}`}>
+                      {cart[sku.key]}
                     </span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => sub(f.id)}
-                    disabled={cart[f.id] === 0}
-                    className={`press min-h-16 rounded-2xl border-4 bg-white text-3xl font-black text-ink active:bg-gray-100 disabled:opacity-30 ${f.border}`}
-                    aria-label={`${f.name}を1つ減らす`}
+                    onClick={() => sub(sku.key)}
+                    disabled={cart[sku.key] === 0}
+                    className={`press min-h-16 w-16 rounded-2xl border-2 bg-white text-3xl font-black text-ink active:bg-gray-100 disabled:opacity-30 ${se.border}`}
+                    aria-label={`${name}を1本減らす`}
                   >
                     −
                   </button>
@@ -184,29 +180,20 @@ export function RegisterScreen() {
         <section className="flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-[0_0.3rem_1rem_rgb(0_0_0/0.08)] lg:sticky lg:top-4 lg:self-start">
           <h2 className="text-2xl font-black text-navy">ご注文</h2>
           <ul className="min-h-28 space-y-1 text-2xl">
-            {FLAVORS.filter((f) => cart[f.id] > 0).map((f) => (
-              <li key={f.id} className="flex items-center gap-3">
-                <span className={`h-4 w-4 rounded-full ${f.bg}`} aria-hidden />
-                <span className="flex-1 font-bold">{f.name}</span>
-                <span className="tabular-nums">× {cart[f.id]}</span>
+            {SKUS.filter((sku) => cart[sku.key] > 0).map((sku) => (
+              <li key={sku.key} className="flex items-center gap-3">
+                <span className="flex-1 font-bold">{skuName(sku.item, sku.seasoning)}</span>
+                <span className="tabular-nums">× {cart[sku.key]}</span>
               </li>
             ))}
-            {totalQty === 0 && <li className="text-gray-500">味のボタンを押してください</li>}
+            {totalQty === 0 && <li className="text-gray-500">串のボタンを押してください</li>}
           </ul>
           <div className="flex items-baseline justify-between border-t-2 border-paper pt-4 text-2xl">
             <span>
-              合計 <span className="font-black tabular-nums">{totalQty}</span>個
+              合計 <span className="font-black tabular-nums">{totalQty}</span>本
               {totalQty >= MAX_ORDER_QTY && <span className="ml-2 text-base font-bold text-red">（上限）</span>}
             </span>
             <span className="text-4xl font-black tabular-nums">{amount.toLocaleString()}円</span>
-          </div>
-          <div className="rounded-2xl bg-paper px-4 py-3 text-center">
-            <p className="text-xl font-bold text-navy">いただく金券</p>
-            <p className="text-8xl leading-tight font-black text-navy tabular-nums">
-              {tickets}
-              <span className="ml-2 text-4xl">枚</span>
-            </p>
-            <p className="text-base text-gray-600">1個200円・味を問わず3個で500円</p>
           </div>
           <button
             type="button"
@@ -238,7 +225,7 @@ export function RegisterScreen() {
         {cancelTarget && (
           <>
             <p>{itemsText(cancelTarget.items)}（{cancelTarget.amount}円）</p>
-            <p className="mt-2 font-bold text-red">金券 {calcTickets(cancelTarget.amount)}枚をお客さんに返してください。</p>
+            <p className="mt-2 font-bold text-red">{cancelTarget.amount.toLocaleString()}円をお客さんに返してください。</p>
           </>
         )}
       </ConfirmDialog>

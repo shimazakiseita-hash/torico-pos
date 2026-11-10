@@ -13,6 +13,11 @@
   --choco: #6b4226;
   --ok: #2f7d4f;
   --warn: #d9822b;
+  /* 味付けの機能色（docs/design.md） */
+  --tare: #b4541c;
+  --tare-bg: #ffe3c7;
+  --shio: #2b8fb3;
+  --shio-bg: #dff6fb;
 }
 
 /* Tailwind から bg-navy / text-red / border-warn などで参照する */
@@ -31,6 +36,10 @@
   --color-choco: var(--choco);
   --color-ok: var(--ok);
   --color-warn: var(--warn);
+  --color-tare: var(--tare);
+  --color-tare-bg: var(--tare-bg);
+  --color-shio: var(--shio);
+  --color-shio-bg: var(--shio-bg);
 }
 
 html {

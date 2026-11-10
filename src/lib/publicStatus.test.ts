@@ -7,15 +7,18 @@ import type { OrderStatus } from "./status";
 function order(number: number, status: OrderStatus, readyAt: string | null = null): Order {
   return {
     id: number,
+    businessDay: "2026-11-21",
     number,
     status,
     totalQty: 1,
-    amount: 200,
+    amount: 100,
+    tendered: 100,
+    changeDue: 0,
     createdAt: "2026-10-01T03:00:00.000Z",
     readyAt,
     servedAt: null,
     cancelledAt: null,
-    items: [{ flavor: "anko", qty: 1 }],
+    items: [{ item: "momo", seasoning: "tare", qty: 1 }],
   };
 }
 
@@ -33,7 +36,7 @@ describe("toPublicStatus", () => {
     expect(s).toEqual({ ready: [2, 1], waiting: [5, 6, 7], avgWaitSeconds: 300, secondsPerOrder: 90 });
   });
 
-  it("番号以外の情報（金額・味）は含めない", () => {
+  it("番号以外の情報（金額・注文内容）は含めない", () => {
     expect(Object.keys(toPublicStatus([order(1, "waiting")], { avgWaitSeconds: null, secondsPerOrder: null }))).toEqual([
       "ready",
       "waiting",

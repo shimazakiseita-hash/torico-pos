@@ -3,7 +3,7 @@
  * 使い方: npm run load-test -- [件数=100] [URL=http://localhost:3000]
  * ※ DB に注文が残るので、終わったら npm run db:reset すること
  */
-import { FLAVOR_IDS } from "../src/lib/menu";
+import { SKUS, UNIT_PRICE } from "../src/lib/menu";
 
 const count = Number(process.argv[2] ?? 100);
 const base = process.argv[3] ?? "http://localhost:3000";
@@ -14,12 +14,12 @@ async function main() {
   let failed = 0;
   const started = Date.now();
   for (let i = 0; i < count; i++) {
-    const flavor = FLAVOR_IDS[i % FLAVOR_IDS.length];
+    const { item, seasoning } = SKUS[i % SKUS.length];
     const t = performance.now();
     const res = await fetch(`${base}/api/orders`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items: [{ flavor, qty: 1 }] }),
+      body: JSON.stringify({ items: [{ item, seasoning, qty: 1 }], tendered: UNIT_PRICE }),
     });
     times.push(performance.now() - t);
     if (res.ok) numbers.push(((await res.json()) as { number: number }).number);

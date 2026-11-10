@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { businessDayOf } from "./businessDay";
 import { DomainError, HTTP_STATUS } from "./errors";
+import { businessDaySchema } from "./schemas";
 
 export function jsonError(status: number, error: string): Response {
   return Response.json({ error }, { status });
@@ -29,4 +31,14 @@ export async function handle(fn: () => Response | Promise<Response>): Promise<Re
     console.error(e);
     return jsonError(500, "サーバーでエラーが発生しました");
   }
+}
+
+/** クエリの day（YYYY-MM-DD）。省略時は今日の営業日。allowAll なら "all"（全営業日）で null を返す */
+export function parseDayParam(params: URLSearchParams, { allowAll = false } = {}): string | null {
+  const raw = params.get("day");
+  if (raw === null || raw === "") return businessDayOf();
+  if (allowAll && raw === "all") return null;
+  const parsed = businessDaySchema.safeParse(raw);
+  if (!parsed.success) throw new DomainError("INVALID_INPUT", "day は YYYY-MM-DD で指定してください");
+  return parsed.data;
 }

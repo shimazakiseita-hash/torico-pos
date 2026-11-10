@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { FLAVOR_IDS } from "./menu";
-import { MAX_ORDER_QTY } from "./pricing";
+import { isBusinessDay } from "./businessDay";
+import { ITEM_IDS, SEASONING_IDS, SKU_KEYS } from "./menu";
+import { MAX_ORDER_QTY, MAX_TENDERED } from "./pricing";
 import { ORDER_STATUSES } from "./status";
 
 z.config(z.locales.ja());
@@ -9,13 +10,18 @@ export const createOrderSchema = z.object({
   items: z
     .array(
       z.object({
-        flavor: z.enum(FLAVOR_IDS),
+        item: z.enum(ITEM_IDS),
+        seasoning: z.enum(SEASONING_IDS),
         qty: z.number().int().min(1).max(MAX_ORDER_QTY),
       }),
     )
     .min(1)
-    .max(FLAVOR_IDS.length * 2),
+    .max(SKU_KEYS.length * 2),
+  tendered: z.number().int().min(0).max(MAX_TENDERED),
 });
+
+/** 営業日 YYYY-MM-DD */
+export const businessDaySchema = z.string().refine(isBusinessDay, "日付は YYYY-MM-DD で指定してください");
 
 export const updateStatusSchema = z.object({
   status: z.enum(ORDER_STATUSES),
@@ -24,7 +30,10 @@ export const updateStatusSchema = z.object({
 export const statusListSchema = z.array(z.enum(ORDER_STATUSES));
 
 export const putSettingsSchema = z.object({
-  targetQty: z.number().int().min(1).max(99999),
+  capacity: z.partialRecord(z.enum(SKU_KEYS), z.number().int().min(0).max(99999).nullable()).optional(),
+  soldout: z.array(z.enum(SKU_KEYS)).max(SKU_KEYS.length).optional(),
+  cashFloat: z.number().int().min(0).max(MAX_TENDERED * 10).optional(),
+  targetQty: z.number().int().min(1).max(99999).optional(),
 });
 
 const orderNumbersSchema = z.array(z.number().int().min(1)).max(1000);

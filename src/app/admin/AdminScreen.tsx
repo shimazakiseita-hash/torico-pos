@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { AppHeader } from "@/components/AppHeader";
 import { ConnectionBanner } from "@/components/ConnectionBanner";
-import { FLAVORS } from "@/lib/menu";
+import { SKUS, skuName } from "@/lib/menu";
 import type { ServerInfo } from "@/lib/serverInfo";
 import type { Summary } from "@/lib/summary";
 import { usePolling } from "@/lib/usePolling";
@@ -46,14 +46,16 @@ export function AdminScreen() {
       <main className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4">
         <Card title="売上">
           <p className="text-5xl font-black tabular-nums">{s ? `${s.revenue.toLocaleString()}円` : "…"}</p>
-          <p className="mt-1 text-3xl font-black text-navy tabular-nums">金券 {s?.tickets ?? "…"}枚</p>
-          <p className="mt-2 text-sm text-gray-500">閉店後、実際の金券の枚数と照合してください</p>
+          <p className="mt-1 text-2xl font-black text-navy tabular-nums">
+            レジ内現金の理論値 {s ? `${s.expectedCash.toLocaleString()}円` : "…"}
+          </p>
+          <p className="mt-2 text-sm text-gray-500">釣り銭準備金 {s?.cashFloat.toLocaleString() ?? "…"}円＋売上。閉店後、実際の現金と照合してください</p>
         </Card>
 
         <Card title="販売数">
           <p className="text-4xl font-black tabular-nums">
             {s?.soldTotal ?? "…"}
-            <span className="text-xl font-bold text-gray-500"> / 目標 {s?.targetQty ?? "…"}個</span>
+            <span className="text-xl font-bold text-gray-500"> / 目標 {s?.targetQty ?? "…"}本</span>
           </p>
           {/* 進捗バー：たい焼きが目標に向かって泳いでいく（両端ではみ出さないよう左右に余白） */}
           <div className="mt-4 px-5">
@@ -77,22 +79,22 @@ export function AdminScreen() {
             </div>
           </div>
           <p className="mt-2 flex justify-between text-sm text-gray-600 tabular-nums">
-            <span>{ratio >= 1 ? <span className="font-black text-red">目標達成！</span> : `あと ${s ? s.targetQty - s.soldTotal : "…"}個`}</span>
+            <span>{ratio >= 1 ? <span className="font-black text-red">目標達成！</span> : `あと ${s ? s.targetQty - s.soldTotal : "…"}本`}</span>
             <span>{Math.round(ratio * 100)}%</span>
           </p>
 
           <table className="mt-3 w-full text-lg">
             <thead>
               <tr className="text-left text-sm text-gray-500">
-                <th className="py-1 font-normal">味</th>
-                <th className="py-1 text-right font-normal">販売数</th>
+                <th className="py-1 font-normal">品目</th>
+                <th className="py-1 text-right font-normal">販売本数</th>
               </tr>
             </thead>
             <tbody>
-              {FLAVORS.map((f) => (
-                <tr key={f.id} className="border-t">
-                  <td className={`py-2 font-bold ${f.text}`}>{f.name}</td>
-                  <td className="py-2 text-right tabular-nums">{s?.soldByFlavor[f.id] ?? "…"}</td>
+              {SKUS.map((sku) => (
+                <tr key={sku.key} className="border-t">
+                  <td className="py-2 font-bold">{skuName(sku.item, sku.seasoning)}</td>
+                  <td className="py-2 text-right tabular-nums">{s?.soldBySku[sku.key] ?? "…"}</td>
                 </tr>
               ))}
             </tbody>

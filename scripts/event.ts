@@ -100,8 +100,8 @@ async function main() {
 
   if (PRACTICE) {
     // 子プロセス（サーバー）にも引き継がれる
-    process.env.TAIYAKI_DB_PATH = PRACTICE_DB;
-    process.env.TAIYAKI_PRACTICE = "1";
+    process.env.TORICO_DB_PATH = PRACTICE_DB;
+    process.env.TORICO_PRACTICE = "1";
     for (const f of [PRACTICE_DB, `${PRACTICE_DB}-wal`, `${PRACTICE_DB}-shm`]) fs.rmSync(f, { force: true });
     log("練習モードで起動します（まっさらな練習用DB。本番のデータ・お客さん向けページ・バックアップには影響しません）");
   }

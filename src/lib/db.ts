@@ -1,43 +1,53 @@
 import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
+import { businessDayOf } from "./businessDay";
 import { DomainError } from "./errors";
-import { DEFAULT_TARGET_QTY, FLAVOR_IDS, type FlavorId } from "./menu";
+import { DEFAULT_TARGET_QTY, ITEM_IDS, SEASONING_IDS, SKU_KEYS, SKUS, skuKey, type SkuKey } from "./menu";
 import { normalizeItems } from "./order";
-import { calcAmount, calcTickets } from "./pricing";
+import { calcAmount, calcChange } from "./pricing";
 import { STATUS_LABELS, canTransition, type OrderStatus } from "./status";
-import type { CreatedOrder, Order, OrderItem, Settings } from "./types";
+import type { CreatedOrder, DaySettings, Order, OrderItem } from "./types";
 
 export type DB = Database.Database;
 
-export const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "taiyaki.db");
+export const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "torico.db");
+
+const sqlList = (ids: readonly string[]) => ids.map((id) => `'${id}'`).join(",");
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS orders (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  number       INTEGER NOT NULL UNIQUE,
+  business_day TEXT NOT NULL,
+  number       INTEGER NOT NULL,
   status       TEXT NOT NULL CHECK (status IN ('waiting','ready','served','cancelled')),
   total_qty    INTEGER NOT NULL,
   amount       INTEGER NOT NULL,
+  tendered     INTEGER NOT NULL,
+  change_due   INTEGER NOT NULL,
   created_at   TEXT NOT NULL,
   ready_at     TEXT,
   served_at    TEXT,
-  cancelled_at TEXT
+  cancelled_at TEXT,
+  UNIQUE (business_day, number)
 );
 CREATE TABLE IF NOT EXISTS order_items (
-  order_id INTEGER NOT NULL REFERENCES orders(id),
-  flavor   TEXT NOT NULL CHECK (flavor IN ('anko','custard','matcha','choco')),
-  qty      INTEGER NOT NULL CHECK (qty > 0),
-  PRIMARY KEY (order_id, flavor)
+  order_id  INTEGER NOT NULL REFERENCES orders(id),
+  item      TEXT NOT NULL CHECK (item IN (${sqlList(ITEM_IDS)})),
+  seasoning TEXT NOT NULL CHECK (seasoning IN (${sqlList(SEASONING_IDS)})),
+  qty       INTEGER NOT NULL CHECK (qty > 0),
+  PRIMARY KEY (order_id, item, seasoning)
 );
-CREATE TABLE IF NOT EXISTS settings (
-  key   TEXT PRIMARY KEY,
-  value TEXT NOT NULL
+CREATE TABLE IF NOT EXISTS day_settings (
+  business_day TEXT NOT NULL,
+  key          TEXT NOT NULL,
+  value        TEXT NOT NULL,
+  PRIMARY KEY (business_day, key)
 );
-CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_day_status ON orders(business_day, status);
 `;
 
-/** DBを開いてスキーマと設定の初期値を用意する。テストでは ':memory:' を渡す */
+/** DBを開いてスキーマを用意する。テストでは ':memory:' を渡す */
 export function openDb(file: string = DEFAULT_DB_PATH): DB {
   if (file !== ":memory:") fs.mkdirSync(path.dirname(file), { recursive: true });
   const db = new Database(file);
@@ -45,40 +55,44 @@ export function openDb(file: string = DEFAULT_DB_PATH): DB {
   db.pragma("foreign_keys = ON");
   db.pragma("busy_timeout = 5000");
   db.exec(SCHEMA);
-  db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run(
-    "target_qty",
-    JSON.stringify(DEFAULT_TARGET_QTY),
-  );
   return db;
 }
 
 // 開発時のホットリロードで接続が増えないよう globalThis に保持する
-const globalForDb = globalThis as unknown as { taiyakiDb?: DB };
+const globalForDb = globalThis as unknown as { toricoDb?: DB };
 
 export function getDb(): DB {
-  globalForDb.taiyakiDb ??= openDb(process.env.TAIYAKI_DB_PATH ?? DEFAULT_DB_PATH);
-  return globalForDb.taiyakiDb;
+  globalForDb.toricoDb ??= openDb(process.env.TORICO_DB_PATH ?? DEFAULT_DB_PATH);
+  return globalForDb.toricoDb;
 }
 
 type OrderRow = {
   id: number;
+  business_day: string;
   number: number;
   status: OrderStatus;
   total_qty: number;
   amount: number;
+  tendered: number;
+  change_due: number;
   created_at: string;
   ready_at: string | null;
   served_at: string | null;
   cancelled_at: string | null;
 };
 
+type ItemRow = OrderItem & { order_id: number };
+
 function toOrder(row: OrderRow, items: OrderItem[]): Order {
   return {
     id: row.id,
+    businessDay: row.business_day,
     number: row.number,
     status: row.status,
     totalQty: row.total_qty,
     amount: row.amount,
+    tendered: row.tendered,
+    changeDue: row.change_due,
     createdAt: row.created_at,
     readyAt: row.ready_at,
     servedAt: row.served_at,
@@ -87,49 +101,68 @@ function toOrder(row: OrderRow, items: OrderItem[]): Order {
   };
 }
 
-export function createOrder(db: DB, rawItems: readonly OrderItem[], now: Date = new Date()): CreatedOrder {
+const SKU_ORDER = new Map<SkuKey, number>(SKUS.map((s, i) => [s.key, i]));
+const bySkuOrder = (a: OrderItem, b: OrderItem) =>
+  SKU_ORDER.get(skuKey(a.item, a.seasoning))! - SKU_ORDER.get(skuKey(b.item, b.seasoning))!;
+
+/** 注文を作る。金額とお釣りはここで計算し直す。番号は営業日ごとの連番 */
+export function createOrder(db: DB, rawItems: readonly OrderItem[], tendered: number, now: Date = new Date()): CreatedOrder {
   const { items, totalQty } = normalizeItems(rawItems);
   const amount = calcAmount(totalQty);
+  const changeDue = calcChange(amount, tendered);
+  const businessDay = businessDayOf(now);
 
   const tx = db.transaction((): CreatedOrder => {
-    const { next } = db.prepare("SELECT COALESCE(MAX(number), 0) + 1 AS next FROM orders").get() as { next: number };
+    const { next } = db
+      .prepare("SELECT COALESCE(MAX(number), 0) + 1 AS next FROM orders WHERE business_day = ?")
+      .get(businessDay) as { next: number };
     const result = db
-      .prepare("INSERT INTO orders (number, status, total_qty, amount, created_at) VALUES (?, 'waiting', ?, ?, ?)")
-      .run(next, totalQty, amount, now.toISOString());
+      .prepare(
+        `INSERT INTO orders (business_day, number, status, total_qty, amount, tendered, change_due, created_at)
+         VALUES (?, ?, 'waiting', ?, ?, ?, ?, ?)`,
+      )
+      .run(businessDay, next, totalQty, amount, tendered, changeDue, now.toISOString());
     const id = Number(result.lastInsertRowid);
-    const insertItem = db.prepare("INSERT INTO order_items (order_id, flavor, qty) VALUES (?, ?, ?)");
-    for (const item of items) insertItem.run(id, item.flavor, item.qty);
-    return { id, number: next, amount, tickets: calcTickets(amount) };
+    const insertItem = db.prepare("INSERT INTO order_items (order_id, item, seasoning, qty) VALUES (?, ?, ?, ?)");
+    for (const i of items) insertItem.run(id, i.item, i.seasoning, i.qty);
+    return { id, businessDay, number: next, amount, tendered, changeDue };
   });
   return tx.immediate();
 }
 
-export function listOrders(db: DB, statuses?: readonly OrderStatus[]): Order[] {
-  const where = statuses && statuses.length > 0 ? `WHERE status IN (${statuses.map(() => "?").join(",")})` : "";
-  const rows = db.prepare(`SELECT * FROM orders ${where} ORDER BY number`).all(...(statuses ?? [])) as OrderRow[];
+/** 指定した営業日の注文（day が null なら全営業日）。番号順 */
+export function listOrders(db: DB, day: string | null, statuses?: readonly OrderStatus[]): Order[] {
+  const conds: string[] = [];
+  const params: string[] = [];
+  if (day !== null) {
+    conds.push("business_day = ?");
+    params.push(day);
+  }
+  if (statuses && statuses.length > 0) {
+    conds.push(`status IN (${statuses.map(() => "?").join(",")})`);
+    params.push(...statuses);
+  }
+  const where = conds.length > 0 ? `WHERE ${conds.join(" AND ")}` : "";
+  const rows = db.prepare(`SELECT * FROM orders ${where} ORDER BY business_day, number`).all(...params) as OrderRow[];
   if (rows.length === 0) return [];
 
   const itemRows = db
-    .prepare(
-      `SELECT order_id, flavor, qty FROM order_items
-        WHERE order_id IN (SELECT id FROM orders ${where})`,
-    )
-    .all(...(statuses ?? [])) as { order_id: number; flavor: FlavorId; qty: number }[];
+    .prepare(`SELECT order_id, item, seasoning, qty FROM order_items WHERE order_id IN (SELECT id FROM orders ${where})`)
+    .all(...params) as ItemRow[];
   const itemsById = new Map<number, OrderItem[]>();
   for (const r of itemRows) {
     const list = itemsById.get(r.order_id) ?? [];
-    list.push({ flavor: r.flavor, qty: r.qty });
+    list.push({ item: r.item, seasoning: r.seasoning, qty: r.qty });
     itemsById.set(r.order_id, list);
   }
-  const order = (i: OrderItem) => FLAVOR_IDS.indexOf(i.flavor);
-  return rows.map((row) => toOrder(row, (itemsById.get(row.id) ?? []).sort((a, b) => order(a) - order(b))));
+  return rows.map((row) => toOrder(row, (itemsById.get(row.id) ?? []).sort(bySkuOrder)));
 }
 
 export function getOrder(db: DB, id: number): Order | null {
   const row = db.prepare("SELECT * FROM orders WHERE id = ?").get(id) as OrderRow | undefined;
   if (!row) return null;
-  const items = db.prepare("SELECT flavor, qty FROM order_items WHERE order_id = ?").all(id) as OrderItem[];
-  return toOrder(row, items);
+  const items = db.prepare("SELECT item, seasoning, qty FROM order_items WHERE order_id = ?").all(id) as OrderItem[];
+  return toOrder(row, items.sort(bySkuOrder));
 }
 
 /** 状態に応じて更新するタイムスタンプ列。戻す操作では該当列を消す */
@@ -160,20 +193,54 @@ export function updateStatus(db: DB, id: number, to: OrderStatus, now: Date = ne
   return tx.immediate();
 }
 
-export function getSettings(db: DB): Settings {
-  const rows = db.prepare("SELECT key, value FROM settings").all() as { key: string; value: string }[];
+export type DaySettingsPatch = {
+  capacity?: Partial<Record<SkuKey, number | null>>;
+  soldout?: SkuKey[];
+  cashFloat?: number;
+  targetQty?: number;
+};
+
+function emptyCapacity(): Record<SkuKey, number | null> {
+  return Object.fromEntries(SKU_KEYS.map((k) => [k, null])) as Record<SkuKey, number | null>;
+}
+
+/** 営業日の設定。未設定の項目は初期値（仕込み数なし＝上限なし、売り切れなし、準備金0円） */
+export function getDaySettings(db: DB, day: string): DaySettings {
+  const rows = db.prepare("SELECT key, value FROM day_settings WHERE business_day = ?").all(day) as {
+    key: string;
+    value: string;
+  }[];
   const map = new Map(rows.map((r) => [r.key, JSON.parse(r.value) as unknown]));
+  const capacity = emptyCapacity();
+  const saved = (map.get("capacity") ?? {}) as Partial<Record<string, number | null>>;
+  for (const k of SKU_KEYS) if (typeof saved[k] === "number") capacity[k] = saved[k];
+  const soldout = ((map.get("soldout") ?? []) as string[]).filter((k): k is SkuKey => SKU_KEYS.includes(k as SkuKey));
   return {
+    businessDay: day,
+    capacity,
+    soldout,
+    cashFloat: (map.get("cash_float") as number | undefined) ?? 0,
     targetQty: (map.get("target_qty") as number | undefined) ?? DEFAULT_TARGET_QTY,
   };
 }
 
-export function putSettings(db: DB, patch: { targetQty?: number }): Settings {
+/** 渡された項目だけ更新する。capacity は SKU ごとに上書き（null で上限なしに戻す） */
+export function putDaySettings(db: DB, day: string, patch: DaySettingsPatch): DaySettings {
   const upsert = db.prepare(
-    "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+    `INSERT INTO day_settings (business_day, key, value) VALUES (?, ?, ?)
+     ON CONFLICT(business_day, key) DO UPDATE SET value = excluded.value`,
   );
   db.transaction(() => {
-    if (patch.targetQty !== undefined) upsert.run("target_qty", JSON.stringify(patch.targetQty));
-  })();
-  return getSettings(db);
+    if (patch.capacity !== undefined) {
+      const capacity = { ...getDaySettings(db, day).capacity, ...patch.capacity };
+      upsert.run(day, "capacity", JSON.stringify(capacity));
+    }
+    if (patch.soldout !== undefined) {
+      const soldout = SKU_KEYS.filter((k) => patch.soldout!.includes(k));
+      upsert.run(day, "soldout", JSON.stringify(soldout));
+    }
+    if (patch.cashFloat !== undefined) upsert.run(day, "cash_float", JSON.stringify(patch.cashFloat));
+    if (patch.targetQty !== undefined) upsert.run(day, "target_qty", JSON.stringify(patch.targetQty));
+  }).immediate();
+  return getDaySettings(db, day);
 }

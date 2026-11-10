@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline/promises";
 
-const file = process.env.TAIYAKI_DB_PATH ?? path.join(process.cwd(), "data", "taiyaki.db");
+const file = process.env.TORICO_DB_PATH ?? path.join(process.cwd(), "data", "torico.db");
 const targets = [file, `${file}-wal`, `${file}-shm`].filter((f) => fs.existsSync(f));
 
 async function main() {
