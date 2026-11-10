@@ -1,39 +1,55 @@
-# taiyaki-pos
+# torico-pos
 
-寮祭のたい焼き屋台で使う注文管理アプリ。レジで会計して呼び出し番号を発行し、
-キッチンで焼き上がりを管理、客席側の画面とスマホで番号を呼び出す。
-Next.js + SQLite で、スマホのテザリングによるローカルネットワーク内で動く。
+津田沼祭（2026年11月21日・22日）の焼き鳥屋台「やきとり TORI♡CO」（寮友会執行役員会）で使う注文・会計アプリ。
+受付で現金会計をして呼び出し番号を発行し、焼き場で「完成」、渡し場で「渡した」を押す。
+寮祭のたい焼き屋台で使った [taiyaki-pos](https://github.com/shimazakiseita-hash/taiyaki-pos) を改修している（作業中）。
+
+注文・会計はインターネットなしで動く。サーバーPC（Ubuntu）が Wi-Fi の親機になり、ほかの端末はブラウザでつなぐ。
+整理券のQRから開くお客さん用ページ（`cloud/`、Cloudflare Workers）だけがインターネットを使う。
 
 ## 画面
 
 | パス | 用途 |
 | --- | --- |
-| `/register` | レジ（注文入力・番号発行） |
-| `/kitchen` | キッチン（焼き待ち → 完成） |
-| `/display` | 呼び出し番号の表示 |
-| `/admin` | 集計・設定・CSV出力 |
+| `/register` | 受付（注文入力・現金会計・番号発行） |
+| `/grill` | 焼き場（注文順のカード → 完成）※作業中。現在は `/kitchen` |
+| `/handoff` | 渡し場・店員用（呼び出し中 → 渡した）※作業中 |
+| `/display` | 渡し場・お客さん用（呼び出し番号の表示） |
+| `/admin` | 管理（集計・レジ締め・仕込み数・CSV） |
 
-`cloud/` はお客さん向け呼び出し状況ページ（Cloudflare Workers）。
+## メニュー
+
+串5種（もも・かわ・ねぎま・つくね・ぼんじり）× 味付け2種（たれ・塩）、すべて1本100円。定義は [src/lib/menu.ts](src/lib/menu.ts)。
 
 ## 動かし方
 
-Node.js 22 以上が必要。`better-sqlite3` のビルドに `build-essential` と `python3` を使う。
+Node.js 24（`.nvmrc`）。`better-sqlite3` のビルドに `build-essential` と `python3` を使う。
 
 ```bash
+nvm use
 npm install
-npm run dev    # http://<PCのIP>:3000
+npm run dev     # http://localhost:3000
 npm test
 ```
+
+当日は `npm run event`（本番サーバー・お客さん用ページへの送信・自動バックアップをまとめて起動）。
+DB は `data/torico.db`。呼び出し番号は営業日（日本時間の日付）ごとに1から振り直す。
 
 ## ドキュメント
 
 - [docs/spec.md](docs/spec.md) — 仕様
-- [docs/design.md](docs/design.md) — デザイン
+- [docs/design.md](docs/design.md) — デザイン指針（完成イメージ：[docs/mock/mock.png](docs/mock/mock.png)）
+- [docs/tasks.md](docs/tasks.md) — 実装タスク
+- [docs/network.md](docs/network.md) — 本番サーバーとネットワークの準備
 - [docs/event-day.md](docs/event-day.md) — 当日の運用手順
 
 ## ライセンス
 
 ソースコードは [MIT License](LICENSE)。
 
-ただし `public/brand/` と `cloud/public/brand/` のロゴ・キャラクター画像はMITの対象外で、
-権利者の許可なく利用できない。`cloud/public/fonts/` のフォントは各OFLファイルに従う。
+ただし次のものは MIT の対象外で、権利者の許可なく利用できない。
+
+- `public/brand/`・`cloud/public/brand/`・`src/app/icon.png` のロゴ・キャラクター画像
+- `docs/design-reference/`・`docs/mock/` の広報物の画像
+
+`cloud/public/fonts/` のフォントは、それぞれの OFL ファイルに従う。

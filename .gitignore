@@ -53,3 +53,6 @@ next-env.d.ts
 
 # 自動バックアップ（npm run event / npm run backup）
 /backups/
+
+# 広報物の原本（公開リポジトリに載せない。画面で使うものは縮小して public/brand/ へ）
+/docs/design-reference/original/
