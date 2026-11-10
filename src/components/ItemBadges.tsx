@@ -3,7 +3,7 @@ import type { OrderItem } from "@/lib/types";
 
 /** SKUごとの本数を、味付けの色のバッジで並べる（色だけでなく文字でも味付けを出す） */
 export function ItemBadges({ items, size = "md" }: { items: readonly OrderItem[]; size?: "sm" | "md" | "lg" }) {
-  const cls = { sm: "px-2 py-0.5 text-base", md: "px-3 py-1 text-xl", lg: "px-4 py-2 text-3xl" }[size];
+  const cls = { sm: "px-2 py-0.5 text-base", md: "px-3 py-1 text-xl", lg: "px-3 py-1 text-2xl" }[size];
   return (
     <span className="flex flex-wrap gap-2">
       {items.map((i) => {

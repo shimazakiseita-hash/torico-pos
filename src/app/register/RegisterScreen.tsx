@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ConnectionBanner } from "@/components/ConnectionBanner";
+import { Heart } from "@/components/Heart";
 import { ItemBadges, itemsText } from "@/components/ItemBadges";
 import { KioskBar } from "@/components/KioskBar";
 import { TenkeyDialog } from "@/components/TenkeyDialog";
@@ -185,9 +186,7 @@ export function RegisterScreen() {
 
       <section aria-labelledby="recent-h" className="mx-4 mb-4 rounded-[28px] bg-white p-4 shadow-[0_6px_0_rgb(0_0_0/0.12)]">
         <h2 id="recent-h" className="mb-2 text-xl font-black">
-          <span className="mr-1 text-pink-200" aria-hidden>
-            ♥
-          </span>
+          <Heart />
           直近の注文
         </h2>
         {recent.length === 0 ? (

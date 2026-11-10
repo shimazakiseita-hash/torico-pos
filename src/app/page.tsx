@@ -3,8 +3,9 @@ import Link from "next/link";
 
 const LINKS = [
   { href: "/register", label: "受付", note: "受付PC（サーバー）" },
-  { href: "/kitchen", label: "キッチン", note: "キッチンPC" },
-  { href: "/display", label: "呼び出し表示", note: "お客さん向け" },
+  { href: "/grill", label: "焼き場", note: "焼き場PC" },
+  { href: "/handoff", label: "渡し場", note: "渡し場PC（店員用）" },
+  { href: "/display", label: "呼び出し表示", note: "渡し場PC（お客さん用）" },
   { href: "/admin", label: "管理", note: "責任者のスマホ" },
 ] as const;
 

@@ -1,7 +1,7 @@
 /**
  * お客さん向けページ（Cloudflare）へ、呼び出し状況（番号と待ち時間の目安だけ）を送り続ける。
  * 使い方: npm run public-sync（.env.public に PUBLIC_STATUS_URL と PUBLIC_STATUS_TOKEN を書いておく）
- * 止まっても・失敗してもレジやキッチンには影響しない
+ * 止まっても・失敗しても受付・焼き場・渡し場には影響しない
  */
 import { toPublicStatus } from "../src/lib/publicStatus";
 import type { Summary } from "../src/lib/summary";

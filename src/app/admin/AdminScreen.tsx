@@ -10,7 +10,8 @@ import { usePolling } from "@/lib/usePolling";
 
 const PAGES = [
   { path: "/register", label: "受付" },
-  { path: "/kitchen", label: "キッチン" },
+  { path: "/grill", label: "焼き場" },
+  { path: "/handoff", label: "渡し場" },
   { path: "/display", label: "呼び出し表示" },
   { path: "/admin", label: "管理" },
 ] as const;
