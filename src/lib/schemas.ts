@@ -2,6 +2,7 @@ import { z } from "zod";
 import { isBusinessDay } from "./businessDay";
 import { ITEM_IDS, SEASONING_IDS, SKU_KEYS } from "./menu";
 import { MAX_ORDER_QTY, MAX_TENDERED } from "./pricing";
+import { GAME_IDS } from "./ranking";
 import { ORDER_STATUSES } from "./status";
 
 z.config(z.locales.ja());
@@ -53,7 +54,10 @@ export const publicSyncReportSchema = z.object({
   error: z.string().max(300).optional(),
 });
 
+export const gameIdSchema = z.enum(GAME_IDS);
+
 export const rankingSubmitSchema = z.object({
+  game: gameIdSchema,
   player: z.string().regex(/^[a-z0-9]{8,32}$/), // スマホごとのID
   name: z.string().max(40), // 長さの本当の上限は normalizeName（10文字）で見る
   score: z.number().int().min(0).max(100000),

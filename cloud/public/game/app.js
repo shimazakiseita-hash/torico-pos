@@ -1,0 +1,283 @@
+// ミニゲームの画面の切り替え（えらぶ → あそぶ → 結果・ランキング）と、きせかえ
+
+import { COSTUMES, H, W, drawMascot, mascotReady, view, fetchRanking, loadSave, startSession, submitScore, unlockedCostumes, writeSave } from "./common.js";
+import * as tsumi from "./tsumi.js";
+
+/** ゲームの一覧（並び順のまま表示） */
+const GAMES = [tsumi];
+
+const save = loadSave();
+const $ = (id) => document.getElementById(id);
+let current = null; // 遊んでいるゲームのモジュール
+let session = null;
+let started = false; // スタートを押したか（ひとやすみから戻るときは合言葉を取り直さない）
+let lastScore = 0;
+let board = "today";
+
+// ── 画面の切り替え ──
+function show(view) {
+  for (const id of ["hub", "dress", "play", "result"]) $(id).hidden = id !== view;
+  if (view === "hub") renderHub();
+  if (view === "dress") renderDress();
+  window.scrollTo(0, 0);
+}
+document.addEventListener("click", (e) => {
+  const go = e.target.closest("[data-go]");
+  if (go) {
+    stopLoop();
+    show(go.dataset.go);
+  }
+});
+
+function paintMascot(canvas, costume) {
+  const ctx = canvas.getContext("2d");
+  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  const size = canvas.clientWidth || 80;
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, size, size);
+  drawMascot(ctx, size / 2, size * 0.56, size * 0.3, costume, { t: performance.now() / 1000 });
+}
+
+function nextCostume() {
+  return COSTUMES.find((c) => c.points > save.points);
+}
+
+function renderHub() {
+  $("points").textContent = `${save.points.toLocaleString()} pt`;
+  const next = nextCostume();
+  $("next-costume").textContent = next ? `あと ${(next.points - save.points).toLocaleString()} pt で「${next.name}」` : "きせかえを ぜんぶ あつめたよ！";
+  paintMascot($("me"), save.costume);
+  const list = $("games");
+  list.textContent = "";
+  for (const g of GAMES) {
+    const li = document.createElement("li");
+    li.className = "game";
+    const best = save.best[g.META.id];
+    li.innerHTML = `<h2></h2><p class="best"></p><button class="btn pink" type="button">あそぶ</button><p></p>`;
+    li.querySelector("h2").textContent = g.META.title;
+    li.querySelector(".best").textContent = best ? `じこベスト ${best.toLocaleString()}点` : "まだ あそんでいない";
+    li.querySelector("p:last-child").textContent = g.META.howto;
+    li.querySelector("button").addEventListener("click", () => openGame(g));
+    list.appendChild(li);
+  }
+}
+
+function renderDress() {
+  $("dress-points").textContent = `やきとりポイント ${save.points.toLocaleString()} pt`;
+  const list = $("costumes");
+  list.textContent = "";
+  const unlocked = new Set(unlockedCostumes(save.points).map((c) => c.id));
+  for (const c of COSTUMES) {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.type = "button";
+    const open = unlocked.has(c.id);
+    b.disabled = !open;
+    b.setAttribute("aria-pressed", String(save.costume === c.id));
+    const cv = document.createElement("canvas");
+    const label = document.createElement("span");
+    label.textContent = open ? c.name : `${c.points.toLocaleString()} pt`;
+    b.append(cv, label);
+    b.addEventListener("click", () => {
+      save.costume = c.id;
+      writeSave(save);
+      renderDress();
+    });
+    li.appendChild(b);
+    list.appendChild(li);
+    requestAnimationFrame(() => paintMascot(cv, c.id));
+  }
+}
+
+$("open-dress").addEventListener("click", () => show("dress"));
+
+// ── あそぶ ──
+const canvas = $("stage");
+const ctx = canvas.getContext("2d");
+let game = null;
+let raf = 0;
+let last = 0;
+let scale = 1;
+
+let offX = 0;
+let offY = 0;
+
+/** キャンバスは画面いっぱい。ゲームの 360×640 は収まる大きさで真ん中に置き、まわりは背景だけ見える */
+function fit() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  scale = Math.min(vw / W, vh / H);
+  offX = (vw - W * scale) / 2;
+  offY = (vh - H * scale) / 2;
+  Object.assign(view, { x0: -offX / scale, y0: -offY / scale, x1: W + offX / scale, y1: H + offY / scale });
+  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  canvas.style.width = `${vw}px`;
+  canvas.style.height = `${vh}px`;
+  canvas.width = Math.round(vw * dpr);
+  canvas.height = Math.round(vh * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, offX * dpr, offY * dpr);
+  if (game) game.draw(ctx);
+}
+window.addEventListener("resize", fit);
+
+function toGame(e) {
+  const r = canvas.getBoundingClientRect();
+  return [(e.clientX - r.left - offX) / scale, (e.clientY - r.top - offY) / scale];
+}
+for (const [ev, type] of [["pointerdown", "down"], ["pointermove", "move"], ["pointerup", "up"], ["pointercancel", "up"]]) {
+  canvas.addEventListener(ev, (e) => {
+    if (!game || !raf) return;
+    e.preventDefault();
+    if (type === "down") canvas.setPointerCapture?.(e.pointerId);
+    const [x, y] = toGame(e);
+    game.pointer(type, x, y);
+  });
+}
+
+function openGame(g) {
+  current = g;
+  game = g.createGame({ costume: save.costume });
+  started = false;
+  if (new URLSearchParams(location.search).has("debug")) window.__game = game;
+  $("ready-title").textContent = g.META.title;
+  $("ready-howto").textContent = g.META.howto;
+  $("ready").hidden = false;
+  show("play");
+  fit();
+}
+
+$("start").addEventListener("click", () => {
+  $("ready").hidden = true;
+  if (!started) {
+    started = true;
+    session = null;
+    startSession().then((s) => (session = s)); // ランキング用。つながらなくても遊べる
+  }
+  last = performance.now();
+  raf = requestAnimationFrame(loop);
+});
+
+function stopLoop() {
+  cancelAnimationFrame(raf);
+  raf = 0;
+}
+
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  game.update(dt);
+  game.draw(ctx);
+  if (game.over) {
+    stopLoop();
+    // 終わった画面を少し見せてから結果へ
+    setTimeout(() => finish(game.score), 900);
+    return;
+  }
+  raf = requestAnimationFrame(loop);
+}
+
+// 別のアプリに切り替えたら止め、戻ったら続きから
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && raf) {
+    stopLoop();
+    $("ready-title").textContent = "ひとやすみ";
+    $("ready-howto").textContent = "つづきから あそべるよ";
+    $("ready").hidden = false;
+  }
+});
+
+// ── 結果 ──
+function finish(score) {
+  lastScore = score;
+  const id = current.META.id;
+  const before = unlockedCostumes(save.points).length;
+  const prevBest = save.best[id] ?? 0;
+  const gained = Math.max(1, Math.round(score * current.META.pointRate));
+  save.points += gained;
+  save.plays++;
+  if (score > prevBest) save.best[id] = score;
+  writeSave(save);
+
+  $("result-game").textContent = current.META.title;
+  $("result-score").textContent = `${score.toLocaleString()}点`;
+  $("result-best").textContent = score > prevBest && prevBest > 0 ? "じこベスト こうしん！" : `じこベスト ${Math.max(prevBest, score).toLocaleString()}点`;
+  $("result-points").textContent = `やきとりポイント +${gained.toLocaleString()} pt（ぜんぶで ${save.points.toLocaleString()} pt）`;
+  const newOnes = unlockedCostumes(save.points).slice(before);
+  $("result-unlock").hidden = newOnes.length === 0;
+  $("result-unlock").textContent = newOnes.length ? `きせかえ「${newOnes.map((c) => c.name).join("」「")}」が つかえるように なったよ！` : "";
+  $("name").value = save.name;
+  $("submit-msg").textContent = score === 0 ? "0点は のせられないよ" : "";
+  $("submit-form").querySelector("button").disabled = score === 0;
+  board = "today";
+  show("result");
+  loadRanking();
+}
+
+async function loadRanking(highlight) {
+  for (const b of document.querySelectorAll("[data-board]")) b.setAttribute("aria-selected", String(b.dataset.board === board));
+  const ol = $("ranking");
+  ol.textContent = "";
+  try {
+    const top = await fetchRanking(current.META.id, board);
+    if (top.length === 0) {
+      ol.innerHTML = `<li class="small">まだ だれも のっていないよ</li>`;
+      return;
+    }
+    const myTag = save.player.slice(0, 6);
+    for (const r of top) {
+      const li = document.createElement("li");
+      if (r.tag === myTag || r.tag === highlight) li.className = "me";
+      li.innerHTML = `<span class="rank"></span><span class="nm"></span><span class="sc"></span>`;
+      li.querySelector(".rank").textContent = `${r.rank}位`;
+      li.querySelector(".nm").textContent = r.name;
+      li.querySelector(".sc").textContent = `${r.score.toLocaleString()}点`;
+      ol.appendChild(li);
+    }
+  } catch (e) {
+    ol.innerHTML = `<li class="small"></li>`;
+    ol.firstChild.textContent = e.message;
+  }
+}
+
+for (const b of document.querySelectorAll("[data-board]")) {
+  b.addEventListener("click", () => {
+    board = b.dataset.board;
+    loadRanking();
+  });
+}
+
+$("submit-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector("button");
+  const name = $("name").value.trim();
+  if (!name) {
+    $("submit-msg").textContent = "なまえを いれてね";
+    return;
+  }
+  if (!session) {
+    $("submit-msg").textContent = "つうしんが できなかったので のせられないよ。もういちど あそんでね";
+    return;
+  }
+  btn.disabled = true;
+  try {
+    const r = await submitScore({ game: current.META.id, player: save.player, name, score: lastScore, session });
+    save.name = name;
+    writeSave(save);
+    $("submit-msg").textContent = `のせたよ！ 今日 ${r.rank}位・歴代 ${r.allRank}位`;
+    session = null;
+    loadRanking();
+  } catch (err) {
+    $("submit-msg").textContent = err.message;
+    btn.disabled = false;
+  }
+});
+
+$("again").addEventListener("click", () => openGame(current));
+
+show("hub");
+mascotReady.then(() => {
+  if (!$("hub").hidden) renderHub();
+  if (!$("dress").hidden) renderDress();
+});

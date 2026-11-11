@@ -42,36 +42,34 @@ export function containsNgWord(name: string): boolean {
   return NG_WORDS.some((w) => key.includes(w));
 }
 
+/** ミニゲーム（cloud/public/game/）。ランキングはゲームごとに分ける */
+export const GAME_IDS = ["tsumi", "catch", "flight"] as const;
+export type GameId = (typeof GAME_IDS)[number];
+
+export const GAME_NAMES: Record<GameId, string> = {
+  tsumi: "つみつみ串",
+  catch: "流れ星キャッチ",
+  flight: "とりこフライト",
+};
+
 /**
- * 開始から seconds 秒で取りうる点数の上限。いちばん狭い間隔（190px）で一度も失敗せず、
- * 出てきたものを全部取れたとしたときの期待値を出し、1.5倍＋100点の余裕をもたせる。
- * 速さ＝min(340, 150＋2.4×よけた数)、1つよけるごとに 1点＋アイテム3点×0.43＋10点×0.06＋（敵が出る面なら）5点×0.55、
- * 40個ごとのボスは 体力×2＋30点（体力＝8＋周回×4、0.32秒に1発）
- * ※ミニゲームを作り直したら（docs/tasks.md フェーズ7）、その仕組みに合わせて見直す
+ * 1秒あたりに取りうる点数の上限（ゲームの作りから出した理論上の最大。各ゲームのファイルの先頭に計算を書いてある）。
+ * ゲームの点数の付け方を変えたら、ここも見直す
  */
-export function maxPlausibleScore(seconds: number): number {
-  let t = 0;
-  let passed = 0;
-  let score = 0;
-  for (;;) {
-    t += 190 / Math.min(340, 150 + 2.4 * passed);
-    if (t > seconds) break;
-    passed++;
-    const stage = Math.floor(passed / 10);
-    const jellySea = stage >= 4 || stage % 4 >= 2;
-    score += 1 + 0.43 * 3 + 0.06 * 10 + (jellySea ? 0.55 * 5 : 0);
-    if (passed % 40 === 0) {
-      const hp = 8 + (passed / 40 - 1) * 4;
-      score += hp * 2 + 30;
-      t += hp * 0.32;
-    }
-  }
-  return Math.round(score * 1.5 + 100);
+export const MAX_POINTS_PER_SECOND: Record<GameId, number> = {
+  tsumi: 140,
+  catch: 200,
+  flight: 60,
+};
+
+/** 開始から seconds 秒で取りうる点数の上限（理論上の最大に1.5倍＋100点の余裕） */
+export function maxPlausibleScore(game: GameId, seconds: number): number {
+  return Math.round(Math.max(0, seconds) * MAX_POINTS_PER_SECOND[game] * 1.5 + 100);
 }
 
 /** 遊んだ時間（サーバーが測ったもの）に対してありえない点数を弾く */
-export function isPlausibleScore(score: number, playMs: number): boolean {
-  return score >= 0 && playMs >= 0 && score <= maxPlausibleScore(playMs / 1000);
+export function isPlausibleScore(game: GameId, score: number, playMs: number): boolean {
+  return score >= 0 && playMs >= 0 && score <= maxPlausibleScore(game, playMs / 1000);
 }
 
 /** プレイヤーごとに1件。点数が上がったときだけ記録を更新し、名前はいつでも最新にする */

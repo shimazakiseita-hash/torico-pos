@@ -12,7 +12,11 @@ const WEIGHTS = [
   ["ZenMaruGothic-Bold.ttf", "zen-maru-gothic-700.woff2"],
   ["ZenMaruGothic-Black.ttf", "zen-maru-gothic-900.woff2"],
 ] as const;
-const TEXT_SOURCES = ["../src/page.ts", "../src/index.ts"];
+const TEXT_SOURCES = [
+  "../src/page.ts",
+  "../src/index.ts",
+  ...["index.html", "app.js", "common.js", "tsumi.js", "catch.js", "flight.js"].map((f) => `../public/game/${f}`),
+];
 const out = new URL("../public/", import.meta.url);
 
 async function download(url: string): Promise<Buffer> {
@@ -32,7 +36,8 @@ for (const [name, width] of [["logo", 480], ["mascot", 240]] as const) {
   console.log(`brand/${name}.webp`);
 }
 
-const sources = await Promise.all(TEXT_SOURCES.map((f) => readFile(new URL(f, import.meta.url), "utf8")));
+// まだ作っていないゲームのファイルは飛ばす
+const sources = await Promise.all(TEXT_SOURCES.map((f) => readFile(new URL(f, import.meta.url), "utf8").catch(() => "")));
 const ascii = Array.from({ length: 95 }, (_, i) => String.fromCharCode(32 + i)).join("");
 const text = [...new Set([...ascii, ..."♡♥", ...sources.join("").replace(/[\x00-\x7f\s]/g, "")])].join("");
 for (const [ttf, woff2] of WEIGHTS) {

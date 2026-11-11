@@ -52,17 +52,17 @@ describe("containsNgWord", () => {
 });
 
 describe("maxPlausibleScore / isPlausibleScore", () => {
-  it("遊んだ時間がのびるほど上限も上がる（ボスのぶんも入る）", () => {
-    const at = [30, 60, 120, 300, 600, 900].map(maxPlausibleScore);
-    expect(at).toEqual([...at].sort((a, b) => a - b));
-    expect(maxPlausibleScore(0)).toBe(100);
+  it("遊んだ時間に比例して上限が上がる（ゲームごとに傾きが違う）", () => {
+    expect(maxPlausibleScore("tsumi", 0)).toBe(100);
+    expect(maxPlausibleScore("catch", 60)).toBe(60 * 200 * 1.5 + 100);
+    expect(maxPlausibleScore("flight", 60)).toBeLessThan(maxPlausibleScore("catch", 60));
   });
 
-  it("本物の上位記録（約2500点）は5分あれば通り、今回の不正（20000点）は15分でも通らない", () => {
-    expect(isPlausibleScore(2519, 5 * 60_000)).toBe(true);
-    expect(isPlausibleScore(20000, 15 * 60_000)).toBe(false);
-    expect(isPlausibleScore(1000, 30_000)).toBe(false);
-    expect(isPlausibleScore(-1, 30_000)).toBe(false);
+  it("時間に見合わない点数・マイナスの点数は通らない", () => {
+    expect(isPlausibleScore("catch", 5000, 60_000)).toBe(true);
+    expect(isPlausibleScore("flight", 5000, 30_000)).toBe(false);
+    expect(isPlausibleScore("tsumi", 1000, 3_000)).toBe(false);
+    expect(isPlausibleScore("tsumi", -1, 30_000)).toBe(false);
   });
 });
 
@@ -94,13 +94,14 @@ describe("jstDateKey", () => {
 });
 
 describe("rankingSubmitSchema", () => {
-  it("プレイヤーID・名前・点数・合言葉を受け付ける（遊んだ時間はもう受け取らない）", () => {
-    const ok = { player: "a1b2c3d4e5f6", name: "たい", score: 5, session: "0123456789abcdef.1790000000000.sig" };
+  it("ゲーム・プレイヤーID・名前・点数・合言葉を受け付ける（遊んだ時間は受け取らない）", () => {
+    const ok = { game: "catch", player: "a1b2c3d4e5f6", name: "とりこ", score: 5, session: "0123456789abcdef.1790000000000.sig" };
     expect(rankingSubmitSchema.safeParse(ok).success).toBe(true);
+    expect(rankingSubmitSchema.safeParse({ ...ok, game: "puzzle" }).success).toBe(false);
     expect(rankingSubmitSchema.safeParse({ ...ok, player: "short" }).success).toBe(false);
     expect(rankingSubmitSchema.safeParse({ ...ok, player: "ABCDEF123456" }).success).toBe(false);
     expect(rankingSubmitSchema.safeParse({ ...ok, name: "x".repeat(41) }).success).toBe(false);
-    expect(rankingSubmitSchema.safeParse({ player: "a1b2c3d4e5f6", name: "たい", score: 5, playMs: 20000 }).success).toBe(false);
+    expect(rankingSubmitSchema.safeParse({ game: "catch", player: "a1b2c3d4e5f6", name: "とりこ", score: 5, playMs: 20000 }).success).toBe(false);
   });
 });
 

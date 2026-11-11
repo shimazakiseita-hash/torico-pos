@@ -1,11 +1,12 @@
 /**
  * お客さん向け呼び出し状況ページ（Cloudflare Workers）。
  * サーバーPCの public-sync が今日の番号と状態だけを PUT し、お客さんのスマホが GET で読む。
- * ミニゲームのランキング（今日・歴代）と、営業終了の表示の設定もここに置く
+ * ミニゲーム（cloud/public/game/、静的ファイル）のランキング（ゲームごとに今日・歴代）と、営業終了の表示の設定もここに置く
  */
 import { DurableObject } from "cloudflare:workers";
 import { isToday, lookupNumber, type PublicStatus } from "../../src/lib/publicStatus";
 import {
+  GAME_IDS,
   RANKING_SIZE,
   allowSubmission,
   containsNgWord,
@@ -16,9 +17,10 @@ import {
   playerTag,
   sortRanking,
   upsertBest,
+  type GameId,
   type RankingEntry,
 } from "../../src/lib/ranking";
-import { publicStatusSchema, rankingSubmitSchema, siteConfigSchema } from "../../src/lib/schemas";
+import { gameIdSchema, publicStatusSchema, rankingSubmitSchema, siteConfigSchema } from "../../src/lib/schemas";
 import { SESSION_TTL_MS, createSession, verifySession } from "../../src/lib/session";
 import { PAGE_HTML } from "./page";
 
@@ -38,16 +40,12 @@ export type SiteConfig = { closed: boolean };
 /** today：今日（日ごと）、all：歴代（これまでの最高点） */
 export type BoardName = "today" | "all";
 
-const DAY_PREFIX = "ranking:2"; // ranking:2026-11-21 のような日ごとのキー
-const ALL_KEY = "ranking:all";
+/** 保存のキー：ranking:<ゲーム>:2026-11-21（日ごと）と ranking:<ゲーム>:all（歴代） */
+const dayKey = (game: GameId, date: string) => `ranking:${game}:${date}`;
+const allKey = (game: GameId) => `ranking:${game}:all`;
 
 function toRows(entries: readonly RankingEntry[]): RankingRow[] {
-  return sortRanking(entries).map((e, i) => ({ rank: i + 1, name: e.name, tag: tagOf(e), score: e.score }));
-}
-
-/** 番号で登録していたころの記録（player がない）も表示・削除できるように */
-function tagOf(e: RankingEntry): string {
-  return e.player ? playerTag(e.player) : `n${(e as { number?: number }).number ?? ""}`;
+  return sortRanking(entries).map((e, i) => ({ rank: i + 1, name: e.name, tag: playerTag(e.player), score: e.score }));
 }
 
 /** 最新の呼び出し状況・ランキング・ページの設定を持つ */
@@ -71,36 +69,36 @@ export class StatusStore extends DurableObject<Env> {
     await this.ctx.storage.put("config", config);
   }
 
-  private async day(date: string): Promise<RankingEntry[]> {
-    return (await this.ctx.storage.get<RankingEntry[]>(`ranking:${date}`)) ?? [];
+  private async day(game: GameId, date: string): Promise<RankingEntry[]> {
+    return (await this.ctx.storage.get<RankingEntry[]>(dayKey(game, date))) ?? [];
   }
 
   /** 歴代。まだなければ、これまでの日ごとのランキングから作る */
-  private async allTime(): Promise<RankingEntry[]> {
-    const saved = await this.ctx.storage.get<RankingEntry[]>(ALL_KEY);
+  private async allTime(game: GameId): Promise<RankingEntry[]> {
+    const saved = await this.ctx.storage.get<RankingEntry[]>(allKey(game));
     if (saved) return saved;
-    const days = await this.ctx.storage.list<RankingEntry[]>({ prefix: DAY_PREFIX });
+    const days = await this.ctx.storage.list<RankingEntry[]>({ prefix: `ranking:${game}:2` });
     const merged = mergeBoards([...days.keys()].sort().map((k) => days.get(k) ?? []));
-    await this.ctx.storage.put(ALL_KEY, merged);
+    await this.ctx.storage.put(allKey(game), merged);
     return merged;
   }
 
-  private async entries(board: BoardName | string): Promise<RankingEntry[]> {
-    if (board === "all") return this.allTime();
-    return this.day(board === "today" ? jstDateKey() : board);
+  private async entries(game: GameId, board: BoardName | string): Promise<RankingEntry[]> {
+    if (board === "all") return this.allTime(game);
+    return this.day(game, board === "today" ? jstDateKey() : board);
   }
 
-  async ranking(board: BoardName): Promise<RankingRow[]> {
-    return toRows(await this.entries(board)).slice(0, RANKING_SIZE);
+  async ranking(game: GameId, board: BoardName): Promise<RankingRow[]> {
+    return toRows(await this.entries(game, board)).slice(0, RANKING_SIZE);
   }
 
   /** スタッフ用：全員分（board のほか、YYYY-MM-DD でその日も見られる） */
-  async rows(board: BoardName | string): Promise<RankingRow[]> {
-    return toRows(await this.entries(board));
+  async rows(game: GameId, board: BoardName | string): Promise<RankingRow[]> {
+    return toRows(await this.entries(game, board));
   }
 
   /** 今日 と 歴代 の両方に記録する。合言葉は1回きり（使った番号は期限まで覚えておく） */
-  async submit(entry: RankingEntry, ip: string, sessionId: string): Promise<SubmitResult> {
+  async submit(game: GameId, entry: RankingEntry, ip: string, sessionId: string): Promise<SubmitResult> {
     const now = Date.now();
     const allowed = allowSubmission(this.submissions.get(ip) ?? [], now);
     this.submissions.set(ip, allowed.times);
@@ -108,22 +106,22 @@ export class StatusStore extends DurableObject<Env> {
     if (await this.ctx.storage.get(`used:${sessionId}`)) return { ok: false, error: "この かいの きろくは もう のせたよ" };
     await this.ctx.storage.put(`used:${sessionId}`, now + SESSION_TTL_MS);
     await this.pruneUsed(now);
-    return this.record(entry);
+    return this.record(game, entry);
   }
 
   /** スタッフ用：記録を手で載せる（古いページで遊んで登録できなかった人など）。tag を渡すと、そのIDの人の記録にする */
-  async add(name: string, score: number, tag: string | null): Promise<SubmitResult> {
-    const found = tag ? (await this.allTime()).find((e) => e.player && tagOf(e) === tag) : undefined;
+  async add(game: GameId, name: string, score: number, tag: string | null): Promise<SubmitResult> {
+    const found = tag ? (await this.allTime(game)).find((e) => playerTag(e.player) === tag) : undefined;
     if (tag && !found) return { ok: false, error: `ID ${tag} の人が見つかりません` };
     const player = found?.player ?? [...crypto.getRandomValues(new Uint8Array(8))].map((b) => b.toString(16).padStart(2, "0")).join("");
-    return this.record({ player, name, score, at: new Date().toISOString() });
+    return this.record(game, { player, name, score, at: new Date().toISOString() });
   }
 
-  private async record(entry: RankingEntry): Promise<SubmitResult> {
+  private async record(game: GameId, entry: RankingEntry): Promise<SubmitResult> {
     const date = jstDateKey(new Date(entry.at));
-    const today = upsertBest(await this.day(date), entry);
-    const all = upsertBest(await this.allTime(), entry);
-    await this.ctx.storage.put({ [`ranking:${date}`]: today, [ALL_KEY]: all });
+    const today = upsertBest(await this.day(game, date), entry);
+    const all = upsertBest(await this.allTime(game), entry);
+    await this.ctx.storage.put({ [dayKey(game, date)]: today, [allKey(game)]: all });
     const rows = toRows(today);
     const rankOf = (list: RankingRow[]) => list.find((r) => r.tag === playerTag(entry.player))!.rank;
     return { ok: true, rank: rankOf(rows), allRank: rankOf(toRows(all)), top: rows.slice(0, RANKING_SIZE) };
@@ -138,12 +136,12 @@ export class StatusStore extends DurableObject<Env> {
 
   /** 不適切な名前などは、今日・歴代・過去の日のどこからでも消す。消した記録の数を返す */
   async remove(tag: string): Promise<number> {
-    await this.allTime();
+    for (const game of GAME_IDS) await this.allTime(game);
     const boards = await this.ctx.storage.list<RankingEntry[]>({ prefix: "ranking:" });
     let removed = 0;
     const updates: Record<string, RankingEntry[]> = {};
     for (const [key, board] of boards) {
-      const next = board.filter((e) => tagOf(e) !== tag);
+      const next = board.filter((e) => playerTag(e.player) !== tag);
       if (next.length < board.length) {
         removed += board.length - next.length;
         updates[key] = next;
@@ -225,32 +223,36 @@ export default {
     // スタッフ用：記録を手で載せる
     if (url.pathname === "/api/ranking/add" && request.method === "POST") {
       if (!authorized(request, env.PUSH_TOKEN)) return json({ error: "認証に失敗しました" }, 401);
-      const body = (await readJson(request)) as { name?: unknown; score?: unknown; tag?: unknown } | undefined;
+      const body = (await readJson(request)) as { game?: unknown; name?: unknown; score?: unknown; tag?: unknown } | undefined;
+      const game = gameIdSchema.safeParse(body?.game);
+      if (!game.success) return json({ error: `game を指定してください（${GAME_IDS.join("・")}）` }, 400);
       const name = typeof body?.name === "string" ? normalizeName(body.name) : null;
       const score = body?.score;
       const tag = typeof body?.tag === "string" && /^[a-z0-9]{1,12}$/.test(body.tag) ? body.tag : null;
       if (!name || typeof score !== "number" || !Number.isInteger(score) || score < 0 || score > 100000) return json({ error: "名前（1〜10文字）と点数を指定してください" }, 400);
-      const result = await store.add(name, score, tag);
+      const result = await store.add(game.data, name, score, tag);
       return result.ok ? json(result) : json({ error: result.error }, 400);
     }
 
     if (url.pathname === "/api/ranking") {
       if (request.method === "GET") {
+        const game = gameIdSchema.safeParse(url.searchParams.get("game"));
+        if (!game.success) return json({ error: `game を指定してください（${GAME_IDS.join("・")}）` }, 400);
         const param = url.searchParams.get("board") ?? "today";
         // スタッフ用（?all=1 は認証つき）：全員分を見る。board=YYYY-MM-DD でその日も
         if (url.searchParams.has("all")) {
           if (!authorized(request, env.PUSH_TOKEN)) return json({ error: "認証に失敗しました" }, 401);
           if (!/^(today|all|\d{4}-\d{2}-\d{2})$/.test(param)) return json({ error: "board が不正です" }, 400);
-          return json({ rows: await store.rows(param) });
+          return json({ rows: await store.rows(game.data, param) });
         }
         const board: BoardName = param === "all" ? "all" : "today";
-        return json({ board, top: await store.ranking(board) });
+        return json({ game: game.data, board, top: await store.ranking(game.data, board) });
       }
       if (request.method === "POST") {
         // お客さん（子どもも）に見せるメッセージなので、ひらがなでやさしく
         const parsed = rankingSubmitSchema.safeParse(await readJson(request));
         if (!parsed.success) return json({ error: "形式が不正です" }, 400);
-        const { player, score } = parsed.data;
+        const { game, player, score } = parsed.data;
         const name = normalizeName(parsed.data.name);
         if (!name) return json({ error: "なまえは 1〜10もじに してね" }, 400);
         if (containsNgWord(name)) return json({ error: "その なまえは つかえないよ。べつの なまえに してね" }, 400);
@@ -262,9 +264,9 @@ export default {
           return json({ error: expired ? "じかんが たちすぎたよ。もういっかい あそんでね" : "きろくを たしかめられなかったよ" }, 400);
         }
         const playMs = now - session.startedAt;
-        if (!isPlausibleScore(score, playMs)) return json({ error: "きろくを たしかめられなかったよ" }, 400);
+        if (!isPlausibleScore(game, score, playMs)) return json({ error: "きろくを たしかめられなかったよ" }, 400);
         const ip = request.headers.get("CF-Connecting-IP") ?? "local";
-        const result = await store.submit({ player, name, score, at: new Date(now).toISOString() }, ip, session.id);
+        const result = await store.submit(game, { player, name, score, at: new Date(now).toISOString() }, ip, session.id);
         return result.ok ? json(result) : json({ error: result.error }, 400);
       }
       if (request.method === "DELETE") {

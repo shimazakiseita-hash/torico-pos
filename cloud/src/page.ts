@@ -68,10 +68,13 @@ export const PAGE_HTML = `<!doctype html>
   .ready li { background: linear-gradient(180deg, var(--pink-400), var(--magenta)); box-shadow: 0 4px 0 #8c2f6e; color: #fff; font-size: 2rem; }
   .nums li.me { outline: 4px solid var(--cyan); outline-offset: 2px; }
   .empty { margin: 0; opacity: 0.75; }
+  .game { display: block; min-height: 3.75rem; padding: 1rem; border-radius: 18px; background: var(--cyan); box-shadow: 0 5px 0 #3bb9c2; color: var(--space-900); font-size: 1.375rem; font-weight: 900; text-decoration: none; }
+  .game:active { transform: translateY(4px); box-shadow: 0 1px 0 #3bb9c2; }
   .mascot { display: block; width: 5.75rem; height: 5.75rem; margin: 0.25rem auto 0; border: 5px solid var(--pink-200); border-radius: 50%; background: #fff; object-fit: cover; }
   #updated { margin: 0; font-size: 0.8125rem; opacity: 0.85; }
   .closed h2 { margin: 0 0 0.5rem; font-size: 1.5rem; }
   .closed p { margin: 0; }
+  .closed p + p { margin-top: 0.75rem; }
 </style>
 </head>
 <body>
@@ -81,6 +84,7 @@ export const PAGE_HTML = `<!doctype html>
   <section id="closed" class="card closed" hidden>
     <h2>ありがとうございました！</h2>
     <p>本日の営業は終了しました。<br>ご来店ありがとうございました ♥</p>
+    <p>ミニゲームは これからも あそべます</p>
   </section>
 
   <section id="mine" class="card" aria-label="あなたの番号">
@@ -105,6 +109,8 @@ export const PAGE_HTML = `<!doctype html>
     <div class="stat"><p>前に待っている組数</p><b id="ahead"></b></div>
     <div class="stat"><p>待ち時間のめやす</p><b id="eta"></b></div>
   </div>
+
+  <a class="game" href="/game/">▶ 待っている間にミニゲーム</a>
 
   <p id="stale" hidden>最新の状況を取得できていません。店頭の画面をご確認ください</p>
 

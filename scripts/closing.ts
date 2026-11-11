@@ -1,12 +1,13 @@
 /**
  * お客さん向けページを営業終了の表示にする・戻す（スタッフ用。.env.public の URL と合言葉を使う）。
  * 使い方: npm run closing（いまの設定を見る）
- *         npm run closing -- on（営業終了にする。今日と歴代のランキングを backups/ に保存）
+ *         npm run closing -- on（営業終了にする。今日と歴代のランキングを backups/ に保存。ミニゲームはこのあとも遊べる）
  *         npm run closing -- off（番号の表示に戻す）
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { businessDayOf } from "../src/lib/businessDay";
+import { GAME_IDS } from "../src/lib/ranking";
 
 type Config = { closed: boolean };
 
@@ -33,15 +34,19 @@ async function putConfig(config: Config): Promise<void> {
   if (!res.ok) throw new Error(`設定を変えられませんでした（${res.status} ${await res.text()}）`);
 }
 
-/** 念のため、ランキングをこのPCにも残す */
+/** 念のため、ランキングをこのPCにも残す（ゲームごとの記録を1つのファイルに） */
 async function saveRanking(board: string, file: string): Promise<number> {
-  const res = await fetch(`${base}/api/ranking?all=1&board=${board}`, { headers: auth });
-  const body = (await res.json()) as { rows?: unknown[]; error?: string };
-  if (!body.rows) throw new Error(body.error ?? `ランキングを取得できませんでした（${res.status}）`);
+  const all: Record<string, unknown[]> = {};
+  for (const game of GAME_IDS) {
+    const res = await fetch(`${base}/api/ranking?all=1&game=${game}&board=${board}`, { headers: auth });
+    const body = (await res.json()) as { rows?: unknown[]; error?: string };
+    if (!body.rows) throw new Error(body.error ?? `ランキングを取得できませんでした（${res.status}）`);
+    all[game] = body.rows;
+  }
   const dir = process.env.BACKUP_DIR ?? path.join(process.cwd(), "backups");
   await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, file), JSON.stringify(body.rows, null, 2) + "\n");
-  return body.rows.length;
+  await writeFile(path.join(dir, file), JSON.stringify(all, null, 2) + "\n");
+  return Object.values(all).reduce((n, rows) => n + rows.length, 0);
 }
 
 async function main() {
