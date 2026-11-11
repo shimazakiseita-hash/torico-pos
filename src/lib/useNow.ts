@@ -11,10 +11,3 @@ export function useNow(offsetMs = 0, intervalMs = 1000): number {
   }, [intervalMs]);
   return now + offsetMs;
 }
-
-export function formatElapsed(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
