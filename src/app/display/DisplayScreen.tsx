@@ -53,12 +53,12 @@ export function DisplayScreen() {
             整理券をお持ちのうえ、お渡し口へどうぞ <span className="text-pink-500">♥</span>
           </p>
           <Image
-            src="/brand/mascot.jpg"
+            src="/brand/mascot.png"
             alt=""
-            width={549}
-            height={526}
+            width={477}
+            height={454}
             priority
-            className="drift absolute -bottom-2 -left-2 h-36 w-36 rounded-full border-[6px] border-pink-200 bg-white object-cover"
+            className="drift absolute -bottom-3 -left-3 h-auto w-40"
           />
         </section>
 

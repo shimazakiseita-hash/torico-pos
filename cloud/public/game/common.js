@@ -63,7 +63,7 @@ export function drawSpace(ctx, t, scroll = 0) {
   }
 }
 
-// ── マスコット：白背景の画像なので、白い丸枠に入れて描く（素材は切り抜きと縮小のみ） ──
+// ── マスコット（背景を抜いた画像。素材は切り抜きと縮小のみ） ──
 const mascotImg = new Image();
 /** マスコットの画像が読めたら解決する（一覧やきせかえの絵を描き直すため） */
 export const mascotReady = new Promise((resolve) => {
@@ -91,38 +91,28 @@ export function drawMascot(ctx, x, y, r, costume = "none", opts = {}) {
   ctx.translate(x, y);
   ctx.rotate(tilt);
   if (costume === "rainbow") {
+    // 色が変わる、ふんわりした光（輪郭は付けない）
     const hue = (t * 120) % 360;
-    ctx.fillStyle = `hsla(${hue},90%,70%,0.55)`;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 1.3, 0, Math.PI * 2);
-    ctx.fill();
+    const g = ctx.createRadialGradient(0, 0, r * 0.6, 0, 0, r * 1.5);
+    g.addColorStop(0, `hsla(${hue},90%,70%,0.6)`);
+    g.addColorStop(1, `hsla(${(hue + 60) % 360},90%,70%,0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(-r * 1.6, -r * 1.6, r * 3.2, r * 3.2);
   }
   if (costume === "halo") {
     ctx.strokeStyle = COLORS.beak;
     ctx.lineWidth = r * 0.12;
     ctx.beginPath();
-    ctx.ellipse(0, -r * 1.12, r * 0.55, r * 0.16, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -r * 1.38, r * 0.55, r * 0.16, 0, 0, Math.PI * 2);
     ctx.stroke();
   }
-  // 白い丸と、ピンクの縁
-  ctx.fillStyle = "#fff";
-  ctx.beginPath();
-  ctx.arc(0, 0, r, 0, Math.PI * 2);
-  ctx.fill();
+  // とりは丸で囲まず、そのまま描く（背景を抜いた画像。幅は半径の約2.3倍）
   if (mascotImg.complete && mascotImg.naturalWidth) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.94, 0, Math.PI * 2);
-    ctx.clip();
-    const s = (r * 2.05) / mascotImg.naturalWidth;
-    ctx.drawImage(mascotImg, -mascotImg.naturalWidth * s * 0.5, -mascotImg.naturalHeight * s * 0.5, mascotImg.naturalWidth * s, mascotImg.naturalHeight * s);
-    ctx.restore();
+    const s = (r * 2.3) / mascotImg.naturalWidth;
+    const w = mascotImg.naturalWidth * s;
+    const h = mascotImg.naturalHeight * s;
+    ctx.drawImage(mascotImg, -w / 2, -h / 2 - r * 0.08, w, h);
   }
-  ctx.strokeStyle = COLORS.pink200;
-  ctx.lineWidth = Math.max(2, r * 0.1);
-  ctx.beginPath();
-  ctx.arc(0, 0, r, 0, Math.PI * 2);
-  ctx.stroke();
   drawAccessory(ctx, r, costume);
   ctx.restore();
 }

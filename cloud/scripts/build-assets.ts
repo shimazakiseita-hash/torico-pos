@@ -28,9 +28,9 @@ async function download(url: string): Promise<Buffer> {
 await mkdir(new URL("brand/", out), { recursive: true });
 await mkdir(new URL("fonts/", out), { recursive: true });
 
-// 画面幅の2倍まであれば十分なので縮めて WebP にする（元は public/brand の白背景JPG）
-for (const [name, width] of [["logo", 480], ["mascot", 240]] as const) {
-  const src = new URL(`../../public/brand/${name}.jpg`, import.meta.url);
+// 画面幅の2倍まであれば十分なので縮めて WebP にする（元は public/brand の logo.jpg と、背景を抜いた mascot.png）
+for (const [name, source, width] of [["logo", "logo.jpg", 480], ["mascot", "mascot.png", 300]] as const) {
+  const src = new URL(`../../public/brand/${source}`, import.meta.url);
   const file = new URL(`brand/${name}.webp`, out);
   await sharp(src.pathname).resize({ width }).webp({ quality: 82 }).toFile(file.pathname);
   console.log(`brand/${name}.webp`);

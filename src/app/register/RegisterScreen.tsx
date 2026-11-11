@@ -404,11 +404,11 @@ function IssuedView({ order, onNext }: { order: CreatedOrder; onNext: () => void
               </div>
             </div>
             <Image
-              src="/brand/mascot.jpg"
+              src="/brand/mascot.png"
               alt=""
-              width={549}
-              height={526}
-              className="drift absolute -right-[20%] -bottom-[8%] w-[34%] rounded-full bg-white shadow-[0_0.4rem_0_rgb(0_0_0/0.3)]"
+              width={477}
+              height={454}
+              className="drift absolute -right-[22%] -bottom-[10%] w-[40%] drop-shadow-[0_0.4rem_0_rgb(0_0_0/0.3)]"
             />
           </div>
         </div>

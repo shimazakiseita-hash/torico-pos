@@ -70,7 +70,7 @@ export const PAGE_HTML = `<!doctype html>
   .empty { margin: 0; opacity: 0.75; }
   .game { display: block; min-height: 3.75rem; padding: 1rem; border-radius: 18px; background: var(--cyan); box-shadow: 0 5px 0 #3bb9c2; color: var(--space-900); font-size: 1.375rem; font-weight: 900; text-decoration: none; }
   .game:active { transform: translateY(4px); box-shadow: 0 1px 0 #3bb9c2; }
-  .mascot { display: block; width: 5.75rem; height: 5.75rem; margin: 0.25rem auto 0; border: 5px solid var(--pink-200); border-radius: 50%; background: #fff; object-fit: cover; }
+  .mascot { display: block; width: 7rem; height: auto; margin: 0.25rem auto 0; filter: drop-shadow(0 4px 0 rgb(0 0 0 / 0.2)); }
   #updated { margin: 0; font-size: 0.8125rem; opacity: 0.85; }
   .closed h2 { margin: 0 0 0.5rem; font-size: 1.5rem; }
   .closed p { margin: 0; }
@@ -126,7 +126,7 @@ export const PAGE_HTML = `<!doctype html>
     <p id="waiting-empty" class="empty" hidden>いまはありません</p>
   </section>
 
-  <img class="mascot" src="/brand/mascot.webp" alt="" width="240" height="230">
+  <img class="mascot" src="/brand/mascot.webp" alt="" width="300" height="286">
   <p id="updated"></p>
 </main>
 <script>

@@ -275,11 +275,11 @@ function SalesCard({ s }: { s: Summary | null }) {
             style={{ width: `${progress}%` }}
           />
           <Image
-            src="/brand/mascot.jpg"
+            src="/brand/mascot.png"
             alt=""
-            width={549}
-            height={526}
-            className="absolute top-1/2 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow transition-[left] duration-700"
+            width={477}
+            height={454}
+            className="absolute top-1/2 w-11 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_2px_2px_rgb(0_0_0/0.25)] transition-[left] duration-700"
             style={{ left: `${progress}%` }}
           />
         </div>
