@@ -18,9 +18,11 @@ import { useNow } from "@/lib/useNow";
 import { usePolling } from "@/lib/usePolling";
 
 const panel = "panel flex min-h-0 flex-col p-4";
+const GRILL_POLL_MS = 1000;
 
 export function GrillScreen() {
-  const orders = usePolling<Order[]>("/api/orders?status=waiting,ready");
+  // 焼き場は新しい注文を2秒以内に出すため1秒ごと（ほかの画面は2秒ごと）
+  const orders = usePolling<Order[]>("/api/orders?status=waiting,ready", GRILL_POLL_MS);
   const now = useNow(orders.clockOffsetMs);
   const toast = useToast();
   const { awake, chime } = useKiosk();

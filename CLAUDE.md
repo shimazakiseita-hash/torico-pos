@@ -22,7 +22,7 @@
 - DB：SQLite（`better-sqlite3`）、ファイルは `data/torico.db`
 - スタイル：Tailwind CSS。色は `docs/design.md` のトークンを theme に登録して使う
 - フォント：`@fontsource/zen-maru-gothic` をローカル同梱
-- 画面更新：2秒間隔のポーリング（WebSocket・SSEは使わない）
+- 画面更新：2秒間隔のポーリング（焼き場だけ1秒。WebSocket・SSEは使わない）
 - テスト：Vitest（料金・お釣り計算、状態遷移、営業日、集計）
 - 開発：WSL2 Ubuntu 24.04 ／ 本番：ネイティブ Ubuntu 26.04。Node.js は両方で同じメジャーバージョン（`.nvmrc` で固定）
 - Dockerは使わない
