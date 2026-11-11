@@ -72,18 +72,26 @@ export const mascotReady = new Promise((resolve) => {
 });
 mascotImg.src = "/brand/mascot.webp";
 
-/** きせかえ。points は「やきとりポイント」の累計で、これを超えると使えるようになる */
+/** きせかえ（ガチャで出る。rarity は ★の数。0 は はじめから持っている） */
 export const COSTUMES = [
-  { id: "none", name: "そのまま", points: 0 },
-  { id: "hachimaki", name: "ねじりはちまき", points: 300 },
-  { id: "star", name: "星のヘアピン", points: 800 },
-  { id: "ribbon", name: "ハートのリボン", points: 1500 },
-  { id: "wizard", name: "まほうつかい", points: 2500 },
-  { id: "crown", name: "王かん", points: 4000 },
-  { id: "halo", name: "天使のわっか", points: 6000 },
-  { id: "helmet", name: "うちゅうヘルメット", points: 9000 },
-  { id: "rainbow", name: "にじいろオーラ", points: 13000 },
+  { id: "none", name: "そのまま", rarity: 0 },
+  { id: "hachimaki", name: "ねじりはちまき", rarity: 1 },
+  { id: "star", name: "星のヘアピン", rarity: 1 },
+  { id: "ribbon", name: "ハートのリボン", rarity: 1 },
+  { id: "sunglasses", name: "サングラス", rarity: 1 },
+  { id: "bowtie", name: "ちょうネクタイ", rarity: 1 },
+  { id: "negi", name: "ねぎぼうし", rarity: 1 },
+  { id: "wizard", name: "まほうつかい", rarity: 2 },
+  { id: "crown", name: "王かん", rarity: 2 },
+  { id: "chef", name: "コックさん", rarity: 2 },
+  { id: "halo", name: "天使のわっか", rarity: 2 },
+  { id: "helmet", name: "うちゅうヘルメット", rarity: 3 },
+  { id: "rainbow", name: "にじいろオーラ", rarity: 3 },
+  { id: "comet", name: "流れ星のしっぽ", rarity: 3 },
 ];
+
+/** 前の版（ポイントの累計で もらえた）で 持っていた きせかえ */
+const LEGACY_UNLOCK = { hachimaki: 300, star: 800, ribbon: 1500, wizard: 2500, crown: 4000, halo: 6000, helmet: 9000, rainbow: 13000 };
 
 export function drawMascot(ctx, x, y, r, costume = "none", opts = {}) {
   const { tilt = 0, t = 0 } = opts;
@@ -98,6 +106,15 @@ export function drawMascot(ctx, x, y, r, costume = "none", opts = {}) {
     g.addColorStop(1, `hsla(${(hue + 60) % 360},90%,70%,0)`);
     ctx.fillStyle = g;
     ctx.fillRect(-r * 1.6, -r * 1.6, r * 3.2, r * 3.2);
+  }
+  if (costume === "comet") {
+    // うしろに ながれる 星のしっぽ
+    for (let i = 0; i < 6; i++) {
+      const k = (t * 1.5 + i / 6) % 1;
+      ctx.fillStyle = `rgba(255,${200 + i * 8},120,${1 - k})`;
+      star(ctx, -r * (1 + k * 1.6), Math.sin(t * 4 + i) * r * 0.3, r * (0.22 - k * 0.12), r * (0.09 - k * 0.05));
+      ctx.fill();
+    }
   }
   if (costume === "halo") {
     ctx.strokeStyle = COLORS.beak;
@@ -163,6 +180,79 @@ function drawAccessory(ctx, r, id) {
       ctx.stroke();
       break;
     }
+    case "sunglasses":
+      ctx.fillStyle = "#1d1830";
+      ctx.strokeStyle = "#1d1830";
+      ctx.lineWidth = r * 0.06;
+      for (const sx of [-1, 1]) {
+        ctx.beginPath();
+        ctx.ellipse(sx * r * 0.32, -r * 0.08, r * 0.27, r * 0.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.08, -r * 0.12);
+      ctx.lineTo(r * 0.08, -r * 0.12);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      ctx.beginPath();
+      ctx.ellipse(-r * 0.4, -r * 0.15, r * 0.08, r * 0.04, -0.4, 0, Math.PI * 2);
+      ctx.ellipse(r * 0.24, -r * 0.15, r * 0.08, r * 0.04, -0.4, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case "bowtie":
+      ctx.fillStyle = COLORS.danger;
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = r * 0.04;
+      ctx.beginPath();
+      ctx.moveTo(0, r * 0.82);
+      ctx.lineTo(-r * 0.36, r * 0.64);
+      ctx.lineTo(-r * 0.36, r * 1.0);
+      ctx.closePath();
+      ctx.moveTo(0, r * 0.82);
+      ctx.lineTo(r * 0.36, r * 0.64);
+      ctx.lineTo(r * 0.36, r * 1.0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, r * 0.82, r * 0.09, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case "negi": {
+      // ねぎを1本 頭にのせる
+      ctx.save();
+      ctx.rotate(-0.35);
+      ctx.fillStyle = "#f4f8ec";
+      ctx.strokeStyle = "#9bbf7e";
+      ctx.lineWidth = r * 0.04;
+      ctx.beginPath();
+      ctx.roundRect(-r * 0.75, -r * 1.02, r * 0.95, r * 0.22, r * 0.1);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#6fbf4a";
+      ctx.beginPath();
+      ctx.moveTo(r * 0.15, -r * 0.98);
+      ctx.quadraticCurveTo(r * 0.7, -r * 1.35, r * 1.05, -r * 1.1);
+      ctx.quadraticCurveTo(r * 0.7, -r * 0.95, r * 0.15, -r * 0.82);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      break;
+    }
+    case "chef":
+      ctx.fillStyle = "#fff";
+      ctx.strokeStyle = "#c9b3e6";
+      ctx.lineWidth = r * 0.05;
+      ctx.beginPath();
+      ctx.roundRect(-r * 0.45, -r * 1.05, r * 0.9, r * 0.38, r * 0.05);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(-r * 0.32, -r * 1.2, r * 0.28, 0, Math.PI * 2);
+      ctx.arc(0, -r * 1.35, r * 0.32, 0, Math.PI * 2);
+      ctx.arc(r * 0.32, -r * 1.2, r * 0.28, 0, Math.PI * 2);
+      ctx.fill();
+      break;
     case "star":
       ctx.fillStyle = COLORS.beak;
       ctx.strokeStyle = "#fff";
@@ -368,6 +458,7 @@ export function drawHearts(ctx, lives, max, x = W - 14, y = 52) {
 // ── このスマホに保存する記録（ベスト・やきとりポイント・きせかえ・名前） ──
 const KEY = "torico-game";
 
+/** このスマホに保存した記録を読む（壊れていても遊べるよう、足りないところは初期値） */
 export function loadSave() {
   let data = {};
   try {
@@ -378,11 +469,19 @@ export function loadSave() {
   if (typeof data.player !== "string" || !/^[a-z0-9]{8,32}$/.test(data.player)) {
     data.player = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, "0")).join("");
   }
+  const points = Number.isInteger(data.points) && data.points >= 0 ? data.points : 0;
+  const ids = new Set(COSTUMES.map((c) => c.id));
+  // 前の版で もらっていた きせかえは そのまま持っている
+  const owned = Array.isArray(data.owned) ? data.owned.filter((id) => ids.has(id)) : Object.keys(LEGACY_UNLOCK).filter((id) => points >= LEGACY_UNLOCK[id]);
+  if (!owned.includes("none")) owned.unshift("none");
+  const costume = typeof data.costume === "string" && owned.includes(data.costume) ? data.costume : "none";
   return {
     player: data.player,
     name: typeof data.name === "string" ? data.name : "",
-    points: Number.isInteger(data.points) && data.points >= 0 ? data.points : 0,
-    costume: typeof data.costume === "string" ? data.costume : "none",
+    points,
+    owned,
+    costume,
+    upgrades: typeof data.upgrades === "object" && data.upgrades ? data.upgrades : {},
     best: typeof data.best === "object" && data.best ? data.best : {},
     plays: Number.isInteger(data.plays) ? data.plays : 0,
   };
@@ -396,9 +495,6 @@ export function writeSave(save) {
   }
 }
 
-export function unlockedCostumes(points) {
-  return COSTUMES.filter((c) => points >= c.points);
-}
 
 // ── ランキング（Worker の /api/play・/api/ranking） ──
 export async function startSession() {

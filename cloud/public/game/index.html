@@ -25,13 +25,17 @@
     <div>
       <p class="label">やきとりポイント</p>
       <p id="points" class="points"></p>
-      <p id="next-costume" class="small"></p>
-      <button id="open-dress" class="btn ghost" type="button">きせかえ</button>
+      <p id="owned-count" class="small"></p>
     </div>
   </section>
+  <div class="menu3">
+    <button class="btn cyan" type="button" data-go="gacha">ガチャ</button>
+    <button class="btn ghost" type="button" data-go="shop">ショップ</button>
+    <button class="btn ghost" type="button" data-go="dress">きせかえ</button>
+  </div>
   <h1 class="title">ミニゲーム</h1>
   <ul id="games" class="games"></ul>
-  <p class="small center">あそぶほど やきとりポイントが たまって、きせかえが ふえるよ</p>
+  <p class="small center">あそぶと やきとりポイントが たまるよ。ガチャで きせかえ、ショップで ゲームを つよく しよう</p>
 </main>
 
 <main id="dress" class="view" hidden>
@@ -39,6 +43,26 @@
   <h1 class="title">きせかえ</h1>
   <p id="dress-points" class="center"></p>
   <ul id="costumes" class="costumes"></ul>
+</main>
+
+<main id="gacha" class="view" hidden>
+  <header class="top"><button class="back" type="button" data-go="hub">← もどる</button></header>
+  <h1 class="title">きせかえガチャ</h1>
+  <p class="center gacha-points"></p>
+  <div class="card center gacha-box">
+    <div id="capsule" class="capsule" aria-hidden="true"><span></span></div>
+    <canvas id="gacha-prize" hidden></canvas>
+    <p id="gacha-result" class="gacha-result" aria-live="polite">1かい 100 pt。なにが でるかな？</p>
+    <button id="pull" class="btn pink" type="button">ガチャを まわす（100 pt）</button>
+  </div>
+  <p class="small center">★ よく出る ／ ★★ ときどき ／ ★★★ めったに出ない。もっているものが出たら 30 pt もどるよ</p>
+</main>
+
+<main id="shop" class="view" hidden>
+  <header class="top"><button class="back" type="button" data-go="hub">← もどる</button></header>
+  <h1 class="title">ショップ</h1>
+  <p class="center shop-points"></p>
+  <ul id="upgrades" class="upgrades"></ul>
 </main>
 
 <main id="play" class="view play" hidden>
