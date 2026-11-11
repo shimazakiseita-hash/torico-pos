@@ -1,9 +1,9 @@
 /**
  * ミニゲームのランキングを見る・消す（スタッフ用。.env.public の URL と合言葉を使う）。
- * ゲーム：tsumi（つみつみ串）・catch（流れ星キャッチ）・flight（とりこフライト）
- * 使い方: npm run ranking -- catch（今日） / npm run ranking -- catch all（歴代） / npm run ranking -- catch 2026-11-21（その日）
+ * ゲーム：tsumi（つみつみ串）・flight（とりこフライト）
+ * 使い方: npm run ranking -- flight（今日） / npm run ranking -- flight all（歴代） / npm run ranking -- flight 2026-11-21（その日）
  *         npm run ranking -- remove a1b2c3（そのIDの記録を、すべてのゲームの今日・歴代・過去の日から消す）
- *         npm run ranking -- add catch 名前 4520 [a1b2c3]（記録を手で載せる。IDを付けると、その人の記録にする）
+ *         npm run ranking -- add flight 名前 4520 [a1b2c3]（記録を手で載せる。IDを付けると、その人の記録にする）
  */
 import { GAME_IDS, GAME_NAMES, type GameId } from "../src/lib/ranking";
 
@@ -34,7 +34,7 @@ async function main() {
   if (command === "add") {
     const [game, name, score, tag] = rest;
     if (!isGame(game) || !name || !/^\d+$/.test(score ?? "")) {
-      console.error(`ゲーム・名前・点数を指定してください（例：npm run ranking -- add catch とりこ 4520 a1b2c3。IDはなくてもよい）\nゲーム：${gameHelp}`);
+      console.error(`ゲーム・名前・点数を指定してください（例：npm run ranking -- add flight とりこ 4520 a1b2c3。IDはなくてもよい）\nゲーム：${gameHelp}`);
       process.exit(1);
     }
     const res = await fetch(`${base}/api/ranking/add`, {
@@ -60,7 +60,7 @@ async function main() {
   }
 
   if (!isGame(command)) {
-    console.error(`ゲームを指定してください（例：npm run ranking -- catch all）\nゲーム：${gameHelp}`);
+    console.error(`ゲームを指定してください（例：npm run ranking -- flight all）\nゲーム：${gameHelp}`);
     process.exit(1);
   }
   const board = rest[0] ?? "today";

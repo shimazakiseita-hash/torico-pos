@@ -15,7 +15,7 @@ const WEIGHTS = [
 const TEXT_SOURCES = [
   "../src/page.ts",
   "../src/index.ts",
-  ...["index.html", "app.js", "common.js", "tsumi.js", "catch.js", "flight.js"].map((f) => `../public/game/${f}`),
+  ...["index.html", "app.js", "common.js", "shop.js", "tsumi.js", "flight.js"].map((f) => `../public/game/${f}`),
 ];
 const out = new URL("../public/", import.meta.url);
 

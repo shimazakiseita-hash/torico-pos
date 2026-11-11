@@ -77,4 +77,4 @@
 ## 2日目の終了後
 - 管理画面の「合計」で2日間の売上・本数を確認し、会計報告に使う
 - サーバーPCのスリープ設定を元に戻す（`docs/network.md` 4）
-- ミニゲームのランキングに不適切な名前があれば：`npm run ranking -- catch`（ゲームは tsumi・catch・flight）で ID を見て、`npm run ranking -- remove <ID>`
+- ミニゲームのランキングに不適切な名前があれば：`npm run ranking -- flight`（ゲームは tsumi・flight）で ID を見て、`npm run ranking -- remove <ID>`

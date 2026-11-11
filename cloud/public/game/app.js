@@ -1,12 +1,11 @@
 // ミニゲームの画面の切り替え（えらぶ → あそぶ → 結果・ランキング）と、きせかえ
 
 import { COSTUMES, H, W, drawMascot, mascotReady, view, fetchRanking, loadSave, startSession, submitScore, unlockedCostumes, writeSave } from "./common.js";
-import * as catchGame from "./catch.js";
 import * as flight from "./flight.js";
 import * as tsumi from "./tsumi.js";
 
 /** ゲームの一覧（並び順のまま表示） */
-const GAMES = [tsumi, catchGame, flight];
+const GAMES = [tsumi, flight];
 
 const save = loadSave();
 const $ = (id) => document.getElementById(id);

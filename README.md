@@ -56,7 +56,7 @@ PUBLIC_STATUS_URL=https://torico-status.<サブドメイン>.workers.dev
 PUBLIC_STATUS_TOKEN=<PUSH_TOKEN と同じ値>
 ```
 
-お客さん用ページからはミニゲーム（`cloud/public/game/`：つみつみ串・流れ星キャッチ・とりこフライト）も遊べる。ランキングの確認・削除は `npm run ranking -- catch`（ゲーム名は tsumi・catch・flight）。
+お客さん用ページからはミニゲーム（`cloud/public/game/`：つみつみ串・とりこフライト）も遊べる。ランキングの確認・削除は `npm run ranking -- flight`（ゲーム名は tsumi・flight）。
 
 整理券は `npm run tickets -- 1 500` で `print/tickets.html` を作り、ブラウザで A4・倍率100%・背景のグラフィックありで印刷する（1枚目は屋台に貼るポスター）。
 
