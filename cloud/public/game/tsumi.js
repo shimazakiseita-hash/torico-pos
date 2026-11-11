@@ -8,7 +8,7 @@
 //   1本：できた 30、お題 80（ジャンボは どちらも2倍）→ 1個あたり最大 (60+160)/8 ≒ 28
 //   いちばん短い落下 約0.45秒＋次が出るまで0.25秒 → 1個に最低0.7秒 → 最大 (95+28)/0.7 ≒ 176点/秒（上限は余裕をみて200）
 
-import { COLORS, FONT, H, Popups, W, drawHearts, drawHud, drawMascot, drawSpace, star, view } from "./common.js";
+import { COLORS, FONT, Popups, W, drawHearts, drawHud, drawMascot, drawSpace, star, view } from "./common.js";
 
 export const META = {
   id: "tsumi",
