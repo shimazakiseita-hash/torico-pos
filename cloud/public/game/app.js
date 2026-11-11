@@ -152,7 +152,7 @@ function renderShop() {
     const li = document.createElement("li");
     li.innerHTML = `<h3><span class="nm"></span> <span class="lv"></span><br><span class="game-name"></span></h3><p></p><button class="btn pink" type="button"></button>`;
     li.querySelector(".nm").textContent = u.name;
-    li.querySelector(".lv").textContent = u.costs.length > 1 ? `Lv${lv}/${u.costs.length}` : lv ? "もっている" : "";
+    li.querySelector(".lv").textContent = u.costs.length > 1 ? `Lv${lv}/${u.costs.length}` : lv ? "✔" : "";
     li.querySelector(".game-name").textContent = GAMES.find((g) => g.META.id === u.game)?.META.title ?? "";
     li.querySelector("p").textContent = u.desc;
     const b = li.querySelector("button");

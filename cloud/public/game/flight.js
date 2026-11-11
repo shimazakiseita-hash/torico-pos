@@ -16,7 +16,7 @@ import { COLORS, FONT, H, Popups, W, drawHud, drawMascot, drawSkewer, drawSpace,
 export const META = {
   id: "flight",
   title: "とりこフライト",
-  howto: "タップで はばたいて、いん石の すきまを ぬけよう。たれびんで ビーム、バリアで 1回セーフ。りゅうせいぐんの先には ボスが まってる！",
+  howto: "タップで はばたいて、いん石の すきまを ぬけよう。アイテムを あつめて すすむと ボスが まってる！ しゅうごとに ちがうボスが でるよ",
   pointRate: 0.25,
 };
 

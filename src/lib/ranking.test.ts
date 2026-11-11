@@ -61,7 +61,7 @@ describe("maxPlausibleScore / isPlausibleScore", () => {
   it("時間に見合わない点数・マイナスの点数は通らない", () => {
     expect(isPlausibleScore("flight", 5000, 60_000)).toBe(true);
     expect(isPlausibleScore("flight", 10000, 30_000)).toBe(false);
-    expect(isPlausibleScore("tsumi", 1200, 3_000)).toBe(false);
+    expect(isPlausibleScore("tsumi", 1300, 3_000)).toBe(false);
     expect(isPlausibleScore("tsumi", -1, 30_000)).toBe(false);
   });
 });
