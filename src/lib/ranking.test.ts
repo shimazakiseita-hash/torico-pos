@@ -55,12 +55,12 @@ describe("maxPlausibleScore / isPlausibleScore", () => {
   it("遊んだ時間に比例して上限が上がる（ゲームごとに傾きが違う）", () => {
     expect(maxPlausibleScore("tsumi", 0)).toBe(100);
     expect(maxPlausibleScore("catch", 60)).toBe(60 * 200 * 1.5 + 100);
-    expect(maxPlausibleScore("flight", 60)).toBeLessThan(maxPlausibleScore("catch", 60));
+    expect(maxPlausibleScore("tsumi", 60)).toBeLessThan(maxPlausibleScore("catch", 60));
   });
 
   it("時間に見合わない点数・マイナスの点数は通らない", () => {
     expect(isPlausibleScore("catch", 5000, 60_000)).toBe(true);
-    expect(isPlausibleScore("flight", 5000, 30_000)).toBe(false);
+    expect(isPlausibleScore("flight", 10000, 30_000)).toBe(false);
     expect(isPlausibleScore("tsumi", 1000, 3_000)).toBe(false);
     expect(isPlausibleScore("tsumi", -1, 30_000)).toBe(false);
   });

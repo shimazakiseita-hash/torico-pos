@@ -82,3 +82,15 @@ button { cursor: pointer; touch-action: manipulation; }
 .ranking .rank { font-weight: 900; color: var(--magenta); }
 .ranking .sc { font-weight: 900; }
 .actions { display: grid; gap: 0.75rem; }
+
+/* 自分の番号（整理券）の状況。できあがったら緑 */
+.order { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 0.25rem 0.75rem; padding: 0.75rem 1rem; border-radius: 20px; background: rgb(255 255 255 / 0.15); color: #fff; text-decoration: none; }
+.order b { font-size: 1.75rem; font-weight: 900; }
+.order.done { background: var(--ok); }
+/* できあがりのお知らせ（どの画面の上にも出す） */
+.call { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgb(29 107 69 / 0.9); }
+.call .card { max-width: 22rem; width: 100%; display: flex; flex-direction: column; gap: 0.75rem; }
+.call h2 { margin: 0; font-size: 1.75rem; color: var(--ok); }
+.call h2::before { content: ""; }
+.call p { margin: 0; }
+.call .btn { display: flex; align-items: center; justify-content: center; text-decoration: none; }

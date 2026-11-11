@@ -1,25 +1,43 @@
-// とりこフライト：タップで はばたいて、いん石の すきまを ぬける。串を あつめて、ぶつかったら おしまい
+// とりこフライト：タップで はばたいて、いん石の すきまを ぬける宇宙の旅
+//   10こ ぬけるごとに ステージが かわる（そら → つき → ほしくず → りゅうせいぐん）。りゅうせいぐんを ぬけると ボス「はらぺこUFO」
+//   アイテム：串（点）・金の串・たれびん（5秒 たれビームを撃てる）・バリア（1回だけ助かる）
+//   ボスを たおしても にげられても、2しゅうめへ。周回するほど むずかしくなる
 //
 // 点数（src/lib/ranking.ts の MAX_POINTS_PER_SECOND.flight の根拠）
-//   すきまを1つぬける 10点、串 30点（1つのすきまに多くて1本）、10こごとに 50点
-//   すきまの間隔 210px、速さは最大 260px/秒 → 1つに最低0.81秒 → 最大 (10+30+5)/0.81 ≒ 56点/秒（上限は余裕をみて60）
+//   すきま 10、串 30、金の串 100（1つのすきまに アイテムは1つまで）、UFO 20、小いん石 10、ボスに1発 2・たおす 150＋50×周回
+//   すきまの間隔 210px、速さは最大 270px/秒 → 1つに最低0.78秒。1つのすきまで 10＋100＋UFO 20＋小いん石 10×2 = 150 → 約190点/秒
+//   ボス戦は 1秒に約5.5発 × 2 ＝ 11点/秒 ＋ たおしたとき 1回だけ
+//   （上限は余裕をみて200）
 
-import { COLORS, FONT, H, Popups, W, drawHud, drawMascot, drawSkewer, drawSpace, view } from "./common.js";
+import { COLORS, FONT, H, Popups, W, drawHud, drawMascot, drawSkewer, drawSpace, heart, star, view } from "./common.js";
 
 export const META = {
   id: "flight",
   title: "とりこフライト",
-  howto: "タップで はばたいて、いん石の すきまを ぬけよう。串も あつめてね。ぶつかったら おしまい！",
-  pointRate: 0.4,
+  howto: "タップで はばたいて、いん石の すきまを ぬけよう。たれびんで ビーム、バリアで 1回セーフ。りゅうせいぐんの先には ボスが まってる！",
+  pointRate: 0.25,
 };
 
 const X = 100;
-const R = 20; // 当たり判定（絵は少し大きい）
+const R = 19; // 当たり判定（絵は少し大きい）
 const GRAVITY = 1500;
 const FLAP = -430;
 const COL_W = 58;
 const SPACING = 210;
 const FLOOR = H - 24;
+const PER_STAGE = 10;
+const GUN_SECONDS = 5;
+const SAFE_SECONDS = 1.2;
+const BOSS_SECONDS = 35;
+const SHOT_EVERY = 0.18;
+
+/** ステージ：tint は背景の色、move はすきまが上下に動く幅、ufo は UFO が出る確率、meteor は小いん石が降る間隔（秒、0 は降らない） */
+const STAGES = [
+  { name: "そらのうえ", tint: "rgba(237,130,167,0.18)", move: 0, ufo: 0, meteor: 0 },
+  { name: "つきのうら", tint: "rgba(201,179,230,0.14)", move: 45, ufo: 0, meteor: 0 },
+  { name: "ほしくずのうみ", tint: "rgba(128,247,253,0.10)", move: 30, ufo: 0.55, meteor: 0 },
+  { name: "りゅうせいぐん", tint: "rgba(229,90,34,0.16)", move: 55, ufo: 0.3, meteor: 1.1 },
+];
 
 export function createGame({ costume }) {
   const pop = new Popups();
@@ -29,28 +47,126 @@ export function createGame({ costume }) {
     vy: 0,
     flying: false, // 最初のタップまでは浮いて待つ
     cols: [],
-    passed: 0,
-    speed: 150,
+    ufos: [],
+    meteors: [],
+    shots: [], // たれビーム
+    beams: [], // 敵のたま
+    passed: 0, // ぬけた数（ボス戦のあいだは増えない）
+    stageIndex: 0, // 0〜。4で割った余りが STAGES の番号、4で割った商が周回
+    sinceStage: 0,
+    banner: { text: "ステージ1 そらのうえ", age: 0 },
     nextIn: 1.1,
+    meteorIn: 2,
+    gun: 0,
+    nextShot: 0,
+    shield: false,
+    safe: 0,
+    boss: null,
     over: false,
     t: 0,
     scroll: 0,
     flap: 0,
+    shake: 0,
   };
 
-  function gap() {
-    return Math.max(132, 196 - state.passed * 2.5);
+  const stage = () => STAGES[state.stageIndex % STAGES.length];
+  const lap = () => Math.floor(state.stageIndex / STAGES.length);
+  // 速さとすきまは ぬけた数で決まる（周回して景色が戻っても、やさしくはならない）
+  const speed = () => Math.min(270, 150 + state.passed * 1.6);
+  const gap = () => Math.max(128, 196 - state.passed * 1.1);
+  // 2しゅうめからは、どのステージでも すきまが動き、UFO が出る
+  const move = () => (lap() > 0 ? Math.max(stage().move, 50) : stage().move);
+  const ufoRate = () => (lap() > 0 ? Math.max(stage().ufo, 0.35) : stage().ufo);
+
+  function banner(text) {
+    state.banner = { text, age: 0 };
   }
 
   function addColumn() {
     const g = gap();
-    const top = 90 + Math.random() * (FLOOR - 90 - g - 60);
-    state.cols.push({ x: W + COL_W, top, bottom: top + g, scored: false, skewer: Math.random() < 0.6 ? { y: top + g * (0.3 + Math.random() * 0.4), got: false } : null, seed: Math.random() * 10 });
+    const center = 90 + g / 2 + Math.random() * (FLOOR - 150 - g);
+    const r = Math.random();
+    let item = null;
+    if (r < 0.05) item = "gold";
+    else if (r < 0.13) item = "gun";
+    else if (r < 0.19 && !state.shield) item = "shield";
+    else if (r < 0.65) item = "skewer";
+    state.cols.push({
+      x: W + COL_W,
+      center,
+      g,
+      amp: move(),
+      phase: Math.random() * Math.PI * 2,
+      scored: false,
+      item: item ? { kind: item, dy: (Math.random() - 0.5) * g * 0.4, got: false } : null,
+      seed: Math.random() * 10,
+    });
+    // UFO はすきまとすきまの間に出る
+    if (Math.random() < ufoRate()) {
+      state.ufos.push({ x: W + COL_W + SPACING / 2, y: 120 + Math.random() * (FLOOR - 240), phase: Math.random() * 6, fire: 1 + Math.random(), hp: 1 });
+    }
   }
 
-  function crash() {
+  const colTop = (c) => c.center - c.g / 2 + Math.sin(state.t * 1.6 + c.phase) * c.amp;
+  const colBottom = (c) => colTop(c) + c.g;
+
+  function startBoss() {
+    const hp = 30 + lap() * 12;
+    state.boss = { x: W + 90, y: (190 + (FLOOR - 70)) / 2, hp, max: hp, time: BOSS_SECONDS, fire: 2, phase: 0, leaving: 0, hit: 0 };
+    banner(`ボス はらぺこUFO！ ${BOSS_SECONDS}秒いないに たおせ`);
+  }
+
+  function endBoss(defeated) {
+    const b = state.boss;
+    if (defeated) {
+      const bonus = 150 + 50 * lap();
+      state.score += bonus;
+      pop.add(`たおした！ +${bonus}`, W / 2, H * 0.35, COLORS.beak, 30);
+    } else {
+      pop.add("にげられた…", W / 2, H * 0.35, "#fff", 26);
+    }
+    b.leaving = 1.2;
+    state.beams = [];
+    state.gun = 0;
+  }
+
+  function nextStage() {
+    state.stageIndex++;
+    state.sinceStage = 0;
+    const l = lap();
+    banner(`${l > 0 ? `${l + 1}しゅうめ ` : ""}ステージ${(state.stageIndex % STAGES.length) + 1} ${stage().name}`);
+  }
+
+  /** 当たった：バリアがあれば助かる */
+  function hurt() {
+    if (state.safe > 0) return false;
+    if (state.shield) {
+      state.shield = false;
+      state.safe = SAFE_SECONDS;
+      state.shake = 0.3;
+      pop.add("バリアで セーフ！", X + 40, state.y - 40, COLORS.cyan, 22);
+      return false;
+    }
     state.over = true;
+    state.shake = 0.4;
     pop.add("ごつん！", X, state.y - 40, COLORS.danger, 30);
+    return true;
+  }
+
+  function takeItem(kind, x, y) {
+    if (kind === "skewer") {
+      state.score += 30;
+      pop.add("+30", x, y - 24, COLORS.beak, 22);
+    } else if (kind === "gold") {
+      state.score += 100;
+      pop.add("金の串！ +100", x, y - 24, COLORS.beak, 24);
+    } else if (kind === "gun") {
+      state.gun = GUN_SECONDS;
+      pop.add("たれビーム！", x, y - 24, COLORS.cyan, 24);
+    } else if (kind === "shield") {
+      state.shield = true;
+      pop.add("バリア！", x, y - 24, COLORS.cyan, 24);
+    }
   }
 
   return {
@@ -70,7 +186,10 @@ export function createGame({ costume }) {
     update(dt) {
       state.t += dt;
       pop.update(dt);
+      state.banner.age += dt;
       state.flap = Math.max(0, state.flap - dt);
+      state.shake = Math.max(0, state.shake - dt);
+      state.safe = Math.max(0, state.safe - dt);
       if (state.over) {
         // ぶつかったあとは落ちていく
         state.vy += GRAVITY * dt;
@@ -81,6 +200,8 @@ export function createGame({ costume }) {
         state.y = H * 0.42 + Math.sin(state.t * 3) * 8;
         return;
       }
+
+      // とり
       state.vy = Math.min(700, state.vy + GRAVITY * dt);
       state.y += state.vy * dt;
       if (state.y < R) {
@@ -89,64 +210,254 @@ export function createGame({ costume }) {
       }
       if (state.y > FLOOR - R) {
         state.y = FLOOR - R;
-        crash();
-        return;
+        state.vy = FLAP * 0.8;
+        if (hurt()) return;
       }
 
-      state.speed = Math.min(260, 150 + state.passed * 2);
-      const dx = state.speed * dt;
+      const sp = state.boss ? 120 : speed();
+      const dx = sp * dt;
       state.scroll += dx;
-      state.nextIn -= dx / SPACING;
-      if (state.nextIn <= 0) {
-        addColumn();
-        state.nextIn += 1;
+
+      // たれビーム（たれびん中と、ボス戦のあいだ）
+      state.gun = Math.max(0, state.gun - dt);
+      state.nextShot -= dt;
+      if ((state.gun > 0 || (state.boss && !state.boss.leaving)) && state.nextShot <= 0) {
+        state.shots.push({ x: X + 20, y: state.y });
+        state.nextShot = SHOT_EVERY;
+      }
+      for (const s of state.shots) s.x += 520 * dt;
+
+      // すきま
+      if (!state.boss) {
+        state.nextIn -= dx / SPACING;
+        if (state.nextIn <= 0 && state.sinceStage + state.cols.filter((c) => !c.scored).length < PER_STAGE) {
+          addColumn();
+          state.nextIn += 1;
+        }
       }
       for (const c of state.cols) {
         c.x -= dx;
-        // すきまの外の いん石（上の柱・下の柱）に当たったか
-        if (hits(X, state.y, R, c.x - COL_W / 2, -1e4, c.x + COL_W / 2, c.top) || hits(X, state.y, R, c.x - COL_W / 2, c.bottom, c.x + COL_W / 2, 1e4)) {
-          crash();
-          return;
+        const top = colTop(c);
+        const bottom = colBottom(c);
+        if (state.safe <= 0 && (hits(X, state.y, R, c.x - COL_W / 2, -1e4, c.x + COL_W / 2, top) || hits(X, state.y, R, c.x - COL_W / 2, bottom, c.x + COL_W / 2, 1e4))) {
+          if (hurt()) return;
         }
-        if (c.skewer && !c.skewer.got && Math.hypot(X - c.x, state.y - c.skewer.y) < R + 16) {
-          c.skewer.got = true;
-          state.score += 30;
-          pop.add("+30", c.x, c.skewer.y - 24, COLORS.beak, 22);
+        if (c.item && !c.item.got && Math.hypot(X - c.x, state.y - (top + c.g / 2 + c.item.dy)) < R + 16) {
+          c.item.got = true;
+          takeItem(c.item.kind, c.x, top + c.g / 2 + c.item.dy);
         }
         if (!c.scored && c.x + COL_W / 2 < X - R) {
           c.scored = true;
           state.passed++;
+          state.sinceStage++;
           state.score += 10;
-          if (state.passed % 10 === 0) {
-            state.score += 50;
-            pop.add(`${state.passed}こ とっぱ！ +50`, W / 2, 140, COLORS.cyan, 26);
+          if (state.sinceStage >= PER_STAGE) {
+            if (state.stageIndex % STAGES.length === STAGES.length - 1) startBoss();
+            else nextStage();
           }
         }
       }
       state.cols = state.cols.filter((c) => c.x > -COL_W);
+
+      // UFO（ゆらゆら飛んで、ときどき たまを撃つ）
+      for (const u of state.ufos) {
+        u.x -= dx + 30 * dt;
+        u.phase += dt * 2;
+        u.y += Math.sin(u.phase) * 40 * dt;
+        u.fire -= dt;
+        if (u.fire <= 0 && u.x < W && u.x > X + 60) {
+          const a = Math.atan2(state.y - u.y, X - u.x);
+          state.beams.push({ x: u.x, y: u.y, vx: Math.cos(a) * 170, vy: Math.sin(a) * 170 });
+          u.fire = 2.2;
+        }
+        if (state.safe <= 0 && Math.hypot(u.x - X, u.y - state.y) < R + 16) {
+          u.hp = 0;
+          if (hurt()) return;
+        }
+      }
+
+      // 小いん石（りゅうせいぐん）
+      const mInterval = state.boss ? 0 : stage().meteor || (lap() > 1 ? 1.6 : 0);
+      if (mInterval) {
+        state.meteorIn -= dt;
+        if (state.meteorIn <= 0) {
+          state.meteors.push({ x: W * (0.45 + Math.random() * 0.6), y: -20, vx: -140 - Math.random() * 60, vy: 170 + Math.random() * 60, rot: 0, hp: 1 });
+          state.meteorIn = mInterval * (0.6 + Math.random() * 0.8);
+        }
+      }
+      for (const m of state.meteors) {
+        m.x += m.vx * dt - dx * 0.3;
+        m.y += m.vy * dt;
+        m.rot += dt * 3;
+        if (state.safe <= 0 && Math.hypot(m.x - X, m.y - state.y) < R + 10) {
+          m.hp = 0;
+          if (hurt()) return;
+        }
+      }
+
+      // 敵のたま
+      for (const b of state.beams) {
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        if (state.safe <= 0 && Math.hypot(b.x - X, b.y - state.y) < R + 6) {
+          b.dead = true;
+          if (hurt()) return;
+        }
+      }
+
+      // たれビームが当たったか
+      for (const s of state.shots) {
+        for (const u of state.ufos) {
+          if (u.hp > 0 && Math.hypot(s.x - u.x, s.y - u.y) < 24) {
+            u.hp = 0;
+            s.dead = true;
+            state.score += 20;
+            pop.add("+20", u.x, u.y - 20, COLORS.cyan, 20);
+          }
+        }
+        for (const m of state.meteors) {
+          if (m.hp > 0 && Math.hypot(s.x - m.x, s.y - m.y) < 18) {
+            m.hp = 0;
+            s.dead = true;
+            state.score += 10;
+            pop.add("+10", m.x, m.y - 16, "#fff", 18);
+          }
+        }
+        const b = state.boss;
+        if (b && !b.leaving && b.hp > 0 && Math.abs(s.x - b.x) < 60 && Math.abs(s.y - b.y) < 34) {
+          s.dead = true;
+          b.hp--;
+          b.hit = 0.08;
+          state.score += 2;
+          if (b.hp <= 0) endBoss(true);
+        }
+      }
+
+      // ボス
+      const b = state.boss;
+      if (b) {
+        b.hit = Math.max(0, b.hit - dt);
+        if (b.leaving) {
+          b.leaving -= dt;
+          b.x += 260 * dt;
+          b.y -= 120 * dt;
+          if (b.leaving <= 0) {
+            state.boss = null;
+            nextStage();
+          }
+        } else {
+          b.x += (W - 80 - b.x) * Math.min(1, dt * 2);
+          b.phase += dt * (1.3 + lap() * 0.2);
+          // 体力バーにかからないよう、画面の中ほどから下を上下する
+          b.y = (190 + (FLOOR - 70)) / 2 + Math.sin(b.phase) * ((FLOOR - 70 - 190) / 2);
+          b.time -= dt;
+          b.fire -= dt;
+          if (b.fire <= 0) {
+            // 3方向に たまを撃つ
+            for (const a of [-0.35, 0, 0.35]) state.beams.push({ x: b.x - 50, y: b.y, vx: -Math.cos(a) * (190 + lap() * 20), vy: Math.sin(a) * 190 });
+            b.fire = Math.max(0.9, 1.8 - lap() * 0.2);
+          }
+          if (state.safe <= 0 && Math.abs(X - b.x) < 70 && Math.abs(state.y - b.y) < 40) {
+            if (hurt()) return;
+          }
+          if (b.time <= 0) endBoss(false);
+        }
+      }
+
+      state.shots = state.shots.filter((s) => !s.dead && s.x < W + 20);
+      state.beams = state.beams.filter((s) => !s.dead && s.x > -20 && s.y > view.y0 - 20 && s.y < view.y1 + 20);
+      state.ufos = state.ufos.filter((u) => u.hp > 0 && u.x > -40);
+      state.meteors = state.meteors.filter((m) => m.hp > 0 && m.y < view.y1 + 30 && m.x > -40);
     },
     draw(ctx) {
       drawSpace(ctx, state.t, state.scroll);
+      ctx.fillStyle = stage().tint;
+      ctx.fillRect(view.x0, view.y0, view.x1 - view.x0, view.y1 - view.y0);
+      drawScenery(ctx, state.stageIndex % STAGES.length, state.scroll, state.t);
+
+      ctx.save();
+      if (state.shake > 0) ctx.translate(Math.sin(state.t * 90) * 4, 0);
       for (const c of state.cols) {
-        drawRocks(ctx, c.x, view.y0 - 10, c.top, c.seed);
-        drawRocks(ctx, c.x, c.bottom, view.y1 + 10, c.seed + 3);
-        if (c.skewer && !c.skewer.got) drawSkewer(ctx, c.x, c.skewer.y + Math.sin(state.t * 4 + c.seed) * 4, -Math.PI / 2, ["tare", "negi", "tare"], 0.85);
+        const top = colTop(c);
+        drawRocks(ctx, c.x, view.y0 - 10, top, c.seed);
+        drawRocks(ctx, c.x, top + c.g, view.y1 + 10, c.seed + 3);
+        if (c.item && !c.item.got) drawItem(ctx, c.item.kind, c.x, top + c.g / 2 + c.item.dy + Math.sin(state.t * 4 + c.seed) * 4, state.t);
       }
+      for (const m of state.meteors) drawSmallMeteor(ctx, m);
+      for (const u of state.ufos) drawUfo(ctx, u.x, u.y, 1, state.t, 0);
+      if (state.boss) drawUfo(ctx, state.boss.x, state.boss.y, 2.4, state.t, state.boss.hit, true);
+      ctx.fillStyle = "#b4541c";
+      for (const s of state.shots) {
+        ctx.beginPath();
+        ctx.ellipse(s.x, s.y, 9, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      for (const b of state.beams) {
+        ctx.fillStyle = "rgba(255,120,200,0.35)";
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#ff8fd0";
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       // 地面（光の帯）
       ctx.fillStyle = "rgba(128,247,253,0.18)";
       ctx.fillRect(view.x0, FLOOR, view.x1 - view.x0, 4);
+
+      // とり（当たったあとの無敵中は点滅。バリアはまわりを回るハート）
       const tilt = state.flying ? Math.max(-0.5, Math.min(0.9, state.vy / 700)) : 0;
-      drawMascot(ctx, X, state.y, R + 4, costume, { t: state.t, tilt });
-      // はばたいた瞬間の羽の光
+      ctx.save();
+      if (state.safe > 0) ctx.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(state.t * 20));
+      drawMascot(ctx, X, state.y, R + 5, costume, { t: state.t, tilt });
+      ctx.restore();
+      if (state.shield) {
+        for (let i = 0; i < 3; i++) {
+          const a = state.t * 3 + (i * Math.PI * 2) / 3;
+          ctx.fillStyle = COLORS.pink400;
+          heart(ctx, X + Math.cos(a) * 34, state.y + Math.sin(a) * 34 + 4, 14);
+          ctx.fill();
+        }
+      }
       if (state.flap > 0) {
         ctx.strokeStyle = `rgba(255,255,255,${state.flap * 4})`;
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.arc(X - 6, state.y + 4, R + 12, Math.PI * 0.6, Math.PI * 1.1);
+        ctx.arc(X - 6, state.y + 4, R + 14, Math.PI * 0.6, Math.PI * 1.1);
         ctx.stroke();
       }
+      ctx.restore();
+
       pop.draw(ctx);
       drawHud(ctx, `${state.score.toLocaleString()}点`, `${state.passed}こ`);
+
+      // 状態：たれビームの残り・ボスの体力と残り時間
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.font = `700 15px ${FONT}`;
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      ctx.fillText(`${lap() > 0 ? `${lap() + 1}しゅうめ ` : ""}${stage().name}`, 14, 46);
+      if (state.gun > 0 && !state.boss) bar(ctx, 14, 70, 120, state.gun / GUN_SECONDS, "#b4541c", "たれビーム");
+      const b = state.boss;
+      if (b && !b.leaving) {
+        bar(ctx, 14, 70, W - 28, b.hp / b.max, COLORS.danger, "はらぺこUFO");
+        bar(ctx, 14, 98, W - 28, Math.max(0, b.time) / BOSS_SECONDS, b.time < 5 ? COLORS.beak : COLORS.cyan, b.time < 5 ? "にげそう！" : "のこり時間");
+      }
+
+      if (state.banner.age < 2.2) {
+        const a = Math.min(1, (2.2 - state.banner.age) * 2);
+        ctx.globalAlpha = a;
+        ctx.fillStyle = "rgba(42,31,92,0.7)";
+        ctx.fillRect(view.x0, H * 0.24 - 26, view.x1 - view.x0, 52);
+        ctx.font = `900 22px ${FONT}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#fff";
+        ctx.fillText(state.banner.text, W / 2, H * 0.24, W - 20);
+        ctx.globalAlpha = 1;
+      }
       if (!state.flying && !state.over) {
         ctx.font = `900 24px ${FONT}`;
         ctx.textAlign = "center";
@@ -166,6 +477,175 @@ function hits(cx, cy, r, x0, y0, x1, y1) {
   const nx = Math.max(x0, Math.min(cx, x1));
   const ny = Math.max(y0, Math.min(cy, y1));
   return Math.hypot(cx - nx, cy - ny) < r;
+}
+
+function bar(ctx, x, y, w, ratio, color, label) {
+  ctx.fillStyle = "rgba(255,255,255,0.2)";
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, 18, 9);
+  ctx.fill();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.roundRect(x, y, Math.max(0, w * ratio), 18, 9);
+  ctx.fill();
+  ctx.font = `900 12px ${FONT}`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#fff";
+  ctx.fillText(label, x + 8, y + 9.5);
+}
+
+/** ステージごとの遠くの景色 */
+function drawScenery(ctx, i, scroll, t) {
+  const px = (v, speed) => ((((v - scroll * speed) % (W + 300)) + W + 300) % (W + 300)) - 150;
+  if (i === 1) {
+    // 大きな月
+    const x = px(W * 0.75, 0.05);
+    ctx.fillStyle = "rgba(241,234,250,0.9)";
+    ctx.beginPath();
+    ctx.arc(x, 150, 70, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(201,179,230,0.7)";
+    for (const [dx, dy, r] of [[-20, -15, 12], [22, 18, 16], [-8, 30, 8]]) {
+      ctx.beginPath();
+      ctx.arc(x + dx, 150 + dy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (i === 2) {
+    // ほしくずの雲
+    for (let k = 0; k < 3; k++) {
+      const x = px(k * 170 + 60, 0.08);
+      const g = ctx.createRadialGradient(x, 140 + k * 150, 0, x, 140 + k * 150, 120);
+      g.addColorStop(0, k % 2 ? "rgba(128,247,253,0.22)" : "rgba(244,176,213,0.25)");
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(x - 120, 20 + k * 150, 240, 240);
+    }
+  } else if (i === 3) {
+    // 遠くの流れ星
+    ctx.strokeStyle = "rgba(255,200,150,0.35)";
+    ctx.lineWidth = 2;
+    for (let k = 0; k < 6; k++) {
+      const x = px(k * 90 + ((t * 120) % 90), 0.2);
+      const y = ((k * 113 + t * 160) % (H + 100)) - 50;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + 40, y - 30);
+      ctx.stroke();
+    }
+  } else {
+    // 夕焼けの雲
+    ctx.fillStyle = "rgba(244,176,213,0.18)";
+    for (let k = 0; k < 4; k++) {
+      const x = px(k * 140, 0.1);
+      ctx.beginPath();
+      ctx.ellipse(x, 520 + (k % 2) * 40, 90, 22, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+function drawItem(ctx, kind, x, y, t) {
+  if (kind === "skewer") {
+    drawSkewer(ctx, x, y, -Math.PI / 2, ["tare", "negi", "tare"], 0.85);
+  } else if (kind === "gold") {
+    ctx.fillStyle = "rgba(255,216,74,0.35)";
+    ctx.beginPath();
+    ctx.arc(x, y, 22 + Math.sin(t * 6) * 3, 0, Math.PI * 2);
+    ctx.fill();
+    drawSkewer(ctx, x, y, -Math.PI / 2, ["gold", "gold", "gold"], 0.9);
+  } else if (kind === "gun") {
+    // たれびん
+    ctx.fillStyle = "#7d3510";
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(x - 10, y - 12, 20, 26, 6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(x - 5, y - 18, 10, 7);
+    ctx.font = `900 10px ${FONT}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("たれ", x, y + 2);
+  } else if (kind === "shield") {
+    ctx.fillStyle = COLORS.pink400;
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    heart(ctx, x, y + 4, 26 + Math.sin(t * 6) * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+
+function drawSmallMeteor(ctx, m) {
+  ctx.strokeStyle = "rgba(255,160,90,0.5)";
+  ctx.lineWidth = 6;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(m.x, m.y);
+  ctx.lineTo(m.x - m.vx * 0.18, m.y - m.vy * 0.18);
+  ctx.stroke();
+  ctx.save();
+  ctx.translate(m.x, m.y);
+  ctx.rotate(m.rot);
+  ctx.fillStyle = "#6d6577";
+  ctx.strokeStyle = "#3b3445";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2;
+    const r = 9 + (i % 2 ? 2 : -1);
+    ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** UFO（boss のときは大きく、おなかをすかせた顔） */
+function drawUfo(ctx, x, y, s, t, hit, boss = false) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  // ドーム
+  ctx.fillStyle = hit > 0 ? "#fff" : "rgba(128,247,253,0.8)";
+  ctx.beginPath();
+  ctx.ellipse(0, -6, 12, 11, 0, Math.PI, 0);
+  ctx.fill();
+  // 円盤
+  ctx.fillStyle = hit > 0 ? "#fff" : boss ? COLORS.magenta : "#9374ab";
+  ctx.strokeStyle = COLORS.space900;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 24, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  // ライト
+  for (let i = -2; i <= 2; i++) {
+    ctx.fillStyle = Math.floor(t * 6 + i) % 2 ? COLORS.beak : "#fff";
+    ctx.beginPath();
+    ctx.arc(i * 8, 1, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (boss) {
+    // はらぺこの顔
+    ctx.fillStyle = COLORS.space900;
+    ctx.beginPath();
+    ctx.arc(-4, -8, 1.6, 0, Math.PI * 2);
+    ctx.arc(4, -8, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = COLORS.danger;
+    ctx.beginPath();
+    ctx.ellipse(0, -3.5, 3.5, 2 + Math.abs(Math.sin(t * 6)) * 1.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#fff";
+    star(ctx, 14, -12, 3, 1.3);
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 /** いん石を積んだ柱（x は中心、y0〜y1 の範囲） */
@@ -198,12 +678,8 @@ function drawRocks(ctx, x, y0, y1, seed) {
   ctx.strokeStyle = "rgba(255,140,80,0.7)";
   ctx.lineWidth = 3;
   ctx.beginPath();
-  if (y0 < 0) {
-    ctx.moveTo(x - COL_W / 2 + 4, y1);
-    ctx.lineTo(x + COL_W / 2 - 4, y1);
-  } else {
-    ctx.moveTo(x - COL_W / 2 + 4, y0);
-    ctx.lineTo(x + COL_W / 2 - 4, y0);
-  }
+  const edge = y0 < 0 ? y1 : y0;
+  ctx.moveTo(x - COL_W / 2 + 4, edge);
+  ctx.lineTo(x + COL_W / 2 - 4, edge);
   ctx.stroke();
 }

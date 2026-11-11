@@ -180,14 +180,76 @@ function loop(now) {
   raf = requestAnimationFrame(loop);
 }
 
+/** 遊んでいる途中で止めて、「つづきから」の案内を出す */
+function pause() {
+  if (!raf) return;
+  stopLoop();
+  $("ready-title").textContent = "ひとやすみ";
+  $("ready-howto").textContent = "つづきから あそべるよ";
+  $("ready").hidden = false;
+}
+
 // 別のアプリに切り替えたら止め、戻ったら続きから
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden && raf) {
-    stopLoop();
-    $("ready-title").textContent = "ひとやすみ";
-    $("ready-howto").textContent = "つづきから あそべるよ";
-    $("ready").hidden = false;
+  if (document.hidden) pause();
+});
+
+// ── 自分の番号（呼び出し状況のページで入れた整理券の番号）を見張り、できあがったらゲームを止めて知らせる ──
+const NUMBER_KEY = "torico-number";
+const WATCH_MS = 5000;
+
+function myNumber() {
+  try {
+    const n = parseInt(localStorage.getItem(NUMBER_KEY) ?? "", 10);
+    return n >= 1 && n <= 9999 ? n : null;
+  } catch {
+    return null;
   }
+}
+
+function renderOrder(n, lookup) {
+  const box = $("my-order");
+  const state = lookup?.state;
+  box.hidden = !n || !(state === "waiting" || state === "ready");
+  if (box.hidden) return;
+  box.href = `/?n=${n}`;
+  box.classList.toggle("done", state === "ready");
+  $("my-order-number").textContent = String(n);
+  $("my-order-state").textContent = state === "ready" ? "できあがりました！ お渡し口へ" : `ただいま焼いています（前に ${lookup.ahead}組）`;
+}
+
+function callReady(n) {
+  const key = `torico-called-${n}`;
+  try {
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+  } catch {
+    // 覚えられなくても知らせる
+  }
+  pause();
+  $("call-number").textContent = String(n);
+  $("call").hidden = false;
+  $("call").querySelector("a").href = `/?n=${n}`;
+  navigator.vibrate?.([300, 150, 300, 150, 300]);
+}
+
+async function watchOrder() {
+  const n = myNumber();
+  if (!n) return renderOrder(null);
+  try {
+    const res = await fetch(`/api/status?n=${n}`, { cache: "no-store" });
+    const data = await res.json();
+    renderOrder(n, data.lookup);
+    if (data.lookup?.state === "ready") callReady(n);
+  } catch {
+    // つながらないときは次の回に
+  }
+}
+setInterval(watchOrder, WATCH_MS);
+watchOrder();
+
+$("call-close").addEventListener("click", () => {
+  $("call").hidden = true;
 });
 
 // ── 結果 ──

@@ -15,6 +15,11 @@
     <a class="back" href="/">← 呼び出し状況</a>
     <span class="logo"><img src="/brand/logo.webp" alt="やきとり TORI♡CO" width="480" height="477"></span>
   </header>
+  <a id="my-order" class="order" href="/" hidden>
+    <span class="label">あなたの番号</span>
+    <b id="my-order-number"></b>
+    <span id="my-order-state"></span>
+  </a>
   <section class="card me">
     <canvas id="me" width="160" height="160" aria-hidden="true"></canvas>
     <div>
@@ -76,5 +81,15 @@
     <button class="btn ghost" type="button" data-go="hub">ゲームをえらぶ</button>
   </div>
 </main>
+<div id="call" class="call" role="alertdialog" aria-labelledby="call-title" hidden>
+  <div class="card center">
+    <p class="label">あなたの番号</p>
+    <p id="call-number" class="score"></p>
+    <h2 id="call-title">できあがりました！</h2>
+    <p>整理券を持って お渡し口へ どうぞ ♥</p>
+    <a class="btn pink" href="/">呼び出し状況を見る</a>
+    <button id="call-close" class="btn ghost" type="button">あとで（ゲームにもどる）</button>
+  </div>
+</div>
 </body>
 </html>
