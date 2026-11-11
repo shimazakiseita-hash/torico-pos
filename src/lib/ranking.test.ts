@@ -54,7 +54,7 @@ describe("containsNgWord", () => {
 describe("maxPlausibleScore / isPlausibleScore", () => {
   it("遊んだ時間に比例して上限が上がる（ゲームごとに傾きが違う）", () => {
     expect(maxPlausibleScore("tsumi", 0)).toBe(100);
-    expect(maxPlausibleScore("catch", 60)).toBe(60 * 200 * 1.5 + 100);
+    expect(maxPlausibleScore("catch", 60)).toBe(60 * 800 * 1.5 + 100);
     expect(maxPlausibleScore("tsumi", 60)).toBeLessThan(maxPlausibleScore("catch", 60));
   });
 

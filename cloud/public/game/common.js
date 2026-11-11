@@ -255,7 +255,7 @@ const PIECES = {
   tare: { fill: "#b4541c", edge: "#7d3510" },
   shio: { fill: "#f6e2c4", edge: "#c9a77a" },
   negi: { fill: "#8fcf6a", edge: "#4f9a35" },
-  tsukune: { fill: "#8a4a22", edge: "#5a2c10" },
+  tsukune: { fill: "#4e2410", edge: "#2a1206" },
   gold: { fill: "#ffd84a", edge: "#e0a400" },
   burnt: { fill: "#2b2223", edge: "#000" },
 };
@@ -282,7 +282,9 @@ export function drawSkewer(ctx, x, y, angle, kinds, size = 1) {
     ctx.strokeStyle = c.edge;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.ellipse(px, 0, 8, 9.5, 0, 0, Math.PI * 2);
+    // つくねは まんまる・大きめ（たれの串と見分けやすく）
+    if (kinds[i] === "tsukune") ctx.arc(px, 0, 10.5, 0, Math.PI * 2);
+    else ctx.ellipse(px, 0, 8, 9.5, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
   }

@@ -58,7 +58,7 @@ export const GAME_NAMES: Record<GameId, string> = {
  */
 export const MAX_POINTS_PER_SECOND: Record<GameId, number> = {
   tsumi: 140,
-  catch: 200,
+  catch: 800,
   flight: 200,
 };
 
