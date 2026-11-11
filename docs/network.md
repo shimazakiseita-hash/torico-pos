@@ -60,7 +60,8 @@ sudo systemctl enable --now torico-pos
 systemctl status torico-pos        # 動作確認
 journalctl -u torico-pos -f        # ログ
 ```
-これでPCの電源を入れるだけで、Wi-Fi親機とアプリの両方が立ち上がる。落ちても自動で再起動する。
+これでPCの電源を入れるだけで、Wi-Fi親機とアプリ（`npm run event`：サーバー・お客さん向けページへの送信・10分ごとのバックアップ）が立ち上がる。落ちても自動で再起動する。
+お客さん向けページへの送信には、リポジトリ直下に `.env.public` が要る（開発機からUSBメモリでコピーする。Git には入れない）。
 
 ## 4. スリープさせない（重要）
 
