@@ -57,7 +57,7 @@ export const GAME_NAMES: Record<GameId, string> = {
  * ゲームの点数の付け方を変えたら、ここも見直す
  */
 export const MAX_POINTS_PER_SECOND: Record<GameId, number> = {
-  tsumi: 140,
+  tsumi: 200,
   catch: 800,
   flight: 200,
 };
