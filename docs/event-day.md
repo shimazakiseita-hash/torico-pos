@@ -18,12 +18,11 @@
 ## 持ち物
 - [ ] PC 4台と、それぞれの電源（延長コード・電源タップ）。雨よけ・日よけ
 - [ ] 整理券：1〜500番の束を **2つ**（1日目用はピンク・11/21、2日目用は水色・11/22）。どちらも1番が上になるように重ねる
-- [ ] 整理券のポスター（屋台に貼る。お客さんがQRで呼び出し状況を見られる）
 - [ ] 釣り銭、コインケース
 - [ ] 予備の紙：注文メモ用紙（串5種×たれ・塩の表）、ペン
 
 ## 前日までの準備（責任者）
-- [ ] 整理券を作る：`npm run tickets -- 1 1 500` と `npm run tickets -- 2 1 500` で `print/tickets-day1.html`・`print/tickets-day2.html` を作り、ブラウザで A4・倍率100%・背景のグラフィックありで印刷する（日を指定し、番号を省略すると1〜500番。ポスターは1日目の1枚目だけ）
+- [ ] 整理券を作る：`npm run tickets -- 1 1 500` と `npm run tickets -- 2 1 500` で `print/tickets-day1.html`・`print/tickets-day2.html` を作り、ブラウザで A4・倍率100%・背景のグラフィックありで印刷する（日を指定し、番号を省略すると1〜500番）
 - [ ] サーバーPCの準備が済んでいる（`docs/network.md`）。`.env.public` がサーバーPCにある
 - [ ] 4台すべてで Wi-Fi「TORICO-POS」を保存し、上のアドレスをブックマーク。スリープ・画面オフを無効に
 - [ ] 最新版に更新：`cd ~/torico-pos && git pull && npm ci && npm run build && sudo systemctl restart torico-pos`

@@ -1,5 +1,5 @@
 /**
- * 整理券（番号ごとのQRコードつき）と、屋台に貼るポスターの印刷用ページを作る。
+ * 整理券（番号ごとのQRコードつき）の印刷用ページを作る。
  * 使い方: npm run tickets -- <日: 1|2> [最初の番号=1] [最後の番号=500]
  * 出力: print/tickets-day1.html / print/tickets-day2.html（ブラウザで開いて A4・倍率100%・背景のグラフィックありで印刷するか PDF に保存し、点線で切る）
  */
@@ -61,15 +61,6 @@ async function main() {
     * { box-sizing: border-box; }
     html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     body { margin: 0; color: #4a3f8c; font-family: "Zen Maru Gothic", sans-serif; font-weight: 700; }
-    .poster { height: 277mm; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7mm; padding: 12mm; border-radius: 10mm; text-align: center; color: #fff; break-after: page;
-      background: linear-gradient(160deg, #544591, #3d2f7d 55%, #2a1f5c); }
-    .poster .logo { width: 70mm; padding: 2mm; border-radius: 7mm; background: #fff; }
-    .poster .logo img { display: block; width: 100%; }
-    .poster h1 { margin: 0; font-size: 13mm; font-weight: 900; }
-    .poster .big-qr { width: 105mm; padding: 6mm; border-radius: 7mm; background: #fff; }
-    .poster .big-qr svg { display: block; width: 100%; height: auto; }
-    .poster p { margin: 0; font-size: 6mm; }
-    .poster .url { font-size: 4.5mm; color: #80f7fd; }
     .sheet { display: grid; grid-template-columns: repeat(3, 1fr); }
     .ticket { height: 45mm; display: grid; grid-template-columns: 1fr 27mm; grid-template-rows: auto 1fr auto; align-items: center; gap: 0.5mm 3mm; padding: 3mm 4mm;
       border: 0.3mm dashed ${day === 1 ? "#f4b0d5" : "#80f7fd"}; break-inside: avoid; }
@@ -85,13 +76,6 @@ async function main() {
   </style>
   </head>
   <body>
-  ${day === 1 ? `<section class="poster">
-    <div class="logo"><img src="../public/brand/logo.jpg" alt="やきとり TORI♡CO"></div>
-    <h1>呼び出し状況</h1>
-    <div class="big-qr">${await qr(`${base}/`)}</div>
-    <p>スマホで読み取ると、できあがった番号がわかります</p>
-    <p class="url">${base}/</p>
-  </section>` : ""}
   <section class="sheet">
   ${tickets.join("\n")}
   </section>
@@ -102,7 +86,7 @@ async function main() {
   await mkdir("print", { recursive: true });
   const output = `print/tickets-day${day}.html`;
   await writeFile(output, html);
-  console.log(`${output} を作りました（${day === 1 ? "ポスター1枚＋" : ""}整理券 ${to - from + 1}枚、URL: ${base}/?n=番号&d=${date}）`);
+  console.log(`${output} を作りました（整理券 ${to - from + 1}枚、URL: ${base}/?n=番号&d=${date}）`);
 }
 
 main();
