@@ -1,7 +1,9 @@
 # torico-pos
 
+[![継続的インテグレーション](https://github.com/shimazakiseita-hash/torico-pos/actions/workflows/ci.yml/badge.svg)](https://github.com/shimazakiseita-hash/torico-pos/actions/workflows/ci.yml)
+
 津田沼祭（2026年11月21日・22日）の焼き鳥屋台「やきとり TORI♡CO」（寮友会執行役員会）で使う注文・会計アプリ。
-受付で現金会計をして呼び出し番号を発行し、焼き場で「完成」、渡し場で「渡した」を押す（作業中）。
+受付で現金会計をして呼び出し番号を発行し、焼き場で「完成」、渡し場で「渡した」を押す。
 
 注文・会計はインターネットなしで動く。サーバーPC（Ubuntu）が Wi-Fi の親機になり、ほかの端末はブラウザでつなぐ。
 整理券のQRから開くお客さん用ページ（`cloud/`、Cloudflare Workers）だけがインターネットを使う。
@@ -56,7 +58,9 @@ PUBLIC_STATUS_URL=https://torico-status.<サブドメイン>.workers.dev
 PUBLIC_STATUS_TOKEN=<PUSH_TOKEN と同じ値>
 ```
 
-お客さん用ページからはミニゲーム（`cloud/public/game/`：つみつみ串・とりこフライト）も遊べる。ランキングの確認・削除は `npm run ranking -- flight`（ゲーム名は tsumi・flight）。
+お客さん用ページでは、ミニゲーム「つみつみ串」「とりこフライト」（`cloud/public/game/`）を遊べる。
+やきとりポイントでガチャ（きせかえ）とショップ（強化）を利用でき、自分の番号ができあがるとゲームを止めて知らせる。
+ランキングの確認・削除は `npm run ranking -- flight`（ゲーム名は tsumi・flight）。
 
 整理券は `npm run tickets -- 1 500` で `print/tickets.html` を作り、ブラウザで A4・倍率100%・背景のグラフィックありで印刷する（1枚目は屋台に貼るポスター）。
 

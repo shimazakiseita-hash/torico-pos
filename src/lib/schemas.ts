@@ -37,7 +37,8 @@ export const putSettingsSchema = z.object({
   targetQty: z.number().int().min(1).max(99999).optional(),
 });
 
-const orderNumbersSchema = z.array(z.number().int().min(1)).max(1000);
+// 1日分のお渡し済み番号も送れるよう、各状態の番号は10000件まで受け付ける。
+const orderNumbersSchema = z.array(z.number().int().min(1)).max(10000);
 
 export const publicStatusSchema = z.object({
   businessDay: businessDaySchema,

@@ -104,6 +104,13 @@ describe("publicStatusSchema", () => {
     expect(publicStatusSchema.safeParse({ ready: [] }).success).toBe(false);
   });
 
+  it("1000件を超えるお渡し済みも受け付ける（10000件まで）", () => {
+    const served = Array.from({ length: 10001 }, (_, i) => i + 1);
+    expect(publicStatusSchema.safeParse({ ...ok, served: served.slice(0, 1001) }).success).toBe(true);
+    expect(publicStatusSchema.safeParse({ ...ok, served: served.slice(0, 10000) }).success).toBe(true);
+    expect(publicStatusSchema.safeParse({ ...ok, served }).success).toBe(false);
+  });
+
   it("余計な項目（金額など）は保存しない", () => {
     expect(publicStatusSchema.parse({ ...ok, amount: 500 })).toEqual(ok);
   });
