@@ -24,6 +24,8 @@ jobs:
         run: npm ci
       - name: リントを実行
         run: npm run lint
+      - name: Next.jsの型を生成
+        run: npx next typegen
       - name: ルートの型をチェック
         run: npx tsc --noEmit
       - name: テストを実行
