@@ -20,7 +20,8 @@ if (day !== 1 && day !== 2) {
 }
 const date = EVENT_DAYS[day - 1];
 const d = new Date(`${date}T00:00:00Z`);
-const dateLabel = `${day}日目 ${d.getUTCMonth() + 1}/${d.getUTCDate()}（${"日月火水木金土"[d.getUTCDay()]}）`;
+const shortDateLabel = `${d.getUTCMonth() + 1}/${d.getUTCDate()}（${"日月火水木金土"[d.getUTCDay()]}）`;
+const dateLabel = `${day}日目 ${shortDateLabel}`;
 const from = Number(process.argv[3] ?? 1);
 const to = Number(process.argv[4] ?? 500);
 const base = process.env.PUBLIC_STATUS_URL?.replace(/\/$/, "");
@@ -42,10 +43,12 @@ async function main() {
   const tickets: string[] = [];
   for (let n = from; n <= to; n++) {
     tickets.push(`<div class="ticket">
-    <div class="head"><img src="../public/brand/logo.jpg" alt=""><span>整理券<small>${dateLabel}</small></span></div>
-    <div class="num" data-digits="${String(n).length}">${n}</div>
-    <div class="qr">${await qr(`${base}/?n=${n}&d=${date}`)}</div>
-    <p>QRコードを読むと、できあがりがスマホでわかります <b>♥</b></p>
+    <div class="pillar"><span>${day}日目</span><small>${shortDateLabel}</small></div>
+    <div class="main">
+      <div class="top"><img src="../public/brand/logo.jpg" alt=""><div><b>やきとり TORI♡CO</b><small>寮友会執行役員会</small></div></div>
+      <div class="row"><div class="num" data-digits="${String(n).length}">${n}</div><div class="qr">${await qr(`${base}/?n=${n}&d=${date}`)}</div></div>
+      <p class="msg">QRを読むと できあがりがスマホでわかります。待っている間は ミニゲームで遊べます</p>
+    </div>
   </div>`);
   }
 
@@ -62,17 +65,22 @@ async function main() {
     html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     body { margin: 0; color: #4a3f8c; font-family: "Zen Maru Gothic", sans-serif; font-weight: 700; }
     .sheet { display: grid; grid-template-columns: repeat(3, 1fr); }
-    .ticket { height: 45mm; display: grid; grid-template-columns: 1fr 27mm; grid-template-rows: auto 1fr auto; align-items: center; gap: 0.5mm 3mm; padding: 3mm 4mm;
-      border: 0.3mm dashed ${day === 1 ? "#f4b0d5" : "#80f7fd"}; break-inside: avoid; }
-    .head { display: flex; align-items: center; gap: 1.5mm; font-size: 3.6mm; }
-    .head small { display: block; font-size: 2.7mm; white-space: nowrap; }
-    .head img { width: 8mm; height: 8mm; object-fit: contain; }
-    .num { font-size: 18mm; font-weight: 900; line-height: 1; color: ${day === 1 ? "#c5589d" : "#2b8fb3"}; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+    .ticket { height: 45mm; display: flex; background: #fff; overflow: hidden; position: relative;
+      --m: ${day === 1 ? "#c5589d" : "#2b8fb3"}; --l: ${day === 1 ? "#f4b0d5" : "#80f7fd"};
+      border: 0.3mm dashed var(--l); break-inside: avoid; }
+    .pillar { width: 8mm; flex-shrink: 0; background: var(--m); color: #fff; writing-mode: vertical-rl; display: flex; align-items: center; justify-content: center; gap: 1mm; font-size: 3.6mm; letter-spacing: 0.1em; }
+    .pillar small { font-size: 2.5mm; }
+    .main { flex: 1; min-width: 0; padding: 1.5mm 2.5mm; display: flex; flex-direction: column; }
+    .top { display: flex; align-items: center; gap: 1.5mm; }
+    .top img { width: 7mm; height: 7mm; object-fit: contain; }
+    .top b { display: block; font-size: 3.2mm; }
+    .top small { display: block; font-size: 2.2mm; color: #9374ab; }
+    .row { display: flex; align-items: center; justify-content: space-between; flex: 1; }
+    .num { font-size: 17mm; font-weight: 900; color: var(--m); line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
     .num[data-digits="3"] { font-size: 15mm; }
-    .qr { grid-column: 2; grid-row: 1 / 3; }
-    .qr svg { display: block; width: 27mm; height: 27mm; }
-    .ticket p { grid-column: 1 / -1; margin: 0; font-size: 2.7mm; line-height: 1.3; }
-    .ticket p b { color: #ed6fb6; }
+    .qr { width: 21mm; height: 21mm; flex-shrink: 0; }
+    .qr svg { display: block; width: 100%; height: 100%; }
+    .msg { margin: 0; font-size: 2.3mm; line-height: 1.35; }
   </style>
   </head>
   <body>
