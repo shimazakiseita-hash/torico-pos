@@ -152,10 +152,10 @@ CREATE TABLE day_settings (
 整理券ごとのQR → Cloudflare Workers 上の公開ページ（`cloud/`）で、お客さんが自分のスマホで番号の状況を見られる。
 サーバーPCの `scripts/public-sync.ts` が番号と状態を Worker へ送り、ページは Worker が返す。
 
-- 公開先：Worker `torico-status`。URLは `https://torico-status.tsudanumasai.workers.dev/?n=<番号>`
+- 公開先：Worker `torico-status`。URLは `https://torico-status.tsudanumasai.workers.dev/?n=<番号>&d=<営業日 YYYY-MM-DD>`
   - アカウントの workers.dev サブドメインは `tsudanumasai`（責任者がダッシュボードで設定。取れなければ `tsudanumasai2026`）
   - 同じアカウントにある既存の Worker は上書きしない。保存先は Worker に付属する Durable Objects なので、ほかの Worker のデータと混ざらない
-  - QRのURL形式は `?n=<番号>`。ページには番号入力欄と「番号を変える」も置く
+  - QRのURL形式は `?n=<番号>&d=<営業日 YYYY-MM-DD>`。ページには番号入力欄と「番号を変える」も置く
 - サーバーPCは数秒おきに「今日の営業日の、番号ごとの状態」と待ち時間の目安を公開先へ送る
   - 送るのは**番号・状態・時刻・待ち時間だけ**。金額や注文内容は送らない
   - 送信は注文処理と切り離す。インターネットが切れても受付〜渡し場は止まらず、復帰したら自動で再開する
@@ -169,7 +169,7 @@ CREATE TABLE day_settings (
   - ミニゲームへのボタンとランキング（切り替えは「今日／歴代」）
   - 「お呼び出し中」「ただいま焼いています」の番号一覧
   - 文言は「整理券」にそろえる
-- 営業日：公開ページは「今日」の番号だけを扱う。番号は毎日1からなので、**整理券は2日とも同じ絵柄（1番〜）を使える**
+- 営業日：公開ページは「今日」の番号だけを扱う。番号は毎日1から始まる。整理券は日ごとに絵柄（色・日付）を分ける。別の日の整理券を読むとその旨を表示
 - 整理券：番号ごとにQRが違う。受付は必ず番号順に上から渡す。取り消した注文の整理券は捨てる
 - ミニゲーム：TORI♡CO 用に新しく作る。内容は先に責任者に案を出して確認する（`docs/tasks.md` フェーズ7）
 

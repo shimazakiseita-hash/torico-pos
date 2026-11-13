@@ -134,6 +134,7 @@ export const PAGE_HTML = `<!doctype html>
   var POLL_MS = 5000;
   var STALE_MS = 60000;
   var KEY = "torico-number";
+  var DAY_KEY = "torico-number-day";
   var BASE_TITLE = document.title;
 
   var input = document.getElementById("n");
@@ -142,6 +143,7 @@ export const PAGE_HTML = `<!doctype html>
   var updatedAt = null;
   var hasStatus = false;
   var myNumber = null;
+  var myDay = null;
   var lastState = null;
   var closed = false;
 
@@ -149,17 +151,20 @@ export const PAGE_HTML = `<!doctype html>
   function store(value) {
     try { if (value === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, value); } catch (e) {}
   }
-  function recall() {
-    try { return localStorage.getItem(KEY); } catch (e) { return null; }
+  function recall(key) {
+    try { return localStorage.getItem(key || KEY); } catch (e) { return null; }
   }
 
-  function setNumber(raw) {
+  function setNumber(raw, day) {
     var n = parseInt(raw, 10);
     myNumber = n >= 1 && n <= 9999 ? n : null;
+    myDay = myNumber && /^\\d{4}-\\d{2}-\\d{2}$/.test(day) ? day : null;
+    try { if (myDay) localStorage.setItem(DAY_KEY, myDay); else localStorage.removeItem(DAY_KEY); } catch (e) {}
     lastState = null;
     store(myNumber ? String(myNumber) : null);
     var url = new URL(location.href);
     if (myNumber) url.searchParams.set("n", String(myNumber)); else url.searchParams.delete("n");
+    if (myDay) url.searchParams.set("d", myDay); else url.searchParams.delete("d");
     history.replaceState(null, "", url);
     form.hidden = !!myNumber;
     view.hidden = !myNumber;
@@ -167,6 +172,7 @@ export const PAGE_HTML = `<!doctype html>
   }
 
   var TEXT = {
+    otherDay: ["state plain", "この整理券は {日付}のものです", "今日の整理券の番号を入れてください"],
     ready: ["state done", "できあがりました！", "整理券を持ってお渡し口へどうぞ ♥"],
     waiting: ["state", "ただいま焼いています", "できあがったらこの画面が変わります"],
     served: ["state plain", "お渡し済み", "ご来店ありがとうございました ♥"],
@@ -175,8 +181,22 @@ export const PAGE_HTML = `<!doctype html>
     unknown: ["state plain", "状況を確認できません", "店頭の呼び出し画面をご確認ください"]
   };
 
+  /** 今日（日本時間）の日付 YYYY-MM-DD */
+  function today() {
+    return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  }
+
+  function isOtherDay() {
+    return myDay && myDay !== today();
+  }
+
+  function formatDay(day) {
+    var d = new Date(day + "T00:00:00Z");
+    return (d.getUTCMonth() + 1) + "/" + d.getUTCDate() + "（" + "日月火水木金土"[d.getUTCDay()] + "）";
+  }
+
   function renderMine(lookup) {
-    var s = myNumber && lookup ? lookup.state : null;
+    var s = myNumber && isOtherDay() ? "otherDay" : myNumber && lookup ? lookup.state : null;
     var done = s === "ready" && !closed;
     document.body.classList.toggle("done", done);
     $("stats").hidden = s !== "waiting" || closed;
@@ -188,7 +208,7 @@ export const PAGE_HTML = `<!doctype html>
     var stale = updatedAt !== null && Date.now() - updatedAt >= STALE_MS;
     var t = TEXT[s === "notFound" && stale ? "unknown" : s || (hasStatus ? "notFound" : "none")];
     $("my-state").className = t[0];
-    $("my-state").textContent = t[1];
+    $("my-state").textContent = s === "otherDay" ? t[1].replace("{日付}", formatDay(myDay)) : t[1];
     $("my-detail").textContent = t[2];
     if (s === "waiting") {
       $("ahead").textContent = lookup.ahead + "組";
@@ -205,7 +225,7 @@ export const PAGE_HTML = `<!doctype html>
     numbers.forEach(function (n) {
       var li = document.createElement("li");
       li.textContent = String(n);
-      if (n === myNumber) li.className = "me";
+      if (n === myNumber && !isOtherDay()) li.className = "me";
       ul.appendChild(li);
     });
     $(id + "-empty").hidden = numbers.length > 0;
@@ -246,7 +266,8 @@ export const PAGE_HTML = `<!doctype html>
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
-    setNumber(input.value);
+    // 手で入れた番号は今日の整理券として覚える（次の日に別の人の番号と取り違えないように）
+    setNumber(input.value, today());
     refresh();
   });
   $("change").addEventListener("click", function () {
@@ -256,7 +277,10 @@ export const PAGE_HTML = `<!doctype html>
   });
   document.addEventListener("visibilitychange", function () { if (!document.hidden) refresh(); });
 
-  setNumber(new URLSearchParams(location.search).get("n") || recall());
+  var params = new URLSearchParams(location.search);
+  if (params.has("n")) setNumber(params.get("n"), params.get("d"));
+  else setNumber(recall(), recall(DAY_KEY));
+  renderMine(null);
   refresh();
   setInterval(refresh, POLL_MS);
   setInterval(renderUpdated, 1000);

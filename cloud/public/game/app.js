@@ -273,6 +273,8 @@ const WATCH_MS = 5000;
 
 function myNumber() {
   try {
+    const day = localStorage.getItem("torico-number-day");
+    if (day && day !== new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)) return null;
     const n = parseInt(localStorage.getItem(NUMBER_KEY) ?? "", 10);
     return n >= 1 && n <= 9999 ? n : null;
   } catch {
@@ -280,12 +282,23 @@ function myNumber() {
   }
 }
 
+/** 呼び出し状況のページへのリンク（整理券の日付も付けて、前の日の券と取り違えないようにする） */
+function statusLink(n) {
+  let day = null;
+  try {
+    day = localStorage.getItem("torico-number-day");
+  } catch {
+    // 日付なしで開く
+  }
+  return /^\d{4}-\d{2}-\d{2}$/.test(day ?? "") ? `/?n=${n}&d=${day}` : `/?n=${n}`;
+}
+
 function renderOrder(n, lookup) {
   const box = $("my-order");
   const state = lookup?.state;
   box.hidden = !n || !(state === "waiting" || state === "ready");
   if (box.hidden) return;
-  box.href = `/?n=${n}`;
+  box.href = statusLink(n);
   box.classList.toggle("done", state === "ready");
   $("my-order-number").textContent = String(n);
   $("my-order-state").textContent = state === "ready" ? "できあがりました！ お渡し口へ" : `ただいま焼いています（前に ${lookup.ahead}組）`;
@@ -302,7 +315,7 @@ function callReady(n) {
   pause();
   $("call-number").textContent = String(n);
   $("call").hidden = false;
-  $("call").querySelector("a").href = `/?n=${n}`;
+  $("call").querySelector("a").href = statusLink(n);
   navigator.vibrate?.([300, 150, 300, 150, 300]);
 }
 

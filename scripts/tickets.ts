@@ -1,10 +1,11 @@
 /**
  * 整理券（番号ごとのQRコードつき）と、屋台に貼るポスターの印刷用ページを作る。
- * 使い方: npm run tickets -- [最初の番号=1] [最後の番号=300]
- * 出力: print/tickets.html（ブラウザで開いて A4・倍率100%・背景のグラフィックありで印刷するか PDF に保存し、点線で切る）
+ * 使い方: npm run tickets -- <日: 1|2> [最初の番号=1] [最後の番号=500]
+ * 出力: print/tickets-day1.html / print/tickets-day2.html（ブラウザで開いて A4・倍率100%・背景のグラフィックありで印刷するか PDF に保存し、点線で切る）
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import QRCode from "qrcode";
+import { EVENT_DAYS } from "../src/lib/businessDay";
 
 try {
   process.loadEnvFile(".env.public");
@@ -12,8 +13,16 @@ try {
   // 環境変数で直接渡してもよい
 }
 
-const from = Number(process.argv[2] ?? 1);
-const to = Number(process.argv[3] ?? 300);
+const day = Number(process.argv[2]);
+if (day !== 1 && day !== 2) {
+  console.error("日は1か2を指定してください（使い方：npm run tickets -- <日: 1|2> [最初の番号=1] [最後の番号=500]）");
+  process.exit(1);
+}
+const date = EVENT_DAYS[day - 1];
+const d = new Date(`${date}T00:00:00Z`);
+const dateLabel = `${day}日目 ${d.getUTCMonth() + 1}/${d.getUTCDate()}（${"日月火水木金土"[d.getUTCDay()]}）`;
+const from = Number(process.argv[3] ?? 1);
+const to = Number(process.argv[4] ?? 500);
 const base = process.env.PUBLIC_STATUS_URL?.replace(/\/$/, "");
 
 if (!base) {
@@ -21,7 +30,7 @@ if (!base) {
   process.exit(1);
 }
 if (!Number.isInteger(from) || !Number.isInteger(to) || from < 1 || to < from) {
-  console.error("番号の範囲が不正です（例：npm run tickets -- 1 300）");
+  console.error("番号の範囲が不正です（例：npm run tickets -- 1 1 500）");
   process.exit(1);
 }
 
@@ -33,9 +42,9 @@ async function main() {
   const tickets: string[] = [];
   for (let n = from; n <= to; n++) {
     tickets.push(`<div class="ticket">
-    <div class="head"><img src="../public/brand/logo.jpg" alt=""><span>整理券</span></div>
+    <div class="head"><img src="../public/brand/logo.jpg" alt=""><span>整理券<small>${dateLabel}</small></span></div>
     <div class="num" data-digits="${String(n).length}">${n}</div>
-    <div class="qr">${await qr(`${base}/?n=${n}`)}</div>
+    <div class="qr">${await qr(`${base}/?n=${n}&d=${date}`)}</div>
     <p>QRコードを読むと、できあがりがスマホでわかります <b>♥</b></p>
   </div>`);
   }
@@ -44,7 +53,7 @@ async function main() {
   <html lang="ja">
   <head>
   <meta charset="utf-8">
-  <title>整理券とポスター（${from}〜${to}）</title>
+  <title>整理券（${dateLabel}・${from}〜${to}）</title>
   <link rel="stylesheet" href="../node_modules/@fontsource/zen-maru-gothic/700.css">
   <link rel="stylesheet" href="../node_modules/@fontsource/zen-maru-gothic/900.css">
   <style>
@@ -63,10 +72,11 @@ async function main() {
     .poster .url { font-size: 4.5mm; color: #80f7fd; }
     .sheet { display: grid; grid-template-columns: repeat(3, 1fr); }
     .ticket { height: 45mm; display: grid; grid-template-columns: 1fr 27mm; grid-template-rows: auto 1fr auto; align-items: center; gap: 0.5mm 3mm; padding: 3mm 4mm;
-      border: 0.3mm dashed #f4b0d5; break-inside: avoid; }
+      border: 0.3mm dashed ${day === 1 ? "#f4b0d5" : "#80f7fd"}; break-inside: avoid; }
     .head { display: flex; align-items: center; gap: 1.5mm; font-size: 3.6mm; }
+    .head small { display: block; font-size: 2.7mm; white-space: nowrap; }
     .head img { width: 8mm; height: 8mm; object-fit: contain; }
-    .num { font-size: 18mm; font-weight: 900; line-height: 1; color: #c5589d; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+    .num { font-size: 18mm; font-weight: 900; line-height: 1; color: ${day === 1 ? "#c5589d" : "#2b8fb3"}; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
     .num[data-digits="3"] { font-size: 15mm; }
     .qr { grid-column: 2; grid-row: 1 / 3; }
     .qr svg { display: block; width: 27mm; height: 27mm; }
@@ -75,13 +85,13 @@ async function main() {
   </style>
   </head>
   <body>
-  <section class="poster">
+  ${day === 1 ? `<section class="poster">
     <div class="logo"><img src="../public/brand/logo.jpg" alt="やきとり TORI♡CO"></div>
     <h1>呼び出し状況</h1>
     <div class="big-qr">${await qr(`${base}/`)}</div>
     <p>スマホで読み取ると、できあがった番号がわかります</p>
     <p class="url">${base}/</p>
-  </section>
+  </section>` : ""}
   <section class="sheet">
   ${tickets.join("\n")}
   </section>
@@ -90,8 +100,9 @@ async function main() {
   `;
 
   await mkdir("print", { recursive: true });
-  await writeFile("print/tickets.html", html);
-  console.log(`print/tickets.html を作りました（ポスター1枚＋整理券 ${to - from + 1}枚、URL: ${base}/?n=番号）`);
+  const output = `print/tickets-day${day}.html`;
+  await writeFile(output, html);
+  console.log(`${output} を作りました（${day === 1 ? "ポスター1枚＋" : ""}整理券 ${to - from + 1}枚、URL: ${base}/?n=番号&d=${date}）`);
 }
 
 main();
