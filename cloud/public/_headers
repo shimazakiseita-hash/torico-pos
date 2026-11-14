@@ -1,0 +1,5 @@
+/fonts/*
+  Cache-Control: public, max-age=86400
+
+/brand/*
+  Cache-Control: public, max-age=86400

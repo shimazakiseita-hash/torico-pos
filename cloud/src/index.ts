@@ -189,7 +189,8 @@ export default {
         const status = saved && isToday(saved) ? saved : null;
         const n = Number(url.searchParams.get("n"));
         const lookup = status && Number.isInteger(n) && n >= 1 ? lookupNumber(status, n) : null;
-        return json({ status, lookup, config: await store.config() });
+        const publicStatus = status ? Object.fromEntries(Object.entries(status).filter(([key]) => key !== "served")) : null;
+        return json({ status: publicStatus, lookup, config: await store.config() });
       }
       if (request.method === "PUT") {
         if (!authorized(request, env.PUSH_TOKEN)) return json({ error: "認証に失敗しました" }, 401);

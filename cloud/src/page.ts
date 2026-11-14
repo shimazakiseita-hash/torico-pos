@@ -1,4 +1,4 @@
-/** お客さんのスマホで開くページ（5秒ごとに更新。画像とフォントは cloud/public から配る） */
+/** お客さんのスマホで開くページ（10秒ごとに更新。画像とフォントは cloud/public から配る） */
 
 const FONT = `"Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic UI", Meiryo, system-ui, sans-serif`;
 
@@ -12,7 +12,6 @@ export const PAGE_HTML = `<!doctype html>
 <link rel="icon" href="/brand/mascot.webp">
 <style>
   @font-face { font-family: "Zen Maru Gothic"; font-weight: 700; font-display: swap; src: url("/fonts/zen-maru-gothic-700.woff2") format("woff2"); }
-  @font-face { font-family: "Zen Maru Gothic"; font-weight: 900; font-display: swap; src: url("/fonts/zen-maru-gothic-900.woff2") format("woff2"); }
   :root {
     --space-900: #2a1f5c; --space-700: #3d2f7d; --space-500: #544591; --ink: #4a3f8c;
     --lav-500: #9374ab; --lav-300: #c9b3e6; --lav-100: #f1eafa;
@@ -34,8 +33,8 @@ export const PAGE_HTML = `<!doctype html>
   }
   /* できあがったら画面全体の色を変えて気づけるようにする */
   body.done { background: linear-gradient(180deg, #5fd39b, var(--ok) 55%, #1d6b45); }
-  main { max-width: 26rem; margin: 0 auto; padding: 1rem 1rem 2rem; display: flex; flex-direction: column; gap: 0.875rem; text-align: center; }
-  .logo { display: block; width: 9.5rem; margin: 0 auto; padding: 0.25rem; border-radius: 20px; background: #fff; }
+  main { max-width: 26rem; margin: 0 auto; padding: 1rem 1rem calc(2rem + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 0.875rem; text-align: center; }
+  .logo { display: block; width: clamp(6rem, 30vw, 9.5rem); margin: 0 auto; padding: 0.25rem; border-radius: 20px; background: #fff; }
   .logo img { display: block; width: 100%; height: auto; border-radius: 16px; }
   .card { padding: 1rem 1rem 1.125rem; border-radius: 28px; background: #fff; color: var(--ink); box-shadow: 0 6px 0 rgb(0 0 0 / 0.15); }
   label, .my-label { display: block; margin: 0 0 0.5rem; font-size: 1rem; }
@@ -48,13 +47,14 @@ export const PAGE_HTML = `<!doctype html>
   .hint { margin: 0.75rem 0 0; font-size: 0.875rem; color: var(--lav-500); }
   .my-label { margin: 0; }
   .my-number {
-    margin: 0; font-size: 6rem; font-weight: 900; line-height: 1.05; letter-spacing: -0.02em;
+    margin: 0; font-size: clamp(4rem, 22vw, 6rem); font-weight: 900; line-height: 1.05; letter-spacing: -0.02em;
     background: linear-gradient(180deg, var(--pink-400), var(--magenta)); -webkit-background-clip: text; background-clip: text; color: transparent;
   }
-  .state { margin: 0.5rem 0; padding: 0.5rem; border-radius: 999px; background: linear-gradient(180deg, var(--pink-400), var(--magenta)); color: #fff; font-size: 1.625rem; font-weight: 900; }
+  .state { margin: 0.5rem 0; padding: 0.5rem; border-radius: 999px; background: linear-gradient(180deg, var(--pink-400), var(--magenta)); color: #fff; font-size: clamp(1.125rem, 5.8vw, 1.625rem); white-space: nowrap; font-weight: 900; }
   .state.done { background: linear-gradient(180deg, #48c58a, var(--ok)); }
-  .state.plain { background: var(--lav-100); color: var(--ink); font-size: 1.375rem; }
-  .detail { margin: 0; font-size: 0.95rem; }
+  /* 灰色のラベルは長い文（別の日の整理券など）もあるので折り返してよい */
+  .state.plain { background: var(--lav-100); color: var(--ink); font-size: clamp(1rem, 5vw, 1.375rem); white-space: normal; }
+  .detail { margin: 0; font-size: clamp(0.8125rem, 3.8vw, 0.95rem); }
   .link { display: block; min-height: 2.75rem; margin: 0.5rem auto 0; padding: 0 1rem; border: 0; background: none; color: var(--lav-500); text-decoration: underline; }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; }
   .stat { padding: 0.625rem; border-radius: 18px; background: rgb(255 255 255 / 0.15); }
@@ -131,7 +131,7 @@ export const PAGE_HTML = `<!doctype html>
 </main>
 <script>
 (function () {
-  var POLL_MS = 5000;
+  var POLL_MS = 10000;
   var STALE_MS = 60000;
   var KEY = "torico-number";
   var DAY_KEY = "torico-number-day";
@@ -142,6 +142,9 @@ export const PAGE_HTML = `<!doctype html>
   var view = document.getElementById("mine-view");
   var updatedAt = null;
   var hasStatus = false;
+  var hasFetched = false;
+  var failed = false;
+  var refreshId = 0;
   var myNumber = null;
   var myDay = null;
   var lastState = null;
@@ -178,6 +181,7 @@ export const PAGE_HTML = `<!doctype html>
     served: ["state plain", "お渡し済み", "ご来店ありがとうございました ♥"],
     notFound: ["state plain", "この番号は使われていません", "整理券の番号をご確認ください"],
     none: ["state plain", "準備中です", "受付が始まると、ここに状況が出ます"],
+    offline: ["state plain", "つながりません", "電波のよいところで、しばらくお待ちください（自動でやり直します）"],
     unknown: ["state plain", "状況を確認できません", "店頭の呼び出し画面をご確認ください"]
   };
 
@@ -206,7 +210,7 @@ export const PAGE_HTML = `<!doctype html>
     $("my-number").textContent = String(myNumber);
     // 更新が止まっている間に発行された番号を「使われていません」と言わないように
     var stale = updatedAt !== null && Date.now() - updatedAt >= STALE_MS;
-    var t = TEXT[s === "notFound" && stale ? "unknown" : s || (hasStatus ? "notFound" : "none")];
+    var t = TEXT[failed && !hasFetched ? "offline" : s === "notFound" && stale ? "unknown" : s || (hasStatus ? "notFound" : "none")];
     $("my-state").className = t[0];
     $("my-state").textContent = s === "otherDay" ? t[1].replace("{日付}", formatDay(myDay)) : t[1];
     $("my-detail").textContent = t[2];
@@ -233,7 +237,7 @@ export const PAGE_HTML = `<!doctype html>
 
   function renderUpdated() {
     var el = $("updated");
-    if (!updatedAt) { el.textContent = "この画面は自動で更新されます"; $("stale").hidden = true; return; }
+    if (!updatedAt) { el.textContent = failed ? "通信できませんでした（自動でやり直します）" : "この画面は自動で更新されます"; $("stale").hidden = true; return; }
     var sec = Math.max(0, Math.round((Date.now() - updatedAt) / 1000));
     el.textContent = "最終更新：" + (sec < 60 ? sec + "秒前" : Math.floor(sec / 60) + "分前") + "（この画面は自動で更新されます）";
     $("stale").hidden = closed || Date.now() - updatedAt < STALE_MS;
@@ -248,9 +252,17 @@ export const PAGE_HTML = `<!doctype html>
   }
 
   function refresh() {
-    fetch("/api/status" + (myNumber ? "?n=" + myNumber : ""), { cache: "no-store" })
-      .then(function (res) { return res.json(); })
+    var id = ++refreshId;
+    var number = myNumber;
+    var controller = new AbortController();
+    var timeout = setTimeout(function () { controller.abort(); }, 8000);
+    function isCurrent() { return id === refreshId && number === myNumber; }
+    fetch("/api/status" + (number ? "?n=" + number : ""), { cache: "no-store", signal: controller.signal })
+      .then(function (res) { if (!res.ok) throw new Error("通信できませんでした"); return res.json(); })
       .then(function (data) {
+        if (!isCurrent()) return;
+        hasFetched = true;
+        failed = false;
         var s = data.status;
         hasStatus = !!s;
         updatedAt = s ? Date.parse(s.updatedAt) : null;
@@ -261,7 +273,13 @@ export const PAGE_HTML = `<!doctype html>
         renderMine(data.lookup);
         renderUpdated();
       })
-      .catch(renderUpdated);
+      .catch(function () {
+        if (!isCurrent()) return;
+        failed = true;
+        if (!hasFetched) renderMine(null);
+        renderUpdated();
+      })
+      .finally(function () { clearTimeout(timeout); });
   }
 
   form.addEventListener("submit", function (e) {
@@ -282,7 +300,7 @@ export const PAGE_HTML = `<!doctype html>
   else setNumber(recall(), recall(DAY_KEY));
   renderMine(null);
   refresh();
-  setInterval(refresh, POLL_MS);
+  setInterval(function () { if (!document.hidden) refresh(); }, POLL_MS);
   setInterval(renderUpdated, 1000);
 })();
 </script>

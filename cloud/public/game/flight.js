@@ -241,60 +241,7 @@ export function createGame({ costume, up = {} }) {
     } else if (kind === "gun") {
       state.gun = gunSeconds;
       pop.add("たれビーム！", x, y - 24, COLORS.cyan, 24);
-    } else if (kind === "bomb") {
-    // つくねばくだん：つくねに 導火線
-    ctx.fillStyle = "#4e2410";
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(x, y + 2, 13, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.strokeStyle = "#e9c48a";
-    ctx.beginPath();
-    ctx.moveTo(x + 6, y - 9);
-    ctx.quadraticCurveTo(x + 12, y - 18, x + 6, y - 22);
-    ctx.stroke();
-    ctx.fillStyle = Math.floor(t * 10) % 2 ? COLORS.beak : COLORS.comb;
-    star(ctx, x + 6, y - 23, 6, 2.5);
-    ctx.fill();
-  } else if (kind === "glide") {
-    // ふわふわ羽
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(-0.6 + Math.sin(t * 4) * 0.2);
-    ctx.fillStyle = "#fff";
-    ctx.strokeStyle = "#c9b3e6";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 8, 18, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(0, -16);
-    ctx.lineTo(0, 20);
-    ctx.stroke();
-    ctx.restore();
-  } else if (kind === "small") {
-    // しいたけ
-    ctx.fillStyle = "#f3e2c7";
-    ctx.fillRect(x - 4, y, 8, 12);
-    ctx.fillStyle = "#7a4a2a";
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.ellipse(x, y + 1, 15, 10, 0, Math.PI, 0);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(255,255,255,0.7)";
-    ctx.beginPath();
-    ctx.moveTo(x - 6, y - 6);
-    ctx.lineTo(x + 6, y - 3);
-    ctx.moveTo(x + 6, y - 6);
-    ctx.lineTo(x - 6, y - 3);
-    ctx.stroke();
-  } else if (kind === "shield") {
+    } else if (kind === "shield") {
       state.shield = true;
       pop.add("バリア！", x, y - 24, COLORS.cyan, 24);
     }
@@ -767,6 +714,59 @@ function drawItem(ctx, kind, x, y, t) {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("たれ", x, y + 2);
+  } else if (kind === "bomb") {
+    // つくねばくだん：つくねに 導火線
+    ctx.fillStyle = "#4e2410";
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y + 2, 13, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = "#e9c48a";
+    ctx.beginPath();
+    ctx.moveTo(x + 6, y - 9);
+    ctx.quadraticCurveTo(x + 12, y - 18, x + 6, y - 22);
+    ctx.stroke();
+    ctx.fillStyle = Math.floor(t * 10) % 2 ? COLORS.beak : COLORS.comb;
+    star(ctx, x + 6, y - 23, 6, 2.5);
+    ctx.fill();
+  } else if (kind === "glide") {
+    // ふわふわ羽
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(-0.6 + Math.sin(t * 4) * 0.2);
+    ctx.fillStyle = "#fff";
+    ctx.strokeStyle = "#c9b3e6";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 8, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -16);
+    ctx.lineTo(0, 20);
+    ctx.stroke();
+    ctx.restore();
+  } else if (kind === "small") {
+    // しいたけ
+    ctx.fillStyle = "#f3e2c7";
+    ctx.fillRect(x - 4, y, 8, 12);
+    ctx.fillStyle = "#7a4a2a";
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(x, y + 1, 15, 10, 0, Math.PI, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,0.7)";
+    ctx.beginPath();
+    ctx.moveTo(x - 6, y - 6);
+    ctx.lineTo(x + 6, y - 3);
+    ctx.moveTo(x + 6, y - 6);
+    ctx.lineTo(x - 6, y - 3);
+    ctx.stroke();
   } else if (kind === "shield") {
     ctx.fillStyle = COLORS.pink400;
     ctx.strokeStyle = "#fff";

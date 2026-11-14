@@ -43,6 +43,11 @@ describe("containsNgWord", () => {
     expect(containsNgWord("ば.か")).toBe(true);
   });
 
+  it("漢字のよくない言葉は弾き、ふつうの名前は通す", () => {
+    for (const name of ["死ね", "殺す", "殺せ", "馬鹿", "阿呆", "糞"]) expect(containsNgWord(name)).toBe(true);
+    for (const name of ["死神", "やきとり", "たろう"]) expect(containsNgWord(name)).toBe(false);
+  });
+
   it("ふつうの名前は通す", () => {
     expect(containsNgWord("やきとり名人")).toBe(false);
     expect(containsNgWord("Seita")).toBe(false);
@@ -106,7 +111,7 @@ describe("rankingSubmitSchema", () => {
 });
 
 describe("allowSubmission", () => {
-  it("10分に20回までは通し、それを超えると断る。古い登録は数えない", () => {
+  it("10分に60回までは通し、それを超えると断る。古い登録は数えない", () => {
     const now = 1_000_000_000;
     const full = Array.from({ length: SUBMIT_LIMIT }, (_, i) => now - i * 1000);
     expect(allowSubmission(full.slice(1), now).ok).toBe(true);

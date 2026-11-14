@@ -4,8 +4,8 @@ export const NAME_MAX = 10;
 export const RANKING_SIZE = 10;
 /** 表示やスタッフの削除に使う、プレイヤーIDの先頭の文字数（IDそのものは出さず、他人の記録を書き換えられないようにする） */
 export const TAG_LENGTH = 6;
-/** 同じ回線からの登録は、10分に20回まで */
-export const SUBMIT_LIMIT = 20;
+/** 同じ回線からの登録は、10分に60回まで */
+export const SUBMIT_LIMIT = 60;
 export const SUBMIT_WINDOW_MS = 10 * 60 * 1000;
 
 /** player はスマホごとに自動で作るID（整理券がなくても登録できる） */
@@ -17,6 +17,7 @@ export function playerTag(player: string): string {
 
 /** 表示名に使わせない言葉（ひらがな・小文字にそろえてから部分一致で見る）。「かす」（かすみ など）のように普通の名前に含まれる語は入れない。最後の砦はスタッフの削除 */
 const NG_WORDS = [
+  "死ね", "殺す", "殺せ", "馬鹿", "阿呆", "糞",
   "しね", "ころす", "ころせ", "きもい", "うざい", "くず", "ばか", "あほ", "ちんこ", "ちんぽ", "まんこ",
   "うんこ", "せっくす", "えっち", "おっぱい", "れいぷ", "ぶす", "でぶ", "がいじ", "きちがい", "ふぁっく",
   "fuck", "shit", "sex", "porn", "dick", "pussy", "bitch", "nigger",

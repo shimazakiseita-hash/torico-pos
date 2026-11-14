@@ -181,8 +181,10 @@ let offY = 0;
 
 /** キャンバスは画面いっぱい。ゲームの 360×640 は収まる大きさで真ん中に置き、まわりは背景だけ見える */
 function fit() {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
+  const play = $("play");
+  if (play.hidden) return;
+  const vw = play.clientWidth;
+  const vh = play.clientHeight - (parseFloat(getComputedStyle(play).paddingBottom) || 0);
   scale = Math.min(vw / W, vh / H);
   offX = (vw - W * scale) / 2;
   offY = (vh - H * scale) / 2;
@@ -215,7 +217,7 @@ function openGame(g) {
   current = g;
   game = g.createGame({ costume: save.costume, up: save.upgrades });
   started = false;
-  if (new URLSearchParams(location.search).has("debug")) window.__game = game;
+  if (["localhost", "127.0.0.1"].includes(location.hostname) && new URLSearchParams(location.search).has("debug")) window.__game = game;
   $("ready-title").textContent = g.META.title;
   $("ready-howto").textContent = g.META.howto;
   $("ready").hidden = false;
@@ -265,11 +267,13 @@ function pause() {
 // 別のアプリに切り替えたら止め、戻ったら続きから
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) pause();
+  else watchOrder();
 });
 
 // ── 自分の番号（呼び出し状況のページで入れた整理券の番号）を見張り、できあがったらゲームを止めて知らせる ──
 const NUMBER_KEY = "torico-number";
-const WATCH_MS = 5000;
+const WATCH_MS = 10000;
+const called = new Set();
 
 function myNumber() {
   try {
@@ -305,13 +309,16 @@ function renderOrder(n, lookup) {
 }
 
 function callReady(n) {
-  const key = `torico-called-${n}`;
+  const day = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const key = `torico-called-${day}-${n}`;
+  if (called.has(key)) return;
   try {
     if (sessionStorage.getItem(key)) return;
     sessionStorage.setItem(key, "1");
   } catch {
-    // 覚えられなくても知らせる
+    // 保存できないときも、この画面で知らせた番号を覚える
   }
+  called.add(key);
   pause();
   $("call-number").textContent = String(n);
   $("call").hidden = false;
@@ -320,15 +327,22 @@ function callReady(n) {
 }
 
 async function watchOrder() {
+  if (document.hidden) return;
   const n = myNumber();
   if (!n) return renderOrder(null);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
   try {
-    const res = await fetch(`/api/status?n=${n}`, { cache: "no-store" });
+    const res = await fetch(`/api/status?n=${n}`, { cache: "no-store", signal: controller.signal });
+    if (!res.ok) return;
     const data = await res.json();
+    if (data.config?.closed === true || !data.status || !(Date.now() - Date.parse(data.status.updatedAt) < 60000)) return renderOrder(null);
     renderOrder(n, data.lookup);
     if (data.lookup?.state === "ready") callReady(n);
   } catch {
     // つながらないときは次の回に
+  } finally {
+    clearTimeout(timeout);
   }
 }
 setInterval(watchOrder, WATCH_MS);
