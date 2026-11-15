@@ -312,9 +312,11 @@ export function createGame({ costume, up = {} }) {
       // すきま
       if (!state.boss) {
         state.nextIn -= dx / SPACING;
-        if (state.nextIn <= 0 && state.sinceStage + state.cols.filter((c) => !c.scored).length < PER_STAGE) {
-          addColumn();
-          state.nextIn += 1;
+        if (state.nextIn <= 0) {
+          if (state.sinceStage + state.cols.filter((c) => !c.scored).length < PER_STAGE) {
+            addColumn();
+            state.nextIn = Math.max(state.nextIn + 1, 0.5);
+          } else state.nextIn = 0;
         }
       }
       for (const c of state.cols) {
