@@ -1,0 +1,10 @@
+{
+  "$schema": "../cloud/node_modules/wrangler/config-schema.json",
+  "name": "torico-practice",
+  "compatibility_date": "2026-09-30",
+  "assets": {
+    "directory": "../demo-out",
+    "not_found_handling": "404-page",
+    "html_handling": "drop-trailing-slash"
+  }
+}

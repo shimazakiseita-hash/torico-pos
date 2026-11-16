@@ -16,7 +16,9 @@
     "backup": "tsx scripts/backup.ts",
     "practice": "tsx scripts/event.ts --practice",
     "ranking": "tsx scripts/ranking.ts",
-    "closing": "tsx scripts/closing.ts"
+    "closing": "tsx scripts/closing.ts",
+    "demo:build": "TORICO_DEMO=1 NEXT_PUBLIC_TORICO_DEMO=1 node scripts/demo-build.mjs",
+    "demo:deploy": "npm run demo:build && npm --prefix cloud exec -- wrangler deploy -c practice/wrangler.jsonc"
   },
   "dependencies": {
     "@fontsource/zen-maru-gothic": "^5.3.1",

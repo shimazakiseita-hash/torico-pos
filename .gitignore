@@ -56,3 +56,8 @@ next-env.d.ts
 
 # 広報物の原本（公開リポジトリに載せない。画面で使うものは縮小して public/brand/ へ）
 /docs/design-reference/original/
+
+# スマホ用の練習版
+/demo-out/
+.wrangler/
+/.demo-build/

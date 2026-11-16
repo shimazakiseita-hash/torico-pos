@@ -82,3 +82,11 @@ PUBLIC_STATUS_TOKEN=<PUSH_TOKEN と同じ値>
 - `docs/mock/` の画像
 
 `cloud/public/fonts/` のフォントは、それぞれの OFL ファイルに従う。
+
+## 練習版（スマホだけで練習）
+
+`npm run demo:build` で静的サイトを `demo-out/` に作ります。
+`npm run demo:deploy` で Cloudflare Workers の `torico-practice` に公開します（cloud/ の Wrangler を使用）。
+公開したサイトをスマホで開くと、受付・焼き場・渡し場・呼び出し表示・管理を練習できます。
+データはそのスマホのブラウザ内だけに保存され、同じブラウザの別タブでも共有されます。
+帯の「練習データを消す」で初期化できます。本番のデータや通常のビルド・`npm run practice` とは無関係です。

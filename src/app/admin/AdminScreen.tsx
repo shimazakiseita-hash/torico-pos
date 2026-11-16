@@ -129,18 +129,26 @@ async function saveSettings(day: string, patch: Record<string, unknown>): Promis
 }
 
 export function AdminScreen() {
+  return process.env.NEXT_PUBLIC_TORICO_DEMO === "1" ? <AdminContent /> : <SyncedAdminScreen />;
+}
+
+function SyncedAdminScreen() {
+  const sync = usePolling<PublicSyncHealth>("/api/public-sync", 5_000);
+  return <AdminContent sync={sync} />;
+}
+
+function AdminContent({ sync }: { sync?: { status: boolean | null; data: PublicSyncHealth | null } }) {
   const today = businessDayOf();
   const tabs = dayTabs(today);
   const [day, setDay] = useState(tabs.some((t) => t.key === today) ? today : tabs[0].key);
   const server = usePolling<ServerInfo>("/api/server-info", 10_000);
-  const sync = usePolling<PublicSyncHealth>("/api/public-sync", 5_000);
   const toast = useToast();
 
   return (
     <div className="bg-candy min-h-dvh pb-6">
-      <AppHeader title="管理" note={day === TOTAL ? "2日間の合計" : dayLabel(day)} error={sync.status} />
+      <AppHeader title="管理" note={day === TOTAL ? "2日間の合計" : dayLabel(day)} error={sync ? sync.status : false} />
       <main className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4">
-        <PublicSyncCard health={sync.data} />
+        {sync && <PublicSyncCard health={sync.data} />}
 
         {/* 営業日の切り替え */}
         <nav aria-label="営業日" className="panel grid auto-cols-fr grid-flow-col gap-2 p-2">
@@ -161,7 +169,7 @@ export function AdminScreen() {
 
         <DayView key={day} day={day} onError={toast.show} />
 
-        <Card title="他の端末をつなぐとき">
+        {process.env.NEXT_PUBLIC_TORICO_DEMO !== "1" && <Card title="他の端末をつなぐとき">
           {!server.data ? (
             <p className="text-lav-500">…</p>
           ) : server.data.urls.length === 0 ? (
@@ -185,7 +193,7 @@ export function AdminScreen() {
             ))
           )}
           <p className="mt-1 text-base text-lav-500">各端末で Wi-Fi「TORICO-POS」につないでから開いてください</p>
-        </Card>
+        </Card>}
       </main>
       <Toast message={toast.message} onClose={toast.clear} />
     </div>

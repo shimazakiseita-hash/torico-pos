@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { DemoShim } from "@/components/DemoShim";
 import { PracticeBanner } from "@/components/PracticeBanner";
 import "@fontsource/zen-maru-gothic/700.css";
 import "@fontsource/zen-maru-gothic/900.css";
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ja" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
+        <DemoShim />
         <PracticeBanner />
         {children}
       </body>
