@@ -18,7 +18,6 @@ export const UPGRADES = [
   { id: "flightShield", game: "flight", name: "スタートバリア", desc: "バリアを もって スタート", costs: [250] },
   { id: "flightGun", game: "flight", name: "たれビーム 長もち", desc: "たれビームが 2秒ずつ 長くなる", costs: [150, 300] },
   { id: "flightLuck", game: "flight", name: "アイテム運", desc: "アイテムが 出やすくなる", costs: [200, 400] },
-  { id: "tsumiPass", game: "tsumi", name: "パス +1", desc: "1本ごとの パスが ふえる", costs: [150, 300] },
   { id: "tsumiLife", game: "tsumi", name: "ハート +1", desc: "はずしても いい回数が ふえる", costs: [400] },
   { id: "tsumiSlow", game: "tsumi", name: "ゆっくりスタート", desc: "さいしょの 5こが ゆっくり ゆれる", costs: [150] },
 ];

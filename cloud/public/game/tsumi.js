@@ -1,22 +1,21 @@
 // つみつみ串：左右にゆれる具をタップで落として、串にまっすぐ刺していく。3回はずすと終わり
-//   1本ごとに「お題」（ねぎま・つくねだけ など）。お題どおりに つめば ボーナス。いらない具は「パス」（1本に2回まで）
-//   とくべつな具：金のもも（どのお題にも合う・+50）・こげ（刺さると お題ボーナスなし）・こおり（しばらく ゆれが ゆっくり）
+//   できた串のならびで「役」を判定。いちばん高い役ひとつのボーナス
+//   とくべつな具：金のもも（どの具にもなる・+50）・こげ（刺さると 役なし）・こおり（しばらく ゆれが ゆっくり）
 //   5本ごとに ジャンボ串（8個・ボーナス2倍）。5本ごとに ゆれ方が かわる
-//   ストック：いまの具を1つ とっておける（もう一度おすと入れかえ。1個につき1回）
 //   焼き加減タイム：1本できたら焼く。メーターが「こんがり」のときにタップで ボーナス
-//   ショップの強化（up）：パス+1・ハート+1・ゆっくりスタート
+//   ショップの強化（up）：ハート+1・ゆっくりスタート
 //
 // 点数（src/lib/ranking.ts の MAX_POINTS_PER_SECOND.tsumi の根拠）
 //   1個：ぴったり 20＋連続ぴったり 5×最大5 ／ まんなか寄り 10 ／ はし 5、金のもも ＋50 → 1個あたり最大 95
-//   1本：できた 30、お題 80、焼き加減 パーフェクト 60（ジャンボは どれも2倍）→ 1個あたり最大 (60+160+120)/8 ≒ 43
-//   いちばん短い落下 約0.45秒＋次が出るまで0.25秒 → 1個に最低0.7秒 → 最大 (95+43)/0.7 ≒ 197点/秒（上限は余裕をみて240）
+//   1本：できた 30、役 最大150、焼き加減 パーフェクト 60（ジャンボは どれも2倍）→ 1個あたり最大 (60+300+120)/8 = 60
+//   いちばん短い落下 約0.45秒＋次が出るまで0.25秒 → 1個に最低0.7秒 → 最大 (95+60)/0.7 ≒ 221点/秒（221 < 上限240）
 
 import { COLORS, FONT, Popups, W, drawHearts, drawHud, drawMascot, drawSpace, star, view } from "./common.js";
 
 export const META = {
   id: "tsumi",
   title: "つみつみ串",
-  howto: "ゆれる具を タップで落として、串に まっすぐ さそう。「お題」どおりに つむと ボーナス！ いらない具は パス、あとで使う具は ストック。できたら こんがり焼こう",
+  howto: "ゆれる具を タップで落として、串に まっすぐ さそう。ならび方で「役」が できると ボーナス！ できたら こんがり焼こう",
   pointRate: 0.12,
 };
 
@@ -26,7 +25,6 @@ const PIECE_H = 34;
 const SMALL_H = 26; // ジャンボ串のときの具の高さ
 const SWING_Y = 150;
 const GRAVITY = 2400;
-const PASSES = 2;
 const KINDS = {
   momo: { name: "もも", fill: "#c8763f", edge: "#8a4a1d", text: "#fff" },
   negi: { name: "ねぎ", fill: "#a4dd7c", edge: "#5a9a3a", text: "#2f5a1d" },
@@ -38,25 +36,27 @@ const KINDS = {
 };
 const NORMAL = ["momo", "negi", "tsukune", "kawa"];
 
-/** お題：ok(kinds) が true なら達成（金のももは どの具の代わりにもなる） */
-const RECIPES = [
-  { name: "なんでもOK", ok: () => true, hint: "どの具でも" },
-  { name: "ねぎま", ok: (k) => alternates(k, "momo", "negi"), hint: "もも・ねぎを こうごに" },
-  { name: "つくねだけ", ok: (k) => k.every((x) => x === "tsukune"), hint: "ぜんぶ つくね" },
-  { name: "ももだけ", ok: (k) => k.every((x) => x === "momo"), hint: "ぜんぶ もも" },
-  { name: "3しゅるい", ok: (k) => new Set(k).size >= 3, hint: "3しゅるい いじょう" },
-  { name: "かわ はさみ", ok: (k) => k[0] === "kawa" && k[k.length - 1] === "kawa", hint: "いちばん下と上が かわ" },
+/** 残りの枠も使って、まだ成立しうる役（金のももは自由に当てはめる） */
+const YAKU = [
+  { name: "ねぎま", bonus: 150, possible: (k) =>
+    [0, 1].some((start) => k.every((x, i) => x === "gold" || x === ["momo", "negi"][(i + start) % 2])) },
+  { name: "ぜんぶ同じ", bonus: 120, possible: (k) =>
+    NORMAL.some((kind) => k.every((x) => x === "gold" || x === kind)) },
+  { name: "4しゅるい", bonus: 60, possible: (k, left) =>
+    NORMAL.filter((kind) => !k.includes(kind)).length <= left + k.filter((x) => x === "gold").length },
+  { name: "かわ はさみ", bonus: 40, possible: (k, left) =>
+    (!k.length || k[0] === "kawa" || k[0] === "gold") &&
+    (left > 0 || k[k.length - 1] === "kawa" || k[k.length - 1] === "gold") },
 ];
 
-/** 金のもも（wild）を当てはめても条件に合うか */
-function alternates(k, a, b) {
-  return k.every((x, i) => x === (i % 2 ? b : a)) || k.every((x, i) => x === (i % 2 ? a : b));
+function yakuPossible(yaku, kinds, left) {
+  return !kinds.includes("burnt") && yaku.possible(kinds, left);
 }
-function recipeOk(recipe, kinds) {
-  // 金のももは、条件に合うどれかの具として数える（ためしに入れてみる）
-  const golds = kinds.map((k, i) => (k === "gold" ? i : -1)).filter((i) => i >= 0);
-  if (!golds.length) return recipe.ok(kinds);
-  return NORMAL.some((a) => NORMAL.some((b) => recipe.ok(kinds.map((k, i) => (k === "gold" ? (golds.indexOf(i) % 2 ? b : a) : k)))));
+
+export function judgeYaku(kinds) {
+  if (!kinds.length) return null;
+  const yaku = YAKU.find((y) => yakuPossible(y, kinds, 0));
+  return yaku ? { name: yaku.name, bonus: yaku.bonus } : null;
 }
 
 /** ゆれ方（5本ごとに かわる） */
@@ -73,7 +73,6 @@ const PERFECT = [0.64, 0.71];
 
 export function createGame({ costume, up = {} }) {
   const pop = new Popups();
-  const maxPasses = PASSES + (up.tsumiPass ?? 0);
   const maxLives = 3 + (up.tsumiLife ?? 0);
   const state = {
     score: 0,
@@ -81,15 +80,11 @@ export function createGame({ costume, up = {} }) {
     combo: 0,
     skewers: 0,
     placed: [], // { kind, off, w }
-    recipe: RECIPES[0],
     perSkewer: 5,
-    passes: maxPasses,
-    stock: null, // とっておいた具
-    swapped: false, // いまの具で ストックを使ったか
     grill: null, // 焼き加減タイム：{ v（0〜1）, speed, done }
     current: null, // ゆれている具
     falling: null, // 落ちている具
-    dropped: [], // はずれて落ちていく具・パスした具
+    dropped: [], // はずれて落ちていく具
     next: "momo",
     wait: 0.4,
     finishing: 0,
@@ -113,23 +108,12 @@ export function createGame({ costume, up = {} }) {
     if (r < 0.05) return "gold";
     if (r < 0.12 && state.skewers >= 1) return "burnt";
     if (r < 0.16) return "ice";
-    // お題に合う具は少し出やすい
-    const rc = state.recipe.name;
-    if (Math.random() < 0.35) {
-      if (rc === "ねぎま") return Math.random() < 0.5 ? "momo" : "negi";
-      if (rc === "つくねだけ") return "tsukune";
-      if (rc === "ももだけ") return "momo";
-      if (rc === "かわ はさみ") return "kawa";
-    }
     return NORMAL[Math.floor(Math.random() * NORMAL.length)];
   }
 
   function newSkewer() {
     const n = state.skewers;
     state.perSkewer = n > 0 && (n + 1) % 5 === 0 ? 8 : 5;
-    // はじめの1本は「なんでもOK」、そのあとは ランダム
-    state.recipe = n === 0 ? RECIPES[0] : RECIPES[1 + Math.floor(Math.random() * (RECIPES.length - 1))];
-    state.passes = maxPasses;
     if (n > 0 && n % 5 === 0) banner(`ゆれ方：${pattern().name}`);
     else if (jumbo()) banner("ジャンボ串！ 8こ つもう");
   }
@@ -148,7 +132,6 @@ export function createGame({ costume, up = {} }) {
       x: STICK_X,
     };
     if (state.ice > 0) state.ice--;
-    state.swapped = false;
     state.next = randomKind();
   }
 
@@ -159,16 +142,10 @@ export function createGame({ costume, up = {} }) {
   function finishSkewer() {
     const kinds = state.placed.map((p) => p.kind);
     const times = jumbo() ? 2 : 1;
-    let bonus = 30 * times;
-    let label = jumbo() ? "ジャンボ串 できた！" : "1本できた！";
-    if (!kinds.includes("burnt") && recipeOk(state.recipe, kinds)) {
-      bonus += 80 * times;
-      label = `お題「${state.recipe.name}」クリア！ +${bonus}`;
-    } else if (kinds.includes("burnt")) {
-      label = "こげが まざった…";
-    }
-    state.score += bonus;
-    pop.add(label, W / 2, 300, COLORS.cyan, 24);
+    const yaku = judgeYaku(kinds);
+    state.score += (30 + (yaku?.bonus ?? 0)) * times;
+    pop.add(jumbo() ? "ジャンボ串 できた！" : "1本できた！", W / 2, 236, COLORS.cyan, 24);
+    if (yaku) pop.add(`役：${yaku.name}！ +${yaku.bonus * times}`, W / 2, 266, COLORS.beak, 22);
     // つぎは 焼き加減タイム（だんだん 速く焼ける）
     state.grill = { v: 0, speed: Math.min(1.1, 0.55 + state.skewers * 0.04), done: false, wait: 0.5 };
   }
@@ -190,20 +167,6 @@ export function createGame({ costume, up = {} }) {
     }
     state.skewers++;
     state.finishing = 0.9;
-  }
-
-  /** ストック：とっておく／入れかえる */
-  function toggleStock() {
-    const c = state.current;
-    if (!c || state.swapped) return;
-    if (state.stock === null) {
-      state.stock = c.kind;
-      state.current = null;
-      state.wait = 0.2;
-    } else {
-      [c.kind, state.stock] = [state.stock, c.kind];
-      state.swapped = true;
-    }
   }
 
   function land(f) {
@@ -253,15 +216,6 @@ export function createGame({ costume, up = {} }) {
     state.wait = 0.25;
   }
 
-  function pass() {
-    if (!state.current || state.passes <= 0) return;
-    const c = state.current;
-    state.dropped.push({ ...c, y: SWING_Y, vx: 0, vy: -500, vr: 4, r: 0 });
-    state.current = null;
-    state.passes--;
-    state.wait = 0.2;
-  }
-
   newSkewer();
 
   return {
@@ -272,16 +226,13 @@ export function createGame({ costume, up = {} }) {
     get over() {
       return state.over;
     },
-    pointer(type, x, y) {
+    pointer(type) {
       if (type !== "down" || state.over) return;
       if (state.grill && !state.grill.done) {
         if (state.grill.wait <= 0) grillStop();
         return;
       }
       if (!state.current || state.falling || state.finishing > 0) return;
-      // 右下の「パス」「ストック」ボタン
-      if (x > 270 && y > BASE_Y - 10 && y < BASE_Y + 50) return pass();
-      if (x > 270 && y > BASE_Y - 66 && y < BASE_Y - 14) return toggleStock();
       const c = state.current;
       state.falling = { kind: c.kind, x: c.x, y: SWING_Y, vy: 0, w: c.w };
       state.current = null;
@@ -390,20 +341,29 @@ export function createGame({ costume, up = {} }) {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // お題の札
+      // 役の早見表
       ctx.fillStyle = "rgba(255,255,255,0.92)";
       ctx.beginPath();
       ctx.roundRect(14, 76, W - 28, 44, 14);
       ctx.fill();
-      ctx.textAlign = "left";
+      ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = `900 16px ${FONT}`;
-      ctx.fillStyle = COLORS.magenta;
-      ctx.fillText(`お題「${state.recipe.name}」`, 26, 98);
-      ctx.font = `700 13px ${FONT}`;
+      ctx.font = `900 11px ${FONT}`;
+      const kinds = state.placed.map((p) => p.kind);
+      YAKU.forEach((yaku, i) => {
+        const x = 20 + i * 68;
+        ctx.globalAlpha = yakuPossible(yaku, kinds, state.perSkewer - kinds.length) ? 1 : 0.25;
+        ctx.fillStyle = COLORS.magenta;
+        ctx.beginPath();
+        ctx.roundRect(x, 84, 64, 28, 6);
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.fillText(yaku.name, x + 32, 98, 60);
+      });
+      ctx.globalAlpha = 1;
       ctx.fillStyle = COLORS.ink;
       ctx.textAlign = "right";
-      ctx.fillText(`${state.recipe.hint}・${state.placed.length}/${state.perSkewer}こ`, W - 26, 98);
+      ctx.fillText(`${state.placed.length}/${state.perSkewer}こ`, W - 20, 98, 34);
 
       // つぎの具
       ctx.font = `700 15px ${FONT}`;
@@ -416,31 +376,6 @@ export function createGame({ costume, up = {} }) {
         ctx.fillStyle = COLORS.cyan;
         ctx.fillText(`ゆっくり あと${state.ice}こ`, 14, 222);
       }
-
-      // ストック（とっておいた具を中に出す）
-      ctx.fillStyle = state.current && !state.swapped ? "#fff" : "rgba(255,255,255,0.35)";
-      ctx.beginPath();
-      ctx.roundRect(276, BASE_Y - 62, 72, 48, 14);
-      ctx.fill();
-      ctx.fillStyle = COLORS.ink;
-      ctx.font = `900 11px ${FONT}`;
-      ctx.textAlign = "center";
-      ctx.fillText("ストック", 312, BASE_Y - 52);
-      if (state.stock) drawPiece(ctx, 312, BASE_Y - 32, 44, state.stock, 0.55, PIECE_H);
-      else {
-        ctx.font = `700 11px ${FONT}`;
-        ctx.fillText("とっておく", 312, BASE_Y - 30);
-      }
-
-      // パス
-      ctx.fillStyle = state.passes > 0 && state.current ? "#fff" : "rgba(255,255,255,0.35)";
-      ctx.beginPath();
-      ctx.roundRect(276, BASE_Y - 4, 72, 44, 14);
-      ctx.fill();
-      ctx.fillStyle = COLORS.ink;
-      ctx.font = `900 16px ${FONT}`;
-      ctx.textAlign = "center";
-      ctx.fillText(`パス ${state.passes}`, 312, BASE_Y + 18);
 
       drawMascot(ctx, 52, BASE_Y - 20, 30, costume, { t: state.t, tilt: Math.sin(state.t * 2) * 0.1 });
 

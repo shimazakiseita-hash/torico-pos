@@ -475,16 +475,23 @@ export function loadSave() {
   const owned = Array.isArray(data.owned) ? data.owned.filter((id) => ids.has(id)) : Object.keys(LEGACY_UNLOCK).filter((id) => points >= LEGACY_UNLOCK[id]);
   if (!owned.includes("none")) owned.unshift("none");
   const costume = typeof data.costume === "string" && owned.includes(data.costume) ? data.costume : "none";
-  return {
+  const upgrades = typeof data.upgrades === "object" && data.upgrades ? data.upgrades : {};
+  const hadPass = Object.hasOwn(upgrades, "tsumiPass");
+  const refund = upgrades.tsumiPass === 1 ? 150 : upgrades.tsumiPass === 2 ? 450 : 0;
+  delete upgrades.tsumiPass;
+  const save = {
     player: data.player,
     name: typeof data.name === "string" ? data.name : "",
-    points,
+    points: points + refund,
     owned,
     costume,
-    upgrades: typeof data.upgrades === "object" && data.upgrades ? data.upgrades : {},
+    upgrades,
     best: typeof data.best === "object" && data.best ? data.best : {},
     plays: Number.isInteger(data.plays) ? data.plays : 0,
   };
+  // 廃止したパス強化を返金し、次に読む前に保存する
+  if (hadPass) writeSave(save);
+  return save;
 }
 
 export function writeSave(save) {
