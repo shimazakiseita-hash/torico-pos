@@ -46,19 +46,19 @@ export function HandoffScreen() {
               {ready.map((o) => (
                 <li
                   key={o.id}
-                  className={`flex items-center gap-4 rounded-[18px] border-[3px] bg-pink-100 px-4 py-2 ${
+                  className={`flex flex-wrap items-center gap-4 rounded-[18px] border-[3px] bg-pink-100 px-4 py-2 sm:flex-nowrap ${
                     fresh.has(o.id) ? "border-cyan ring-4 ring-cyan" : "border-pink-200"
                   }`}
                 >
-                  <span className="text-grad w-32 shrink-0 text-[4.5rem] leading-none font-black tabular-nums">{o.number}</span>
-                  <span className="flex-1">
+                  <span className="text-grad w-auto shrink-0 text-6xl leading-none font-black tabular-nums sm:w-32 sm:text-[4.5rem]">{o.number}</span>
+                  <span className="min-w-0 flex-1 sm:min-w-auto">
                     <ItemBadges items={o.items} size="md" />
                   </span>
                   <button
                     type="button"
                     onClick={() => move(o, "served")}
                     disabled={isPending(o)}
-                    className="btn-ok min-h-20 w-44 shrink-0 text-3xl"
+                    className="btn-ok min-h-16 w-full shrink-0 basis-full text-3xl sm:min-h-20 sm:w-44 sm:basis-auto"
                   >
                     渡した
                   </button>

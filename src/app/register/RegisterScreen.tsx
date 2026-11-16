@@ -99,8 +99,8 @@ export function RegisterScreen() {
           {/* 串5種 × 味付け2種 */}
           <section aria-label="品目" className="flex flex-col gap-2.5 panel p-4">
             {ITEMS.map((item) => (
-              <div key={item.id} className="grid min-h-16 flex-1 grid-cols-[9.5rem_1fr_1fr] gap-2.5">
-                <div className="flex items-center text-[1.75rem] font-black whitespace-nowrap">
+              <div key={item.id} className="grid min-h-16 flex-1 grid-cols-2 gap-2.5 sm:grid-cols-[9.5rem_1fr_1fr]">
+                <div className="col-span-2 flex items-center text-[1.5rem] font-black whitespace-nowrap sm:col-span-1 sm:text-[1.75rem]">
                   <span className="mr-2 text-pink-200" aria-hidden>
                     ♥
                   </span>
@@ -304,17 +304,23 @@ function SkuCell({
           else onAdd();
         }}
         aria-label={`${name}を1本追加`}
-        className="press flex flex-1 items-center justify-between gap-2 px-4 text-left select-none"
+        className="press flex min-w-0 flex-1 items-center justify-between gap-1 px-2 text-left select-none sm:gap-2 sm:px-4"
       >
-        <span className="text-2xl font-black">
+        <span className="text-base font-black whitespace-nowrap sm:text-2xl">
           {s.name}
-          <small className="ml-2 text-sm font-bold opacity-80">
-            {avail.soldOut ? "売り切れ" : ""}
+          {/* スマホ幅では「売切」と短く下に出し、「−」ボタンを押し出さない */}
+          <small className="block text-xs font-bold opacity-80 sm:ml-2 sm:inline sm:text-sm">
+            {avail.soldOut && (
+              <>
+                <span className="sm:hidden">売切</span>
+                <span className="hidden sm:inline">売り切れ</span>
+              </>
+            )}
           </small>
         </span>
         <span
           key={count}
-          className={`min-w-14 rounded-full bg-white text-center text-3xl leading-[3rem] font-black tabular-nums ${count > 0 ? "pop" : "opacity-60"}`}
+          className={`min-w-11 rounded-full bg-white text-center text-2xl leading-[2.5rem] font-black tabular-nums sm:min-w-14 sm:text-3xl sm:leading-[3rem] ${count > 0 ? "pop" : "opacity-60"}`}
         >
           {dim ? "-" : count}
         </span>
@@ -324,7 +330,7 @@ function SkuCell({
         onClick={onSub}
         disabled={count === 0}
         aria-label={`${name}を1本減らす`}
-        className={`w-14 shrink-0 border-l-[3px] bg-white/60 text-3xl font-black disabled:opacity-30 ${s.border}`}
+        className={`w-11 shrink-0 sm:w-14 border-l-[3px] bg-white/60 text-3xl font-black disabled:opacity-30 ${s.border}`}
       >
         −
       </button>

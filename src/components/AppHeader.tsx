@@ -13,7 +13,7 @@ type Props = {
 /** 共通ヘッダー：キャンディ背景の上に、白枠のロゴと画面名、右端に補足と接続状態 */
 export function AppHeader({ title, note, error }: Props) {
   return (
-    <header className="flex h-16 shrink-0 items-center gap-3 px-4 text-white">
+    <header className="flex h-16 shrink-0 items-center gap-2 px-3 text-white sm:gap-3 sm:px-4">
       <Link href="/" aria-label="トップへ" className="shrink-0">
         <Image
           src="/brand/logo.jpg"
@@ -24,8 +24,8 @@ export function AppHeader({ title, note, error }: Props) {
           className="h-[52px] w-[52px] rounded-xl bg-white p-0.5 shadow-[0_3px_0_rgb(0_0_0/0.15)]"
         />
       </Link>
-      <h1 className="text-2xl font-black tracking-wider drop-shadow-[0_2px_0_rgb(0_0_0/0.15)]">{title}</h1>
-      {note && <span className="ml-auto rounded-full bg-white/20 px-4 py-1 text-base font-bold">{note}</span>}
+      <h1 className="shrink-0 whitespace-nowrap text-xl font-black tracking-wider drop-shadow-[0_2px_0_rgb(0_0_0/0.15)] sm:shrink sm:whitespace-normal sm:text-2xl">{title}</h1>
+      {note && <span className="ml-auto min-w-0 truncate rounded-full bg-white/20 px-2 py-1 text-sm font-bold sm:min-w-auto sm:overflow-visible sm:px-4 sm:text-base sm:text-clip sm:whitespace-normal">{note}</span>}
       <ConnectionStatus error={error} className={note ? "" : "ml-auto"} />
     </header>
   );
@@ -38,7 +38,7 @@ export function ConnectionStatus({ error, className = "" }: { error: boolean | n
   return (
     <span
       role="status"
-      className={`flex items-center gap-2 rounded-full px-3 py-1 text-base font-bold ${
+      className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-2 py-1 text-sm font-bold sm:shrink sm:whitespace-normal sm:px-3 sm:text-base ${
         error ? "bg-white text-danger" : "bg-white/20 text-white"
       } ${className}`}
     >

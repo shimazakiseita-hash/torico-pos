@@ -9,7 +9,7 @@ export function ItemBadges({ items, size = "md" }: { items: readonly OrderItem[]
       {items.map((i) => {
         const s = SEASONING_BY_ID[i.seasoning];
         return (
-          <span key={skuKey(i.item, i.seasoning)} className={`rounded-full border-2 font-bold ${s.bg} ${s.text} ${s.border} ${cls}`}>
+          <span key={skuKey(i.item, i.seasoning)} className={`whitespace-nowrap rounded-full border-2 font-bold ${s.bg} ${s.text} ${s.border} ${cls}`}>
             {skuName(i.item, i.seasoning)}×{i.qty}
           </span>
         );

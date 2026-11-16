@@ -57,7 +57,7 @@ export function GrillScreen() {
           {queue.length === 0 ? (
             <p className="flex flex-1 items-center justify-center text-2xl text-lav-500">調理待ちの注文はありません</p>
           ) : (
-            <ul className="grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-3 overflow-y-auto xl:grid-cols-3">
+            <ul className="grid min-h-0 flex-1 auto-rows-min grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2 xl:grid-cols-3">
               {queue.map((o) => {
                 const late = isLate(o, now);
                 const min = Math.max(0, Math.floor((now - Date.parse(o.createdAt)) / 60000));
