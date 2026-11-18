@@ -6,6 +6,10 @@ export const META = {
   howto: "とりこを 引っぱって はなすと とぶよ。砦を くずして UFOの 手下を ぜんぶ たおせば クリア！とんでいる とちゅうで タップすると どかーん！",
 };
 const STEP = 1 / 60;
+// 半分の距離で従来と同じ最大速度・見た目の引き幅にする。
+const MAX_PULL = 45;
+const SHOT_SPEED = 0.3;
+const PULL_DISPLAY = 0.6;
 const FLOOR = 590;
 const SLING = { x: 48, y: 475 };
 const TYPES = {
@@ -18,12 +22,12 @@ const TYPES = {
   ufo: { hp: 28, density: 0.001, color: "#bba1d3" },
 };
 
-// 配置と重さを保ち、部材と手下の耐久値で狙いどころを絞る。
+// 配置と重さを保ち、1〜3面は耐久値を下げて練習しやすくする。
 // 7面は囲いを固くしつつ手下を弱め、上下を連鎖で倒す1発を残す。
 const STAGE_DURABILITY = [
-  { structure: 3, ufo: 2 },
-  { structure: 3, ufo: 1.5 },
-  { structure: 2, ufo: 1.5 },
+  { structure: 0.75, ufo: 0.5 },
+  { structure: 1.4, ufo: 0.8 },
+  { structure: 1.2, ufo: 0.9 },
   { structure: 5, ufo: 1.2 },
   { structure: 2, ufo: 1.2 },
   { structure: 4, ufo: 0.7 },
@@ -125,7 +129,7 @@ export function createGame({ costume, stage = 0 }) {
   }
   function pull(x, y) {
     const dx = x - state.drag.x, dy = y - state.drag.y;
-    const factor = Math.min(1, 90 / (Math.hypot(dx, dy) || 1));
+    const factor = Math.min(1, MAX_PULL / (Math.hypot(dx, dy) || 1));
     state.drag.dx = dx * factor; state.drag.dy = dy * factor;
   }
   function tick() {
@@ -195,9 +199,9 @@ export function createGame({ costume, stage = 0 }) {
         pull(x, y);
         const { dx, dy } = state.drag;
         state.drag = null;
-        if (Math.hypot(dx, dy) < 6) return;
+        if (Math.hypot(dx, dy) < 4) return;
         state.bird = Bodies.circle(SLING.x, SLING.y, 16, { density: 0.008, restitution: 0.25, friction: 0.6 });
-        Body.setVelocity(state.bird, { x: -dx * 0.15, y: -dy * 0.15 });
+        Body.setVelocity(state.bird, { x: -dx * SHOT_SPEED, y: -dy * SHOT_SPEED });
         Composite.add(engine.world, state.bird);
         state.burstUsed = false;
         state.ammo--; state.flying = true; state.shotAge = 0; state.quiet = 0;
@@ -214,7 +218,7 @@ export function createGame({ costume, stage = 0 }) {
       if (state.shake > 0) ctx.translate(Math.sin(state.t * 91) * 3, Math.cos(state.t * 79) * 2);
       for (const b of state.pieces) drawPiece(ctx, b);
       const dx = state.drag?.dx || 0, dy = state.drag?.dy || 0;
-      const bx = SLING.x + dx * 0.3, by = SLING.y + dy * 0.3;
+      const bx = SLING.x + dx * PULL_DISPLAY, by = SLING.y + dy * PULL_DISPLAY;
       ctx.lineCap = "round";
       for (const x of [32, 64]) {
         ctx.strokeStyle = "#eac189"; ctx.lineWidth = 7;
@@ -226,7 +230,7 @@ export function createGame({ costume, stage = 0 }) {
       if (state.bird) drawMascot(ctx, state.bird.position.x, state.bird.position.y, 20, costume, { t: state.t, tilt: state.bird.angle });
       if (state.drag) {
         // 最初の約0.4秒だけ。実際と同じ重力・空気抵抗の簡易予測。
-        let x = SLING.x, y = SLING.y, vx = -dx * 0.15, vy = -dy * 0.15;
+        let x = SLING.x, y = SLING.y, vx = -dx * SHOT_SPEED, vy = -dy * SHOT_SPEED;
         ctx.fillStyle = "rgba(255,255,255,0.65)";
         for (let i = 0; i < 24; i++) {
           vx *= 0.99; vy = vy * 0.99 + engine.gravity.y * engine.gravity.scale * (STEP * 1000) ** 2;
