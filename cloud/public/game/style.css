@@ -136,9 +136,9 @@ button { cursor: pointer; touch-action: manipulation; }
 .shot-mountains::after { content: ""; position: absolute; inset: 40% 0 0; background: #101b2c; clip-path: polygon(0 19%, 30% 0, 48% 25%, 72% 7%, 100% 20%, 100% 100%, 0 100%); }
 .shot-lanterns { position: absolute; top: 44px; left: 0; width: 100%; height: 160px; filter: drop-shadow(0 4px 8px #ff756a66); }
 .shot-route { position: relative; margin-top: 105px; }
-.shot-route > svg { position: absolute; inset: 0; width: 100%; height: 650px; overflow: visible; filter: drop-shadow(0 0 5px #ffd68f88); }
+.shot-route > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 5px #ffd68f88); }
 .shot-route path { fill: none; stroke: #edbd7b88; stroke-width: 3; vector-effect: non-scaling-stroke; stroke-dasharray: 3 9; stroke-linecap: round; }
-.shot-stages { position: relative; height: 650px; }
+.shot-stages { position: relative; }
 .shot-stages button { position: absolute; left: var(--stage-x); top: var(--stage-y); transform: translate(-50%, -50%); width: 70px; height: 70px; padding: 2px; border: 2px solid #dcb987; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff0c8; background: repeating-linear-gradient(90deg, transparent 0 10px, #72324930 10px 12px), radial-gradient(ellipse at 50% 35%, #bd696b, #703848); box-shadow: 0 4px 0 #271e30, inset 0 0 10px #ffd79466; }
 .shot-stages b { font-size: 1.7rem; line-height: 1.1; text-shadow: 0 2px 3px #46263b; }
 .shot-stages span { font-size: .85rem; letter-spacing: 1px; color: #ffe4a0; }

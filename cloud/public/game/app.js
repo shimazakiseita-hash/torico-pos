@@ -65,7 +65,7 @@ function renderHub() {
     const best = save.best[g.META.id];
     li.innerHTML = `<h2></h2><p class="best"></p><button class="btn pink" type="button">あそぶ</button><button class="rank-link" type="button">ランキング</button><p></p>`;
     li.querySelector("h2").textContent = g.META.title;
-    li.querySelector(".best").textContent = g.META.mode === "map" ? `★ ${shotTotal()} / 24` : best ? `じこベスト ${best.toLocaleString()}点` : "まだ あそんでいない";
+    li.querySelector(".best").textContent = g.META.mode === "map" ? `★ ${shotTotal()} / ${shot.STAGE_COUNT * 3}` : best ? `じこベスト ${best.toLocaleString()}点` : "まだ あそんでいない";
     li.querySelector("p:last-child").textContent = g.META.howto;
     li.querySelector("button").addEventListener("click", () => g.META.mode === "map" ? show("shot-map") : openGame(g));
     if (g.META.mode === "map") li.querySelector(".rank-link").remove();
@@ -78,21 +78,31 @@ const shotSkills = () => shot.SKILLS.filter((skill) => skill.stage < 0 || save.s
 const shotTotal = () => save.shot.stars.reduce((sum, n) => sum + n, 0);
 const shotStars = (n) => "★".repeat(n) + "☆".repeat(3 - n);
 function renderShotMap() {
-  $("shot-total").textContent = `★ ${shotTotal()} / 24`;
+  $("shot-total").textContent = `★ ${shotTotal()} / ${shot.STAGE_COUNT * 3}`;
   $("shot-stages").textContent = "";
   const firstUncleared = save.shot.stars.findIndex((n) => n === 0);
+  const positions = [20, 48, 78, 70, 40, 18, 46, 78, 70, 40, 18, 32, 64, 78, 48, 20];
+  const points = positions.map((x, stage) => ({ x, y: 48 + stage * 76 }));
+  const height = points.at(-1).y + 70;
+  $("shot-stages").style.height = `${height}px`;
+  const route = document.querySelector(".shot-route > svg");
+  route.setAttribute("viewBox", `0 0 100 ${height}`);
+  route.querySelector("path").setAttribute("d", points.map((p, i) => i ? `C${points[i - 1].x} ${p.y - 38} ${p.x} ${p.y - 38} ${p.x} ${p.y}` : `M${p.x} ${p.y}`).join(" "));
   save.shot.stars.forEach((stars, stage) => {
     const button = document.createElement("button");
     button.type = "button";
     button.disabled = save.shot.stars[stage] === 0 && firstUncleared !== -1 && stage > firstUncleared;
     button.className = stars ? "cleared" : button.disabled ? "locked" : "next";
-    button.style.setProperty("--stage-x", `${[20, 48, 78, 70, 40, 18, 46, 78][stage]}%`);
-    button.style.setProperty("--stage-y", `${48 + stage * 76}px`);
+    button.style.setProperty("--stage-x", `${points[stage].x}%`);
+    button.style.setProperty("--stage-y", `${points[stage].y}px`);
     button.innerHTML = `<b>${stage + 1}</b><span>${shotStars(stars)}</span>${button.disabled ? '<i aria-hidden="true">🔒</i>' : ''}`;
     button.setAttribute("aria-label", `${stage + 1} ${shotStars(stars)}${button.disabled ? " 🔒" : ""}`);
     if (!stars && !button.disabled) button.setAttribute("aria-current", "step");
     button.addEventListener("click", () => openGame(shot, stage));
     $("shot-stages").appendChild(button);
+  });
+  requestAnimationFrame(() => {
+    $("shot-stages").children[firstUncleared < 0 ? shot.STAGE_COUNT - 1 : firstUncleared]?.scrollIntoView({ block: "center" });
   });
 }
 
@@ -411,7 +421,7 @@ function finishShot() {
     badge.append(icon, document.createTextNode(skill.name));
     $("shot-unlock-skills").appendChild(badge);
   }
-  $("shot-next").hidden = !cleared || stage === 7;
+  $("shot-next").hidden = !cleared || stage === shot.STAGE_COUNT - 1;
   show("shot-result");
 }
 $("shot-next").addEventListener("click", () => openGame(shot, shotStage + 1));

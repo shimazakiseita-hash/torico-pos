@@ -1,3 +1,4 @@
+export const STAGE_COUNT = 16;
 // ミニゲームの共通部品：画面の大きさ、宇宙の背景、マスコット（きせかえ）、焼き鳥の絵、記録の保存、ランキングの通信
 
 /** ゲームの論理サイズ（縦長）。実際の画面には拡大・縮小して描く */
@@ -489,14 +490,14 @@ export function loadSave() {
     costume,
     upgrades,
     best: typeof data.best === "object" && data.best ? data.best : {},
-    shot: { v: 2, stars: Array.from({ length: 8 }, (_, i) => {
+    shot: { v: 2, stars: Array.from({ length: STAGE_COUNT }, (_, i) => {
       const n = !resetShot && Array.isArray(data.shot?.stars) ? data.shot.stars[i] : 0;
       return Number.isInteger(n) && n >= 0 && n <= 3 ? n : 0;
     }) },
     plays: Number.isInteger(data.plays) ? data.plays : 0,
   };
   // 廃止したパス強化の返金・ショットの旧記録のリセット後、次に読む前に保存する
-  if (hadPass || resetShot) writeSave(save);
+  if (hadPass || resetShot || data.shot?.stars?.length !== STAGE_COUNT) writeSave(save);
   return save;
 }
 

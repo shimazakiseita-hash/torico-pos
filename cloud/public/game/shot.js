@@ -1,5 +1,7 @@
-// とりこショット：8つの砦を順にクリアして★を集めるステージ制ゲーム。
-import { COLORS, FONT, Popups, W, drawHud, drawMascot, view } from "./common.js";
+// とりこショット：16の砦を順にクリアして★を集めるステージ制ゲーム。
+import { COLORS, FONT, Popups, W, STAGE_COUNT, drawHud, drawMascot, view } from "./common.js";
+
+export { STAGE_COUNT } from "./common.js";
 
 export const META = {
   id: "shot", mode: "map", title: "とりこショット",
@@ -33,6 +35,14 @@ const STAGE_DURABILITY = [
   { structure: 4, ufo: 0.7 },
   { structure: 4, ufo: 0.3 },
   { structure: 2, coal: 4, mesh: 1, ufo: 0.6 },
+  { structure: 3, ufo: 0.6 },
+  { structure: 4, ufo: 1 },
+  { structure: 5, ufo: 2.25 },
+  { structure: 3, ufo: 0.8 },
+  { structure: 2, ufo: 0.6 },
+  { structure: 0.7, ufo: 0.6 },
+  { structure: 4, ufo: 1 },
+  { structure: 1, ufo: 0.6 },
 ];
 
 // [種類, 中心x, 中心y, 幅（円は半径）, 高さ, 角度]。焼き台は固定物。
@@ -53,6 +63,22 @@ const STAGES = [
   [["grill",264,390,146,16],["negima",205,354,20,56],["coal",323,354,20,56],["mesh",264,318,138,16],["ufo",285,292,18],["ember",240,364,36,36],["negima",233,555,100,70],["ufo",233,502,18],["coal",205,284,20,52],["coal",323,284,20,52],["negima",264,250,138,16],["coal",173,534,20,112],["coal",293,534,20,112],["mesh",233,470,140,16]],
   // 全部入り：前壁、宙の焼き網、上下の火種。右の支えを下段と共有。
   [["coal",206,550,32,80],["coal",314,550,32,80],["mesh",260,502,140,16],["ufo",260,536,18],["ember",260,572,36,36],["grill",220,416,100,16],["negima",235,355,40,74],["coal",317,355,24,74],["mesh",276,310,82,16],["ufo",280,338,18],["ember",280,374,36,36],["coal",317,451,24,86],["mesh",280,400,120,16],["coal",155,520,24,140]],
+  // 双塔：高さの違う屋根を崩す。
+  [["coal",165,535,20,110],["negima",235,535,20,110],["mesh",200,472,90,16],["ufo",200,536,18],["ember",200,572,36,36],["coal",275,505,20,170],["negima",345,505,20,170],["mesh",310,412,90,16],["ufo",310,536,18],["ember",310,572,36,36]],
+  // 三段の宙砦：上下に狙いを切り替える。
+  [["grill",205,578,90,16],["coal",170,525,20,90],["negima",240,525,20,90],["mesh",205,472,90,16],["ufo",205,516,18],["ember",205,552,36,36],["grill",310,488,90,16],["coal",275,435,20,90],["negima",345,435,20,90],["mesh",310,382,90,16],["ufo",310,426,18],["ember",310,462,36,36],["grill",230,330,100,16]],
+  // 火種の回廊：長い連鎖で両端を崩す。
+  [["coal",165,535,20,110],["coal",345,535,20,110],["mesh",255,472,200,16],["ufo",215,536,18],["ufo",295,536,18],["ember",215,572,36,36],["ember",255,572,36,36],["ember",295,572,36,36]],
+  // 坂のつくね：留め具を抜いて下の砦へ。
+  [["coal",165,545,20,90],["negima",235,545,20,90],["mesh",200,492,90,16],["ufo",200,536,18],["ember",200,572,36,36],["coal",265,545,20,90],["negima",335,545,20,90],["mesh",300,492,90,16],["ufo",300,536,18],["ember",300,572,36,36],["grill",185,390,130,16,0.12],["negima",183,369.7,18,24,0.12],["tsukune",152.5,355.1,23]],
+  // 炭の箱：厚い屋根と横の入口。
+  [["coal",140,535,20,110],["negima",230,535,20,110],["coal",185,472,110,16],["ufo",185,536,18],["ember",185,572,36,36],["coal",265,545,20,90],["negima",335,545,20,90],["coal",300,492,90,16],["ufo",300,536,18],["ember",300,572,36,36]],
+  // 三方向の守り：分身で広く攻める。
+  [["coal",135,545,20,90],["negima",195,545,20,90],["mesh",165,492,80,16],["ember",165,572,36,36],["coal",275,545,20,90],["negima",335,545,20,90],["mesh",305,492,80,16],["ufo",305,536,18],["ember",305,572,36,36],["grill",235,470,110,16],["coal",190,417,20,90],["negima",280,417,20,90],["mesh",235,364,110,16],["ufo",235,408,18],["ember",235,444,36,36]],
+  // 二重屋根：重い落下で支えを崩す。
+  [["coal",145,525,20,130],["negima",225,525,20,130],["coal",185,452,100,16],["ufo",185,536,18],["ember",185,572,36,36],["coal",255,525,20,130],["negima",335,525,20,130],["coal",295,452,100,16],["ufo",295,536,18],["ember",295,572,36,36],["coal",185,436,100,16],["coal",295,436,100,16]],
+  // 奥の砦：前壁を加速で突破する。
+  [["coal",165,535,20,110],["negima",245,535,20,110],["coal",205,472,100,16],["ufo",205,536,18],["ember",205,572,36,36],["grill",290,408,110,16],["coal",245,355,20,90],["negima",335,355,20,90],["mesh",290,302,110,16],["ufo",290,346,18],["ember",290,382,36,36],["coal",125,515,28,150]],
 ];
 
 export const SKILLS = [
@@ -97,7 +123,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"] }) {
   if (!available.some((skill) => skill.id === selectedSkill)) selectedSkill = "boom";
   const pop = new Popups();
   const engine = Engine.create({ enableSleeping: true });
-  const state = { over: false, result: null, t: 0, stageIndex: Number.isInteger(stage) && stage >= 0 && stage < 8 ? stage : 0, ammo: 3, age: 0,
+  const state = { over: false, result: null, t: 0, stageIndex: Number.isInteger(stage) && stage >= 0 && stage < STAGE_COUNT ? stage : 0, ammo: 3, age: 0,
     skill: selectedSkill, birds: [], trails: [], flying: false, shotAge: 0, quiet: 0, clearWait: 0, pieces: [], bird: null,
     drag: null, particles: [], rings: [], dizzy: [], shake: 0, burstUsed: false, banner: { text: "", age: 0 } };
   const background = festivalBackground(state.stageIndex);
@@ -357,7 +383,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"] }) {
       }
       pop.draw(ctx);
       ctx.restore();
-      drawHud(ctx, `${state.stageIndex + 1} / 8`, "");
+      drawHud(ctx, `${state.stageIndex + 1} / ${STAGE_COUNT}`, "");
       ctx.font = `700 17px ${FONT}`; ctx.textAlign = "left"; ctx.fillStyle = "#fff";
       for (let i = 0; i < state.ammo; i++) {
         const x = 24 + i * 27;
@@ -443,7 +469,9 @@ function festivalBackground(stage) {
       cache.width = Math.ceil(width); cache.height = Math.ceil(height);
       const c = cache.getContext("2d");
       c.translate(-x0, -y0);
-      const night = stage / 7;
+      // 最初の8面の色を保ち、追加の砦は同じ深夜の空にする。
+      const originalNightSpan = 7;
+      const night = Math.min(stage / originalNightSpan, 1);
       const sky = c.createLinearGradient(0, y0, 0, FLOOR);
       sky.addColorStop(0, `hsl(${235 - night * 8} 38% ${23 - night * 14}%)`);
       sky.addColorStop(0.65, `hsl(${270 - night * 20} 25% ${29 - night * 13}%)`);
