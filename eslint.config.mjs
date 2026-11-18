@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Cloudflare のビルド出力
     "cloud/.wrangler/**",
+    // 改変せず同梱する外部ライブラリ
+    "cloud/public/game/vendor/**",
   ]),
 ]);
 

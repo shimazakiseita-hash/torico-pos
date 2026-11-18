@@ -44,12 +44,13 @@ export function containsNgWord(name: string): boolean {
 }
 
 /** ミニゲーム（cloud/public/game/）。ランキングはゲームごとに分ける */
-export const GAME_IDS = ["tsumi", "flight"] as const;
+export const GAME_IDS = ["tsumi", "flight", "shot"] as const;
 export type GameId = (typeof GAME_IDS)[number];
 
 export const GAME_NAMES: Record<GameId, string> = {
   tsumi: "つみつみ串",
   flight: "とりこフライト",
+  shot: "とりこショット",
 };
 
 /**
@@ -59,6 +60,7 @@ export const GAME_NAMES: Record<GameId, string> = {
 export const MAX_POINTS_PER_SECOND: Record<GameId, number> = {
   tsumi: 240,
   flight: 200,
+  shot: 650,
 };
 
 /** 開始から seconds 秒で取りうる点数の上限（理論上の最大に1.5倍＋100点の余裕） */
