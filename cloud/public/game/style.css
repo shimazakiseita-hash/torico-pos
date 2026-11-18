@@ -137,7 +137,7 @@ button { cursor: pointer; touch-action: manipulation; }
 .shot-lanterns { position: absolute; top: 44px; left: 0; width: 100%; height: 160px; filter: drop-shadow(0 4px 8px #ff756a66); }
 .shot-route { position: relative; margin-top: 105px; }
 .shot-route > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 5px #ffd68f88); }
-.shot-route path { fill: none; stroke: #edbd7b88; stroke-width: 3; vector-effect: non-scaling-stroke; stroke-dasharray: 3 9; stroke-linecap: round; }
+.shot-route > svg > path { fill: none; stroke: #edbd7b88; stroke-width: 3; vector-effect: non-scaling-stroke; stroke-dasharray: 3 9; stroke-linecap: round; }
 .shot-stages { position: relative; }
 .shot-stages button { position: absolute; left: var(--stage-x); top: var(--stage-y); transform: translate(-50%, -50%); width: 70px; height: 70px; padding: 2px; border: 2px solid #dcb987; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff0c8; background: repeating-linear-gradient(90deg, transparent 0 10px, #72324930 10px 12px), radial-gradient(ellipse at 50% 35%, #bd696b, #703848); box-shadow: 0 4px 0 #271e30, inset 0 0 10px #ffd79466; }
 .shot-stages b { font-size: 1.7rem; line-height: 1.1; text-shadow: 0 2px 3px #46263b; }
@@ -158,3 +158,7 @@ button { cursor: pointer; touch-action: manipulation; }
 #shot-unlock-skills { margin: .6rem 0 0; font-size: 1.3rem; font-weight: 900; }
 #shot-unlock-skills span { display: inline-flex; align-items: center; gap: .4rem; }
 #shot-unlock-skills canvas { width: 40px; height: 40px; }
+
+.shot-stages .shot-goal { background: radial-gradient(ellipse at 50% 35%, #ce884e, #7c413a); border-color: #ffe8a8; box-shadow: 0 4px 0 #543242, 0 0 24px #ffbf6799, inset 0 0 18px #ffc577; }
+.shot-goal svg { width: 60px; height: 60px; }
+.shot-goal:disabled svg { opacity: .35; filter: saturate(.25); }

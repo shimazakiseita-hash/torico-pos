@@ -116,14 +116,14 @@ export function drawSkillIcon(ctx, id, x, y, size = 24) {
 }
 // モジュール内で保持し、次のステージでも選択を引き継ぐ。
 let selectedSkill = "boom";
-export function createGame({ costume, stage = 0, skills = ["boom"] }) {
+export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly = false }) {
   const { Engine, Bodies, Body, Composite, Events, Sleeping } = window.Matter;
   const available = SKILLS.filter((skill) => skill.id === "boom" || skills.includes(skill.id));
   const skillButtons = available.map((skill, i) => ({ ...skill, x: W / 2 + (i - (available.length - 1) / 2) * 65, y: 612 }));
   if (!available.some((skill) => skill.id === selectedSkill)) selectedSkill = "boom";
   const pop = new Popups();
   const engine = Engine.create({ enableSleeping: true });
-  const state = { over: false, result: null, t: 0, stageIndex: Number.isInteger(stage) && stage >= 0 && stage < STAGE_COUNT ? stage : 0, ammo: 3, age: 0,
+  const state = { over: false, result: null, t: 0, stageIndex: endingOnly ? STAGE_COUNT - 1 : Number.isInteger(stage) && stage >= 0 && stage < STAGE_COUNT ? stage : 0, ammo: 3, age: 0,
     skill: selectedSkill, birds: [], trails: [], flying: false, shotAge: 0, quiet: 0, clearWait: 0, pieces: [], bird: null,
     drag: null, particles: [], rings: [], dizzy: [], shake: 0, burstUsed: false, banner: { text: "", age: 0 } };
   const background = festivalBackground(state.stageIndex);
@@ -250,7 +250,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"] }) {
   const heatCtx = heat.getContext("2d");
   function startEnding() {
     if (state.over || state.ending || state.stageIndex !== STAGE_COUNT - 1) return;
-    state.result = { cleared: true, stars: Math.min(3, state.ammo + 1), stage: state.stageIndex };
+    if (!endingOnly) state.result = { cleared: true, stars: Math.min(3, state.ammo + 1), stage: state.stageIndex };
     state.drag = null;
     state.clearWait = 0;
     state.ending = { age: 0 };
@@ -427,9 +427,10 @@ export function createGame({ costume, stage = 0, skills = ["boom"] }) {
       }
     }
   }
-  startStage();
+  if (endingOnly) startEnding();
+  else startStage();
   return {
-    state,
+    state, endingOnly,
     ...(new URLSearchParams(location.search).has("debug") ? { debugEnding: startEnding } : {}),
     get result() { return state.result; }, get over() { return state.over; },
     pointer(type, x, y) {

@@ -83,11 +83,13 @@ function renderShotMap() {
   const firstUncleared = save.shot.stars.findIndex((n) => n === 0);
   const positions = [20, 48, 78, 70, 40, 18, 46, 78, 70, 40, 18, 32, 64, 78, 48, 20];
   const points = positions.map((x, stage) => ({ x, y: 48 + stage * 76 }));
-  const height = points.at(-1).y + 70;
+  const goal = { x: 48, y: points.at(-1).y + 90 };
+  const routePoints = [...points, goal];
+  const height = goal.y + 70;
   $("shot-stages").style.height = `${height}px`;
   const route = document.querySelector(".shot-route > svg");
   route.setAttribute("viewBox", `0 0 100 ${height}`);
-  route.querySelector("path").setAttribute("d", points.map((p, i) => i ? `C${points[i - 1].x} ${p.y - 38} ${p.x} ${p.y - 38} ${p.x} ${p.y}` : `M${p.x} ${p.y}`).join(" "));
+  route.querySelector("path").setAttribute("d", routePoints.map((p, i) => i ? `C${routePoints[i - 1].x} ${p.y - 38} ${p.x} ${p.y - 38} ${p.x} ${p.y}` : `M${p.x} ${p.y}`).join(" "));
   save.shot.stars.forEach((stars, stage) => {
     const button = document.createElement("button");
     button.type = "button";
@@ -101,6 +103,16 @@ function renderShotMap() {
     button.addEventListener("click", () => openGame(shot, stage));
     $("shot-stages").appendChild(button);
   });
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "shot-goal";
+  button.disabled = save.shot.stars[shot.STAGE_COUNT - 1] === 0;
+  button.setAttribute("aria-label", "エンディングを見る");
+  button.style.setProperty("--stage-x", `${goal.x}%`);
+  button.style.setProperty("--stage-y", `${goal.y}px`);
+  button.innerHTML = `<svg viewBox="0 0 64 64" aria-hidden="true"><g transform="rotate(-38 32 32)" stroke-linecap="round"><path d="M7 30h50" stroke="#e9c48a" stroke-width="3"/><g stroke-width="1.5"><ellipse cx="19" cy="30" rx="8" ry="9.5" fill="#b4541c" stroke="#7d3510"/><ellipse cx="33" cy="30" rx="6" ry="9" fill="#8fcf6a" stroke="#4f9a35"/><ellipse cx="47" cy="30" rx="8" ry="9.5" fill="#b4541c" stroke="#7d3510"/></g></g><path d="M47 47v10l9-5z" fill="#fff0c8"/></svg>`;
+  button.addEventListener("click", () => openGame(shot, shot.STAGE_COUNT - 1, true));
+  $("shot-stages").appendChild(button);
   requestAnimationFrame(() => {
     $("shot-stages").children[firstUncleared < 0 ? shot.STAGE_COUNT - 1 : firstUncleared]?.scrollIntoView({ block: "center" });
   });
@@ -254,17 +266,22 @@ for (const [ev, type] of [["pointerdown", "down"], ["pointermove", "move"], ["po
   });
 }
 
-function openGame(g, stage = shotStage) {
+function openGame(g, stage = shotStage, endingOnly = false) {
+  stopLoop();
   if (g.META.mode === "map") shotStage = stage;
   current = g;
-  game = g.createGame({ costume: save.costume, up: save.upgrades, stage, skills: shotSkills() });
-  started = false;
+  game = g.createGame({ costume: save.costume, up: save.upgrades, stage, skills: shotSkills(), endingOnly });
+  started = endingOnly;
   if (["localhost", "127.0.0.1"].includes(location.hostname) && new URLSearchParams(location.search).has("debug")) window.__game = game;
   $("ready-title").textContent = g.META.title;
   $("ready-howto").textContent = g.META.howto;
-  $("ready").hidden = false;
+  $("ready").hidden = endingOnly;
   show("play");
   fit();
+  if (endingOnly) {
+    last = performance.now();
+    raf = requestAnimationFrame(loop);
+  }
 }
 
 $("start").addEventListener("click", () => {
@@ -397,6 +414,10 @@ $("call-close").addEventListener("click", () => {
 
 // ── 結果 ──
 function finishShot() {
+  if (game.endingOnly) {
+    show("shot-map");
+    return;
+  }
   const { cleared, stars, stage } = game.result;
   const before = shotSkills();
   const gained = Math.max(0, stars - save.shot.stars[stage]) * 20;
