@@ -13,21 +13,42 @@ const TYPES = {
   tsukune: { hp: 12, density: 0.001, color: "#a55a32" },
   coal: { hp: 65, density: 0.004, color: "#403c48" },
   mesh: { hp: 10, density: 0.0007, color: "#b8c6d4" },
-  ember: { hp: 18, density: 0.002, color: "#ef6241" },
+  ember: { hp: 12, density: 0.002, color: "#ef6241" },
   grill: { hp: Infinity, density: 0.002, color: "#8999ae" },
-  ufo: { hp: 13, density: 0.001, color: "#bba1d3" },
+  ufo: { hp: 28, density: 0.001, color: "#bba1d3" },
 };
+
+// 配置と重さを保ち、部材と手下の耐久値で狙いどころを絞る。
+// 7面は囲いを固くしつつ手下を弱め、上下を連鎖で倒す1発を残す。
+const STAGE_DURABILITY = [
+  { structure: 3, ufo: 2 },
+  { structure: 3, ufo: 1.5 },
+  { structure: 2, ufo: 1.5 },
+  { structure: 5, ufo: 1.2 },
+  { structure: 2, ufo: 1.2 },
+  { structure: 4, ufo: 0.7 },
+  { structure: 4, ufo: 0.3 },
+  { structure: 2, coal: 4, mesh: 1, ufo: 0.6 },
+];
 
 // [種類, 中心x, 中心y, 幅（円は半径）, 高さ, 角度]。焼き台は固定物。
 const STAGES = [
-  [["negima",190,535,90,110],["ufo",190,462,18]],
-  [["negima",225,530,26,120],["negima",295,530,26,120],["mesh",260,462,110,16],["ufo",240,436,18],["ufo",283,436,18]],
-  [["grill",260,410,145,16],["negima",260,382,100,40],["ufo",240,344,18],["ufo",285,344,18]],
-  [["ember",200,572,36,36],["ember",248,572,36,36],["ember",296,572,36,36],["mesh",248,546,140,16],["ufo",218,520,18],["ufo",280,520,18]],
-  [["grill",220,410,130,16,0.12],["negima",218,389.7,18,24,0.12],["tsukune",187.5,375.1,23],["ufo",287,572,18],["ember",242,572,36,36]],
-  [["coal",210,535,40,110],["coal",320,535,24,110],["coal",265,468,150,24],["ember",250,572,36,36],["ufo",290,572,18]],
-  [["grill",264,390,146,16],["ufo",285,364,18],["ember",240,364,36,36],["negima",233,555,100,70],["ufo",233,502,18]],
-  [["coal",206,550,32,80],["coal",304,550,32,80],["mesh",255,502,140,16],["ufo",276,476,18],["ember",229,476,36,36],["grill",265,400,146,16],["negima",225,362,24,60],["negima",304,362,24,60],["mesh",265,324,124,16],["ufo",286,298,18],["ember",240,298,36,36],["tsukune",265,370,22]],
+  // 低い砦：左の串を抜き、焼き網と手下の台座を崩す。
+  [["negima",190,528,20,124],["coal",310,528,20,124],["mesh",250,458,140,16],["negima",250,570,70,40],["ufo",250,532,18]],
+  // 高い塔：中段の焼き網を狙い、二重の屋根を落とす。
+  [["coal",220,530,22,120],["coal",300,530,22,120],["mesh",260,462,102,16],["ufo",260,572,18],["coal",220,433,22,42],["coal",300,433,22,42],["negima",260,404,102,16]],
+  // 宙の焼き台：左の壁を抜くか、上から屋根へ。
+  [["grill",265,465,150,16],["negima",210,417,22,80],["coal",320,417,22,80],["mesh",265,369,132,16],["ufo",265,439,18]],
+  // ひの炭：壁際の火種から屋根下へ連鎖。
+  [["coal",200,550,30,80],["coal",320,550,24,80],["negima",260,502,144,16],["ember",229,572,32,36],["ember",261,572,32,36],["ufo",295,574,16]],
+  // 坂のつくね：坂の留め具を外して、下の砦へ転がす。
+  [["grill",215,410,130,16,0.12],["negima",213,389.7,18,24,0.12],["tsukune",182.5,375.1,23],["coal",230,550,24,80],["coal",326,550,24,80],["mesh",278,502,120,16],["ufo",278,572,18],["ember",250,480,28,28]],
+  // 固い守り：左下の火種と串の仕切りが入口。
+  [["coal",210,535,36,110],["coal",320,535,28,110],["coal",265,472,138,16],["negima",262,572,18,36],["ember",240,572,18,36],["ufo",285,572,18]],
+  // 高低二か所：二つの囲い。上の火種と下の台座を狙う。
+  [["grill",264,390,146,16],["negima",205,354,20,56],["coal",323,354,20,56],["mesh",264,318,138,16],["ufo",285,292,18],["ember",240,364,36,36],["negima",233,555,100,70],["ufo",233,502,18],["coal",205,284,20,52],["coal",323,284,20,52],["negima",264,250,138,16],["coal",173,534,20,112],["coal",293,534,20,112],["mesh",233,470,140,16]],
+  // 全部入り：前壁、宙の焼き網、上下の火種。右の支えを下段と共有。
+  [["coal",206,550,32,80],["coal",314,550,32,80],["mesh",260,502,140,16],["ufo",260,536,18],["ember",260,572,36,36],["grill",220,416,100,16],["negima",235,355,40,74],["coal",317,355,24,74],["mesh",276,310,82,16],["ufo",280,338,18],["ember",280,374,36,36],["coal",317,451,24,86],["mesh",280,400,120,16],["coal",155,520,24,140]],
 ];
 
 export function createGame({ costume, stage = 0 }) {
@@ -51,10 +72,12 @@ export function createGame({ costume, stage = 0 }) {
     Composite.add(engine.world, Bodies.rectangle(180, FLOOR + 30, 2400, 60, { isStatic: true, friction: 0.7 }));
     for (const [kind, x, y, w, h, angle = 0] of STAGES[state.stageIndex]) {
       const spec = TYPES[kind];
+      const durability = STAGE_DURABILITY[state.stageIndex];
+      const hp = spec.hp * (durability[kind] ?? durability.structure);
       const opts = { isStatic: kind === "grill", angle, density: spec.density, friction: kind === "tsukune" ? 0.12 : 0.9, frictionStatic: 5, restitution: 0.06, frictionAir: 0.006 };
       // 手下は底を平らにして、わずかな傾きで勝手に転がるのを防ぐ。
       const body = kind === "ufo" ? Bodies.rectangle(x, y, w * 2, w * 2, { ...opts, chamfer: { radius: 7 } }) : h ? Bodies.rectangle(x, y, w, h, opts) : Bodies.circle(x, y, w, opts);
-      body.plugin.shot = { kind, w, h, maxHp: spec.hp, hp: spec.hp };
+      body.plugin.shot = { kind, w, h, maxHp: hp, hp };
       state.pieces.push(body);
       Composite.add(engine.world, body);
     }
@@ -65,7 +88,7 @@ export function createGame({ costume, stage = 0 }) {
     if (state.age < 1 || !state.flying || state.clearWait > 0) return;
     for (const { bodyA: a, bodyB: b } of pairs) {
       const speed = Math.hypot(a.velocity.x - b.velocity.x, a.velocity.y - b.velocity.y);
-      if (speed < 2.4) continue;
+      if (speed < 3.1) continue;
       if (speed > 6) state.shake = Math.max(state.shake, 0.18);
       const mass = a.isStatic ? b.mass : b.isStatic ? a.mass : a.mass * b.mass / (a.mass + b.mass);
       const damage = speed * speed * Math.max(0.3, mass) * 0.7;
@@ -80,12 +103,12 @@ export function createGame({ costume, stage = 0 }) {
       if (body.isStatic) continue;
       const dx = body.position.x - x, dy = body.position.y - y;
       const distance = Math.hypot(dx, dy);
-      if (distance > 78) continue;
-      const k = 1 - distance / 90;
+      if (distance > 52) continue;
+      const k = 1 - distance / 62;
       Sleeping.set(body, false);
-      Body.setVelocity(body, { x: body.velocity.x + dx / (distance || 1) * 9 * k,
-        y: body.velocity.y + dy / (distance || 1) * 9 * k - 2 * k });
-      body.plugin.shot.hp -= 65 * k;
+      Body.setVelocity(body, { x: body.velocity.x + dx / (distance || 1) * 5.5 * k,
+        y: body.velocity.y + dy / (distance || 1) * 5.5 * k - 2 * k });
+      body.plugin.shot.hp -= 26 * k;
     }
   }
   function destroy(body) {
