@@ -33,7 +33,7 @@ const STAGES = [
 ];
 
 export function createGame({ costume }) {
-  const { Engine, Bodies, Body, Composite, Events } = window.Matter;
+  const { Engine, Bodies, Body, Composite, Events, Sleeping } = window.Matter;
   const engine = Engine.create({ enableSleeping: true });
   const state = { score: 0, over: false, t: 0, stageIndex: 0, ammo: 3, age: 0,
     flying: false, shotAge: 0, quiet: 0, clearWait: 0, pieces: [], bird: null,
@@ -76,6 +76,8 @@ export function createGame({ costume }) {
     state.score += data.kind === "ufo" ? 100 : 10;
     state.pieces = state.pieces.filter((p) => p !== body);
     Composite.remove(engine.world, body);
+    for (const piece of state.pieces) Sleeping.set(piece, false);
+    if (state.bird) Sleeping.set(state.bird, false);
     for (let i = 0; i < 7; i++) state.particles.push({ x: body.position.x, y: body.position.y,
       vx: (Math.random() - 0.5) * 110, vy: -40 - Math.random() * 100, life: 0.65, color: TYPES[data.kind].color });
   }
@@ -189,10 +191,10 @@ function drawPiece(ctx, body) {
   ctx.save(); ctx.translate(body.position.x, body.position.y); ctx.rotate(body.angle);
   ctx.fillStyle = TYPES[kind].color; ctx.strokeStyle = "#382b41"; ctx.lineWidth = 1.5;
   if (kind === "ufo") {
-    ctx.fillStyle = COLORS.cyan; ctx.beginPath(); ctx.ellipse(0, -4, 8, 7, 0, Math.PI, 0); ctx.fill();
-    ctx.fillStyle = TYPES.ufo.color; ctx.beginPath(); ctx.ellipse(0, 2, 16, 6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = COLORS.cyan; ctx.beginPath(); ctx.ellipse(0, -1, 8, 8, 0, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = TYPES.ufo.color; ctx.beginPath(); ctx.ellipse(0, 6, 15, 6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.fillStyle = COLORS.beak;
-    for (const x of [-9, 0, 9]) { ctx.beginPath(); ctx.arc(x, 2, 1.8, 0, Math.PI * 2); ctx.fill(); }
+    for (const x of [-9, 0, 9]) { ctx.beginPath(); ctx.arc(x, 6, 1.8, 0, Math.PI * 2); ctx.fill(); }
   } else if (kind === "tsukune") {
     ctx.beginPath(); ctx.arc(0, 0, w, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.strokeStyle = "#62331d"; ctx.beginPath(); ctx.moveTo(-7, -4); ctx.lineTo(5, -6); ctx.moveTo(-4, 5); ctx.lineTo(7, 3); ctx.stroke();
