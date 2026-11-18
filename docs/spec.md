@@ -80,9 +80,10 @@ CREATE TABLE day_settings (
 );
 ```
 
-- 採番：`SELECT COALESCE(MAX(number),0)+1 FROM orders WHERE business_day = ?` を注文INSERTと同一トランザクションで
+- 採番：`max(その日の orders の MAX(number), skipped の最大, 0) + 1`。注文INSERTと同一トランザクション内で skipped も読む
 - `day_settings` のキー
   - `capacity`：串ごとの販売上限（たれ・塩の合計） `{"momo": 500, ...}`。未設定なら初期値、null は「上限なし」
+  - `skipped`：使えない整理券などで飛ばした番号の配列（JSON）。営業日ごとに保存
   - `soldout`：手動で売り切れにしたSKUの配列
   - `cash_float`：釣り銭準備金（円）。初期値 0
 - WALモード有効
@@ -111,6 +112,8 @@ CREATE TABLE day_settings (
 ### 8.1 受付 `/register`（受付PC）
 - 5行（串）× 2列（たれ / 塩）の計10ボタン。タップで +1、長押しまたは横の − で −1
 - 各ボタンに選択本数と残り販売可能数。売り切れ（残0 または手動売り切れ）は押せない
+- 会計欄の先頭に「次の番号」と「飛ばす」。飛ばしたあとに注文が入るまでは「戻す」で戻せる
+- 番号発行後に整理券が使えなければ「整理券が使えない → ○番にする」で番号を変更する（今日の調理待ち・呼び出し中のみ）
 - 右側：内訳、総本数、**合計金額を特大表示**
 - 預かり金額ボタン → **お釣りを特大表示** → 「会計確定 → 番号発行」
 - 確定後：**呼び出し番号とお釣りを画面いっぱいに表示** → 同じ番号の整理券を渡す →「次のお客さん」で入力に戻る
@@ -178,6 +181,9 @@ CREATE TABLE day_settings (
 - `POST /api/orders`：body に `items: [{item, seasoning, qty}]`, `tendered`。サーバー側で金額・お釣りを再計算して検証する
 - 一覧・集計系：クエリ `day=YYYY-MM-DD`（省略時は今日）
 - `GET/PUT /api/settings`：`day` ごとの `capacity` / `soldout` / `cash_float`
+- `GET /api/numbering`：今日の次の番号・飛ばした番号・戻せるかを取得
+- `POST /api/numbering/skip`・`POST /api/numbering/undo`：次の番号を飛ばす・最後に飛ばした番号を戻す（body は `{}`）
+- `POST /api/orders/[id]/renumber`：今日の調理待ち・呼び出し中の注文を次の番号に変更し、元番号を skipped に記録（body は `{}`）
 - 状態遷移APIは既存のまま
 
 ## 10. 非機能

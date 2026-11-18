@@ -17,7 +17,7 @@ import { MAX_ORDER_QTY } from "@/lib/pricing";
 import { TENDER_PRESETS, availability, cartItems, checkout, type SkuAvailability, type Tender } from "@/lib/register";
 import { STATUS_LABELS } from "@/lib/status";
 import { sum, type Summary } from "@/lib/summary";
-import type { CreatedOrder, Order } from "@/lib/types";
+import type { CreatedOrder, Numbering, Order } from "@/lib/types";
 import { useKiosk } from "@/lib/useKiosk";
 import { usePolling } from "@/lib/usePolling";
 
@@ -29,6 +29,9 @@ const yen = (n: number) => `¥${n.toLocaleString()}`;
 export function RegisterScreen() {
   const orders = usePolling<Order[]>("/api/orders");
   const summary = usePolling<Summary>("/api/summary");
+  const numbering = usePolling<Numbering>("/api/numbering");
+  const [numberBusy, setNumberBusy] = useState(false);
+  const numberSending = useRef(false);
   const toast = useToast();
   const kiosk = useKiosk();
 
@@ -44,7 +47,7 @@ export function RegisterScreen() {
   const totalQty = sum(cart);
   const co = checkout(cart, tender);
   const avail = availability(cart, summary.data?.remainingByItem ?? {}, summary.data?.soldOut ?? []);
-  const connError = orders.error || summary.error;
+  const connError = orders.error || summary.error || numbering.error;
 
   const add = (key: SkuKey) => {
     if (avail[key].canAdd) setCart((c) => ({ ...c, [key]: c[key] + 1 }));
@@ -56,7 +59,7 @@ export function RegisterScreen() {
   };
 
   async function submit() {
-    if (sending.current || co.state !== "ok") return;
+    if (sending.current || numberSending.current || co.state !== "ok") return;
     sending.current = true;
     setSubmitting(true);
     const res = await sendJson<CreatedOrder>("POST", "/api/orders", { items: cartItems(cart), tendered: co.tendered });
@@ -66,6 +69,7 @@ export function RegisterScreen() {
     else toast.show(res.error);
     void orders.refresh();
     void summary.refresh();
+    void numbering.refresh();
   }
 
   function next() {
@@ -82,9 +86,36 @@ export function RegisterScreen() {
     toast.show(res.ok ? `${cancelTarget.number}番を取り消しました` : res.error);
     void orders.refresh();
     void summary.refresh();
+    void numbering.refresh();
   }
 
-  if (issued) return <IssuedView order={issued} onNext={next} />;
+  async function numberAction(action: "skip" | "undo" | "renumber") {
+    if (numberSending.current || sending.current) return;
+    numberSending.current = true;
+    setNumberBusy(true);
+    const url = action === "renumber" && issued ? `/api/orders/${issued.id}/renumber` : `/api/numbering/${action}`;
+    const res = await sendJson<Numbering | Order>("POST", url, {});
+    if (res.ok) {
+      if (action === "renumber" && "number" in res.data) {
+        const old = issued?.number;
+        setIssued(res.data);
+        toast.show(`${old}番の整理券を捨ててください`);
+      } else if ("next" in res.data) {
+        toast.show(action === "skip" ? `${Math.max(...res.data.skipped)}番を飛ばしました（整理券を捨ててください）` : `${res.data.next}番に戻しました（整理券を束に戻してください）`);
+      }
+    } else toast.show(res.error);
+    await numbering.refresh();
+    void orders.refresh();
+    numberSending.current = false;
+    setNumberBusy(false);
+  }
+
+  if (issued) return <>
+    <IssuedView order={issued} onNext={next} nextNumber={numbering.data?.next} busy={numberBusy} onRenumber={() => void numberAction("renumber")} />
+    <Toast message={toast.message} onClose={toast.clear} />
+    <ConnectionBanner error={connError} />
+  </>;
+
 
   const recent = (orders.data ?? []).slice(-RECENT_COUNT).reverse();
   const tenderIs = (t: Tender) => JSON.stringify(t) === JSON.stringify(tender);
@@ -131,6 +162,11 @@ export function RegisterScreen() {
 
           {/* 会計 */}
           <aside aria-label="会計" className="flex flex-col gap-2.5 panel p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="flex-1 text-xl whitespace-nowrap">次の番号 <b className="text-3xl tabular-nums">{numbering.data?.next ?? "…"}</b>番</p>
+              <button type="button" disabled={!numbering.data || numberBusy || submitting} onClick={() => void numberAction("skip")} className="btn-ghost min-h-16 px-4 text-lg">飛ばす</button>
+              {numbering.data?.canUndo && <button type="button" disabled={numberBusy || submitting} onClick={() => void numberAction("undo")} className="btn-ghost min-h-16 px-4 text-lg">戻す</button>}
+            </div>
             <ul className="min-h-0 flex-1 overflow-y-auto text-xl">
               {SKUS.filter((s) => cart[s.key] > 0).map((s) => (
                 <li key={s.key} className="flex justify-between border-b-2 border-dashed border-pink-200 py-1">
@@ -180,7 +216,7 @@ export function RegisterScreen() {
             <button
               type="button"
               onClick={submit}
-              disabled={co.state !== "ok" || submitting}
+              disabled={co.state !== "ok" || submitting || numberBusy}
               className="btn-ok min-h-[5.25rem] text-3xl"
             >
               {submitting ? "送信中…" : "会計確定 → 番号発行"}
@@ -396,7 +432,7 @@ function ChangePanel({ co }: { co: ReturnType<typeof checkout> }) {
 }
 
 /** 番号発行後：番号とお釣りを画面いっぱいに */
-function IssuedView({ order, onNext }: { order: CreatedOrder; onNext: () => void }) {
+function IssuedView({ order, onNext, nextNumber, busy, onRenumber }: { order: CreatedOrder; onNext: () => void; nextNumber?: number; busy: boolean; onRenumber: () => void }) {
   const label = String(order.number);
   return (
     <main className="bg-space flex min-h-dvh flex-1 flex-col items-center justify-center gap-6 p-6 text-center text-white">
@@ -431,8 +467,11 @@ function IssuedView({ order, onNext }: { order: CreatedOrder; onNext: () => void
       <p className="text-3xl font-bold">
         整理券 <b className="text-5xl text-cyan">{label}番</b> をお渡しください
       </p>
-      <button type="button" autoFocus onClick={onNext} className="btn-pink min-h-24 w-full max-w-xl text-4xl">
+      <button type="button" autoFocus disabled={busy} onClick={onNext} className="btn-pink min-h-24 w-full max-w-xl text-4xl">
         次のお客さん
+      </button>
+      <button type="button" disabled={busy || nextNumber === undefined} onClick={onRenumber} className="btn-ghost min-h-16 w-full max-w-xl px-4 text-lg">
+        整理券が使えない → {nextNumber ?? "…"}番にする
       </button>
     </main>
   );

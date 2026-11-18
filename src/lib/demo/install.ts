@@ -1,12 +1,12 @@
 import { TOTAL, totalSettings } from "../admin";
 import { handle, jsonError, parseBody, parseDayParam } from "../api";
-import { EVENT_DAYS } from "../businessDay";
+import { businessDayOf, EVENT_DAYS } from "../businessDay";
 import { formatLocal, ordersToCsv } from "../csv";
 import { DomainError } from "../errors";
 import { EMPTY_SYNC_STATE, syncHealth } from "../publicSync";
-import { createOrderSchema, putSettingsSchema, statusListSchema, updateStatusSchema } from "../schemas";
+import { emptyActionSchema, createOrderSchema, putSettingsSchema, statusListSchema, updateStatusSchema } from "../schemas";
 import { computeSummary } from "../summary";
-import { createOrder, getDaySettings, listOrders, putDaySettings, updateStatus } from "./store";
+import { getNumbering, skipNumber, undoSkip, renumberOrder, createOrder, getDaySettings, listOrders, putDaySettings, updateStatus } from "./store";
 import { readState, writeState } from "./storage";
 
 export async function respond(request: Request): Promise<Response> {
@@ -29,6 +29,22 @@ export async function respond(request: Request): Promise<Response> {
       const result = createOrder(readState(), items, tendered);
       writeState(result.state);
       return Response.json(result.value, { status: 201 });
+    }
+    if (path === "/api/numbering" && method === "GET") return Response.json(getNumbering(readState(), businessDayOf()));
+    if ((path === "/api/numbering/skip" || path === "/api/numbering/undo") && method === "POST") {
+      await parseBody(request, emptyActionSchema);
+      const result = (path.endsWith("/skip") ? skipNumber : undoSkip)(readState());
+      writeState(result.state);
+      return Response.json(result.value);
+    }
+    const renumber = path.match(/^\/api\/orders\/([^/]+)\/renumber$/);
+    if (renumber && method === "POST") {
+      const id = Number(decodeURIComponent(renumber[1]));
+      if (!Number.isInteger(id) || id <= 0) throw new DomainError("NOT_FOUND", "注文が見つかりません");
+      await parseBody(request, emptyActionSchema);
+      const result = renumberOrder(readState(), id);
+      writeState(result.state);
+      return Response.json(result.value);
     }
     const match = path.match(/^\/api\/orders\/([^/]+)$/);
     if (match && method === "PATCH") {

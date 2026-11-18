@@ -12,7 +12,7 @@ const orderSchema = createOrderSchema.extend({
   changeDue: z.number().int().nonnegative(), createdAt: z.iso.datetime(),
   readyAt: z.iso.datetime().nullable(), servedAt: z.iso.datetime().nullable(), cancelledAt: z.iso.datetime().nullable(),
 });
-const stateSchema = z.object({ orders: z.array(orderSchema), settings: z.record(businessDaySchema, putSettingsSchema.required().extend({ businessDay: businessDaySchema, capacity: z.record(z.enum(ITEM_IDS), z.number().int().nonnegative().nullable()) })) });
+const stateSchema = z.object({ skipped: z.record(businessDaySchema, z.array(z.number().int().positive())).default({}), orders: z.array(orderSchema), settings: z.record(businessDaySchema, putSettingsSchema.required().extend({ businessDay: businessDaySchema, capacity: z.record(z.enum(ITEM_IDS), z.number().int().nonnegative().nullable()) })) });
 
 export function readState(): DemoState {
   try {

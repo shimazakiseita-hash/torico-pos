@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import * as store from "./store";
-import { emptyState, getDaySettings, listOrders, type DemoState } from "./store";
+import { getNumbering, emptyState, getDaySettings, listOrders, type DemoState } from "./store";
 import { DomainError } from "../errors";
 
 function createOrder(...args: Parameters<typeof store.createOrder>) {
@@ -165,4 +165,76 @@ it("入力の状態を変更しない", () => {
   const settings = store.putDaySettings(state, "2026-11-21", { cashFloat: 100 });
   expect(state.settings).toEqual({});
   expect(settings.value.cashFloat).toBe(100);
+});
+
+function skipNumber(...args: Parameters<typeof store.skipNumber>) {
+  const result = store.skipNumber(...args);
+  db = result.state;
+  return result.value;
+}
+
+function undoSkip(...args: Parameters<typeof store.undoSkip>) {
+  const result = store.undoSkip(...args);
+  db = result.state;
+  return result.value;
+}
+
+function renumberOrder(...args: Parameters<typeof store.renumberOrder>) {
+  const result = store.renumberOrder(...args);
+  db = result.state;
+  return result.value;
+}
+
+describe("整理券の番号", () => {
+  it("連続で飛ばした番号は注文にせず、次の採番に反映する", () => {
+    expect(getNumbering(db, "2026-11-21")).toEqual({ businessDay: "2026-11-21", next: 1, skipped: [], canUndo: false });
+    expect(skipNumber(db, DAY1)).toMatchObject({ next: 2, skipped: [1], canUndo: true });
+    expect(skipNumber(db, DAY1)).toMatchObject({ next: 3, skipped: [1, 2] });
+    expect(listOrders(db, "2026-11-21")).toEqual([]);
+    expect(createOrder(db, one, 100, DAY1).number).toBe(3);
+    expect(getNumbering(db, "2026-11-21")).toMatchObject({ next: 4, canUndo: false });
+  });
+  it("最大の飛ばした番号から戻せるが、注文後には戻せない", () => {
+    expectDomainError(() => undoSkip(db, DAY1), "INVALID_TRANSITION");
+    skipNumber(db, DAY1);
+    skipNumber(db, DAY1);
+    expect(undoSkip(db, DAY1)).toMatchObject({ next: 2, skipped: [1], canUndo: true });
+    expect(undoSkip(db, DAY1)).toMatchObject({ next: 1, skipped: [], canUndo: false });
+    skipNumber(db, DAY1);
+    createOrder(db, one, 100, DAY1);
+    expectDomainError(() => undoSkip(db, DAY1), "INVALID_TRANSITION");
+  });
+  it("再発行は元番号を記録し、会計と状態を保ったまま何度でもできる", () => {
+    const original = createOrder(db, one, 1000, DAY1);
+    createOrder(db, one, 100, DAY1);
+    skipNumber(db, DAY1);
+    const changed = renumberOrder(db, original.id, DAY1);
+    expect(changed).toMatchObject({ ...original, number: 4, status: "waiting" });
+    expect(getNumbering(db, "2026-11-21")).toMatchObject({ next: 5, skipped: [3, 1], canUndo: false });
+    updateStatus(db, original.id, "ready", DAY1);
+    expect(renumberOrder(db, original.id, DAY1)).toMatchObject({ number: 5, status: "ready", readyAt: DAY1.toISOString(), changeDue: 900 });
+    expect(getNumbering(db, "2026-11-21").skipped).toEqual([3, 1, 4]);
+    expect(listOrders(db, "2026-11-21").map((o) => o.number)).toEqual([2, 5]);
+  });
+  it("受け渡し済み・取り消し・別の日・存在しない注文は再発行できない", () => {
+    const served = createOrder(db, one, 100, DAY1);
+    updateStatus(db, served.id, "ready", DAY1);
+    updateStatus(db, served.id, "served", DAY1);
+    const cancelled = createOrder(db, one, 100, DAY1);
+    updateStatus(db, cancelled.id, "cancelled", DAY1);
+    const waiting = createOrder(db, one, 100, DAY1);
+    const before = getNumbering(db, "2026-11-21");
+    expectDomainError(() => renumberOrder(db, served.id, DAY1), "INVALID_TRANSITION");
+    expectDomainError(() => renumberOrder(db, cancelled.id, DAY1), "INVALID_TRANSITION");
+    expectDomainError(() => renumberOrder(db, waiting.id, DAY2), "INVALID_TRANSITION");
+    expectDomainError(() => renumberOrder(db, 999, DAY1), "NOT_FOUND");
+    expect(getNumbering(db, "2026-11-21")).toEqual(before);
+  });
+  it("JSTの日付が変わると飛ばした番号は持ち越さない", () => {
+    skipNumber(db, DAY1_LATE);
+    expect(getNumbering(db, "2026-11-22")).toMatchObject({ next: 1, skipped: [], canUndo: false });
+    expectDomainError(() => undoSkip(db, DAY2), "INVALID_TRANSITION");
+    expect(createOrder(db, one, 100, DAY2).number).toBe(1);
+    expect(getNumbering(db, "2026-11-21").skipped).toEqual([1]);
+  });
 });

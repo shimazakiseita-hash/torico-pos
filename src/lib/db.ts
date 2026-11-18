@@ -7,7 +7,7 @@ import { DEFAULT_CAPACITY, DEFAULT_TARGET_QTY, ITEM_IDS, SEASONING_IDS, SKU_KEYS
 import { normalizeItems } from "./order";
 import { calcAmount, calcChange } from "./pricing";
 import { STATUS_LABELS, canTransition, type OrderStatus } from "./status";
-import type { CreatedOrder, DaySettings, Order, OrderItem } from "./types";
+import type { CreatedOrder, DaySettings, Numbering, Order, OrderItem } from "./types";
 
 export type DB = Database.Database;
 
@@ -113,9 +113,7 @@ export function createOrder(db: DB, rawItems: readonly OrderItem[], tendered: nu
   const businessDay = businessDayOf(now);
 
   const tx = db.transaction((): CreatedOrder => {
-    const { next } = db
-      .prepare("SELECT COALESCE(MAX(number), 0) + 1 AS next FROM orders WHERE business_day = ?")
-      .get(businessDay) as { next: number };
+    const { next } = readNumbering(db, businessDay);
     const result = db
       .prepare(
         `INSERT INTO orders (business_day, number, status, total_qty, amount, tendered, change_due, created_at)
@@ -239,4 +237,55 @@ export function putDaySettings(db: DB, day: string, patch: DaySettingsPatch): Da
     if (patch.targetQty !== undefined) upsert.run(day, "target_qty", JSON.stringify(patch.targetQty));
   }).immediate();
   return getDaySettings(db, day);
+}
+
+function readNumbering(db: DB, day: string): Numbering {
+  const { max } = db.prepare("SELECT COALESCE(MAX(number), 0) AS max FROM orders WHERE business_day = ?").get(day) as { max: number };
+  const row = db.prepare("SELECT value FROM day_settings WHERE business_day = ? AND key = 'skipped'").get(day) as { value: string } | undefined;
+  const skipped: number[] = row ? JSON.parse(row.value) : [];
+  const lastSkipped = Math.max(0, ...skipped);
+  return { businessDay: day, next: Math.max(max, lastSkipped) + 1, skipped, canUndo: lastSkipped > max };
+}
+
+function saveSkipped(db: DB, day: string, skipped: number[]) {
+  db.prepare(`INSERT INTO day_settings (business_day, key, value) VALUES (?, 'skipped', ?)
+    ON CONFLICT(business_day, key) DO UPDATE SET value = excluded.value`).run(day, JSON.stringify(skipped));
+}
+
+export function getNumbering(db: DB, day: string): Numbering {
+  return db.transaction(() => readNumbering(db, day))();
+}
+
+export function skipNumber(db: DB, now: Date = new Date()): Numbering {
+  return db.transaction(() => {
+    const day = businessDayOf(now);
+    const current = readNumbering(db, day);
+    saveSkipped(db, day, [...current.skipped, current.next]);
+    return readNumbering(db, day);
+  }).immediate();
+}
+
+export function undoSkip(db: DB, now: Date = new Date()): Numbering {
+  return db.transaction(() => {
+    const day = businessDayOf(now);
+    const current = readNumbering(db, day);
+    if (!current.canUndo) throw new DomainError("INVALID_TRANSITION", "戻せる番号がありません");
+    const last = Math.max(...current.skipped);
+    saveSkipped(db, day, current.skipped.filter((n) => n !== last));
+    return readNumbering(db, day);
+  }).immediate();
+}
+
+export function renumberOrder(db: DB, id: number, now: Date = new Date()): Order {
+  return db.transaction(() => {
+    const order = getOrder(db, id);
+    if (!order) throw new DomainError("NOT_FOUND", "注文が見つかりません");
+    const day = businessDayOf(now);
+    if (order.businessDay !== day) throw new DomainError("INVALID_TRANSITION", "今日の注文だけ番号を変更できます");
+    if (order.status !== "waiting" && order.status !== "ready") throw new DomainError("INVALID_TRANSITION", "調理待ち・呼び出し中の注文だけ番号を変更できます");
+    const current = readNumbering(db, day);
+    saveSkipped(db, day, [...current.skipped, order.number]);
+    db.prepare("UPDATE orders SET number = ? WHERE id = ?").run(current.next, id);
+    return getOrder(db, id)!;
+  }).immediate();
 }

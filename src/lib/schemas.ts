@@ -69,3 +69,5 @@ export const rankingSubmitSchema = z.object({
 export const siteConfigSchema = z.object({
   closed: z.boolean(),
 });
+
+export const emptyActionSchema = z.object({}).strict();

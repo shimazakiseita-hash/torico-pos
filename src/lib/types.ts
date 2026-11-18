@@ -36,3 +36,5 @@ export type CreatedOrder = {
   tendered: number;
   changeDue: number;
 };
+
+export type Numbering = { businessDay: string; next: number; skipped: number[]; canUndo: boolean };

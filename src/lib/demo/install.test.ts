@@ -53,3 +53,19 @@ it("本番と同じ入力エラーを返す", async () => {
   expect((await request("orders", "POST", {})).status).toBe(400);
   expect((await request("orders/0", "PATCH", { status: "ready" })).status).toBe(404);
 });
+
+it("旧保存データを保ったまま番号を飛ばし、戻し、再発行できる", async () => {
+  await request("orders", "POST", { items: [{ item: "momo", seasoning: "tare", qty: 1 }], tendered: 500 });
+  const old = JSON.parse(saved!);
+  delete old.skipped;
+  saved = JSON.stringify(old);
+  expect(readState().orders).toHaveLength(1);
+  expect(readState().skipped).toEqual({});
+  expect(await (await request("numbering")).json()).toMatchObject({ next: 2 });
+  expect(await (await request("numbering/skip", "POST", {})).json()).toMatchObject({ next: 3, skipped: [2], canUndo: true });
+  expect(await (await request("numbering/undo", "POST", {})).json()).toMatchObject({ next: 2, skipped: [] });
+  expect(await (await request("orders/1/renumber", "POST", {})).json()).toMatchObject({ number: 2, changeDue: 400 });
+  expect((await request("numbering/undo", "POST", {})).status).toBe(409);
+  expect((await request("orders/0/renumber", "POST", {})).status).toBe(404);
+  expect((await request("numbering/skip", "POST", { number: 10 })).status).toBe(400);
+});
