@@ -9,6 +9,8 @@ import * as shot from "./shot.js";
 /** ゲームの一覧（並び順のまま表示） */
 const GAMES = [tsumi, flight, shot];
 
+const RANKED_GAMES = GAMES.filter((g) => g.META.mode !== "map");
+let shotStage = 0;
 const save = loadSave();
 const $ = (id) => document.getElementById(id);
 let current = null; // 遊んでいるゲームのモジュール
@@ -22,7 +24,8 @@ const rankingRequests = new WeakMap();
 
 // ── 画面の切り替え ──
 function show(view) {
-  for (const id of ["hub", "dress", "gacha", "shop", "play", "result", "rank"]) $(id).hidden = id !== view;
+  for (const id of ["hub", "dress", "gacha", "shop", "play", "result", "rank", "shot-map", "shot-result"]) $(id).hidden = id !== view;
+  if (view === "shot-map") renderShotMap();
   if (view === "hub") renderHub();
   if (view === "dress") renderDress();
   if (view === "gacha") renderGacha(true);
@@ -62,12 +65,29 @@ function renderHub() {
     const best = save.best[g.META.id];
     li.innerHTML = `<h2></h2><p class="best"></p><button class="btn pink" type="button">あそぶ</button><button class="rank-link" type="button">ランキング</button><p></p>`;
     li.querySelector("h2").textContent = g.META.title;
-    li.querySelector(".best").textContent = best ? `じこベスト ${best.toLocaleString()}点` : "まだ あそんでいない";
+    li.querySelector(".best").textContent = g.META.mode === "map" ? `★ ${shotTotal()} / 24` : best ? `じこベスト ${best.toLocaleString()}点` : "まだ あそんでいない";
     li.querySelector("p:last-child").textContent = g.META.howto;
-    li.querySelector("button").addEventListener("click", () => openGame(g));
-    li.querySelector(".rank-link").addEventListener("click", () => openRanking(g));
+    li.querySelector("button").addEventListener("click", () => g.META.mode === "map" ? show("shot-map") : openGame(g));
+    if (g.META.mode === "map") li.querySelector(".rank-link").remove();
+    else li.querySelector(".rank-link").addEventListener("click", () => openRanking(g));
     list.appendChild(li);
   }
+}
+
+const shotTotal = () => save.shot.stars.reduce((sum, n) => sum + n, 0);
+const shotStars = (n) => "★".repeat(n) + "☆".repeat(3 - n);
+function renderShotMap() {
+  $("shot-total").textContent = `★ ${shotTotal()} / 24`;
+  $("shot-stages").textContent = "";
+  const firstUncleared = save.shot.stars.findIndex((n) => n === 0);
+  shot.STAGE_NAMES.forEach((name, stage) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.disabled = save.shot.stars[stage] === 0 && firstUncleared !== -1 && stage > firstUncleared;
+    button.textContent = `${button.disabled ? "🔒 " : ""}${stage + 1} ${name}\n${shotStars(save.shot.stars[stage])}`;
+    button.addEventListener("click", () => openGame(shot, stage));
+    $("shot-stages").appendChild(button);
+  });
 }
 
 function renderDress() {
@@ -218,9 +238,10 @@ for (const [ev, type] of [["pointerdown", "down"], ["pointermove", "move"], ["po
   });
 }
 
-function openGame(g) {
+function openGame(g, stage = shotStage) {
+  if (g.META.mode === "map") shotStage = stage;
   current = g;
-  game = g.createGame({ costume: save.costume, up: save.upgrades });
+  game = g.createGame({ costume: save.costume, up: save.upgrades, stage });
   started = false;
   if (["localhost", "127.0.0.1"].includes(location.hostname) && new URLSearchParams(location.search).has("debug")) window.__game = game;
   $("ready-title").textContent = g.META.title;
@@ -235,7 +256,7 @@ $("start").addEventListener("click", () => {
   if (!started) {
     started = true;
     session = null;
-    startSession().then((s) => (session = s)); // ランキング用。つながらなくても遊べる
+    if (current.META.mode !== "map") startSession().then((s) => (session = s)); // ランキング用。つながらなくても遊べる
   }
   last = performance.now();
   raf = requestAnimationFrame(loop);
@@ -254,7 +275,8 @@ function loop(now) {
   if (game.over) {
     stopLoop();
     // 終わった画面を少し見せてから結果へ
-    setTimeout(() => finish(game.score), 900);
+    if (current.META.mode === "map") finishShot();
+    else setTimeout(() => finish(game.score), 900);
     return;
   }
   raf = requestAnimationFrame(loop);
@@ -358,6 +380,22 @@ $("call-close").addEventListener("click", () => {
 });
 
 // ── 結果 ──
+function finishShot() {
+  const { cleared, stars, stage } = game.result;
+  const gained = Math.max(0, stars - save.shot.stars[stage]) * 20;
+  save.shot.stars[stage] = Math.max(stars, save.shot.stars[stage]);
+  save.points += gained;
+  save.plays++;
+  writeSave(save);
+  $("shot-outcome").textContent = cleared ? `クリア！ ${shotStars(stars)}` : "ざんねん…";
+  $("shot-points").textContent = gained ? `やきとりポイント +${gained}pt` : "";
+  $("shot-next").hidden = !cleared || stage === 7;
+  $("shot-complete").hidden = !cleared || stage !== 7;
+  show("shot-result");
+}
+$("shot-next").addEventListener("click", () => openGame(shot, shotStage + 1));
+$("shot-again").addEventListener("click", () => openGame(shot, shotStage));
+
 function finish(score) {
   lastScore = score;
   const id = current.META.id;
@@ -435,7 +473,7 @@ function loadRankScreen() {
   return renderRanking($("rank-ranking"), rankGame, rankBoard);
 }
 
-for (const g of GAMES) {
+for (const g of RANKED_GAMES) {
   const b = document.createElement("button");
   b.type = "button";
   b.setAttribute("role", "tab");

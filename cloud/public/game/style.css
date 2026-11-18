@@ -125,3 +125,11 @@ button { cursor: pointer; touch-action: manipulation; }
 .call h2::before { content: ""; }
 .call p { margin: 0; }
 .call .btn { display: flex; align-items: center; justify-content: center; text-decoration: none; }
+
+/* 砦をつなぐジグザグの道 */
+.shot-stages { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; position: relative; padding: 1rem 0; }
+.shot-stages::before { content: ""; position: absolute; inset: 2rem 22%; border: 8px dashed var(--lav-300); border-radius: 45%; opacity: 0.6; pointer-events: none; }
+.shot-stages button { position: relative; grid-column: 1; min-height: 80px; white-space: pre-line; border: 3px solid var(--beak); border-radius: 24px; background: var(--pink-100); color: var(--ink); box-shadow: 0 5px 0 var(--magenta); font-size: 1rem; }
+.shot-stages button:nth-child(even) { grid-column: 2; transform: translateY(2rem); }
+.shot-stages button:disabled { background: var(--space-700); color: var(--lav-300); border-color: var(--lav-500); box-shadow: none; cursor: default; }
+#shot-result h1 { font-size: 1.6rem; }

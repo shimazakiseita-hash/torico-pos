@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  GAME_IDS,
-  MAX_POINTS_PER_SECOND,
   SUBMIT_LIMIT,
   SUBMIT_WINDOW_MS,
   allowSubmission,
@@ -59,17 +57,6 @@ describe("containsNgWord", () => {
 });
 
 describe("maxPlausibleScore / isPlausibleScore", () => {
-  it("shot の最速クリアと途中得点を通し、上限超過を弾く", () => {
-    expect(GAME_IDS).toContain("shot");
-    expect(MAX_POINTS_PER_SECOND.shot).toBeGreaterThanOrEqual(1030 / 2.5 * 1.2);
-    expect(isPlausibleScore("shot", 330, 1000)).toBe(true);
-    for (let stages = 1; stages <= 12; stages++) {
-      expect(isPlausibleScore("shot", stages * 1030, (2.5 + (stages - 1) * 4.5) * 1000)).toBe(true);
-    }
-    const limit = maxPlausibleScore("shot", 10);
-    expect(isPlausibleScore("shot", limit, 10000)).toBe(true);
-    expect(isPlausibleScore("shot", limit + 1, 10000)).toBe(false);
-  });
   it("遊んだ時間に比例して上限が上がる（ゲームごとに傾きが違う）", () => {
     expect(maxPlausibleScore("tsumi", 0)).toBe(100);
     expect(maxPlausibleScore("flight", 60)).toBe(60 * 200 * 1.5 + 100);
@@ -115,7 +102,6 @@ describe("rankingSubmitSchema", () => {
   it("ゲーム・プレイヤーID・名前・点数・合言葉を受け付ける（遊んだ時間は受け取らない）", () => {
     const ok = { game: "flight", player: "a1b2c3d4e5f6", name: "とりこ", score: 5, session: "0123456789abcdef.1790000000000.sig" };
     expect(rankingSubmitSchema.safeParse(ok).success).toBe(true);
-    expect(rankingSubmitSchema.safeParse({ ...ok, game: "shot" }).success).toBe(true);
     expect(rankingSubmitSchema.safeParse({ ...ok, game: "catch" }).success).toBe(false);
     expect(rankingSubmitSchema.safeParse({ ...ok, player: "short" }).success).toBe(false);
     expect(rankingSubmitSchema.safeParse({ ...ok, player: "ABCDEF123456" }).success).toBe(false);

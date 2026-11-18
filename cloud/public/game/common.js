@@ -466,6 +466,7 @@ export function loadSave() {
   } catch {
     data = {};
   }
+  if (typeof data !== "object" || Array.isArray(data)) data = {};
   if (typeof data.player !== "string" || !/^[a-z0-9]{8,32}$/.test(data.player)) {
     data.player = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, "0")).join("");
   }
@@ -487,6 +488,10 @@ export function loadSave() {
     costume,
     upgrades,
     best: typeof data.best === "object" && data.best ? data.best : {},
+    shot: { stars: Array.from({ length: 8 }, (_, i) => {
+      const n = Array.isArray(data.shot?.stars) ? data.shot.stars[i] : 0;
+      return Number.isInteger(n) && n >= 0 && n <= 3 ? n : 0;
+    }) },
     plays: Number.isInteger(data.plays) ? data.plays : 0,
   };
   // 廃止したパス強化を返金し、次に読む前に保存する

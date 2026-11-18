@@ -1,6 +1,6 @@
 /**
  * ミニゲームのランキングを見る・消す（スタッフ用。.env.public の URL と合言葉を使う）。
- * ゲーム：tsumi（つみつみ串）・flight（とりこフライト）・shot（とりこショット）
+ * ゲーム：tsumi（つみつみ串）・flight（とりこフライト）
  * 使い方: npm run ranking -- flight（今日） / npm run ranking -- flight all（歴代） / npm run ranking -- flight 2026-11-21（その日）
  *         npm run ranking -- remove a1b2c3（そのIDの記録を、すべてのゲームの今日・歴代・過去の日から消す）
  *         npm run ranking -- add flight 名前 4520 [a1b2c3]（記録を手で載せる。IDを付けると、その人の記録にする）

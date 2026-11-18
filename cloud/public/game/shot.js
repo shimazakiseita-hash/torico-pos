@@ -1,17 +1,9 @@
-// とりこショット：串のパチンコで材料の砦をくずす TORI♡CO オリジナルゲーム。
-// 得点上限（src/lib/ranking.ts）：固定の焼き台は得点なし。
-// 8面の最大は普通の材料7個×10＋ひの炭2個×30＋UFO2体×100 = 330点。
-// クリア300＋残り弾最大2×200を加えて1030点（最低1発必要）。
-// 開始1秒＋発射後最低1.5秒 = 最短2.5秒、1030/2.5 = 412点/秒。
-// 途中得点も開始1秒以降で最大330点。上限500は412の1.21倍以上。
-// 次面まではさらに2秒待つ。周回しても個数・得点は変わらない。
-// 固定刻みのゲーム時間だけ進める。休止・遅い端末で実時間より速くならない。
+// とりこショット：8つの砦を順にクリアして★を集めるステージ制ゲーム。
 import { COLORS, FONT, Popups, W, drawHud, drawMascot, drawSpace, view } from "./common.js";
 
 export const META = {
-  id: "shot", title: "とりこショット",
-  howto: "とりこを 引っぱって はなすと とんでいくよ。砦を くずして はらぺこUFOの 手下を ぜんぶ たおそう！ 1ステージ 3発まで。とんでいる とちゅうで タップすると どかーん！",
-  pointRate: 0.15,
+  id: "shot", mode: "map", title: "とりこショット",
+  howto: "とりこを 引っぱって はなすと とぶよ。砦を くずして UFOの 手下を ぜんぶ たおせば クリア！とんでいる とちゅうで タップすると どかーん！",
 };
 const STEP = 1 / 60;
 const FLOOR = 590;
@@ -25,7 +17,9 @@ const TYPES = {
   grill: { hp: Infinity, density: 0.002, color: "#8999ae" },
   ufo: { hp: 13, density: 0.001, color: "#bba1d3" },
 };
-// [種類, 中心x, 中心y, 幅（円は半径）, 高さ, 角度]。焼き台は得点なしの固定物。
+export const STAGE_NAMES = ["はじめの砦", "高い塔", "宙の焼き台", "ひの炭", "ころころ坂", "炭の守り", "上と下", "大きな砦"];
+
+// [種類, 中心x, 中心y, 幅（円は半径）, 高さ, 角度]。焼き台は固定物。
 const STAGES = [
   [["negima",190,535,90,110],["ufo",190,462,18]],
   [["negima",225,530,26,120],["negima",295,530,26,120],["mesh",260,462,110,16],["ufo",240,436,18],["ufo",283,436,18]],
@@ -37,11 +31,11 @@ const STAGES = [
   [["coal",206,550,32,80],["coal",304,550,32,80],["mesh",255,502,140,16],["ufo",276,476,18],["ember",229,476,36,36],["grill",265,400,146,16],["negima",225,362,24,60],["negima",304,362,24,60],["mesh",265,324,124,16],["ufo",286,298,18],["ember",240,298,36,36],["tsukune",265,370,22]],
 ];
 
-export function createGame({ costume }) {
+export function createGame({ costume, stage = 0 }) {
   const { Engine, Bodies, Body, Composite, Events, Sleeping } = window.Matter;
   const pop = new Popups();
   const engine = Engine.create({ enableSleeping: true });
-  const state = { score: 0, over: false, t: 0, stageIndex: 0, ammo: 3, age: 0,
+  const state = { over: false, result: null, t: 0, stageIndex: Number.isInteger(stage) && stage >= 0 && stage < 8 ? stage : 0, ammo: 3, age: 0,
     flying: false, shotAge: 0, quiet: 0, clearWait: 0, pieces: [], bird: null,
     drag: null, particles: [], rings: [], dizzy: [], shake: 0, burstUsed: false, banner: { text: "", age: 0 } };
   let accumulator = 0;
@@ -55,17 +49,16 @@ export function createGame({ costume }) {
     pop.items = [];
     // 地面は画面より広い。画面外の動的ボディは下の固定境界で回収。
     Composite.add(engine.world, Bodies.rectangle(180, FLOOR + 30, 2400, 60, { isStatic: true, friction: 0.7 }));
-    const lap = Math.floor(state.stageIndex / STAGES.length);
-    for (const [kind, x, y, w, h, angle = 0] of STAGES[state.stageIndex % STAGES.length]) {
+    for (const [kind, x, y, w, h, angle = 0] of STAGES[state.stageIndex]) {
       const spec = TYPES[kind];
       const opts = { isStatic: kind === "grill", angle, density: spec.density, friction: kind === "tsukune" ? 0.12 : 0.9, frictionStatic: 5, restitution: 0.06, frictionAir: 0.006 };
       // 手下は底を平らにして、わずかな傾きで勝手に転がるのを防ぐ。
       const body = kind === "ufo" ? Bodies.rectangle(x, y, w * 2, w * 2, { ...opts, chamfer: { radius: 7 } }) : h ? Bodies.rectangle(x, y, w, h, opts) : Bodies.circle(x, y, w, opts);
-      body.plugin.shot = { kind, w, h, maxHp: spec.hp * (kind === "ufo" ? 1 + lap * 0.15 : 1), hp: spec.hp * (kind === "ufo" ? 1 + lap * 0.15 : 1) };
+      body.plugin.shot = { kind, w, h, maxHp: spec.hp, hp: spec.hp };
       state.pieces.push(body);
       Composite.add(engine.world, body);
     }
-    state.banner = { text: `${lap ? `${lap + 1}しゅうめ ` : ""}ステージ${state.stageIndex % STAGES.length + 1}`, age: 0 };
+    state.banner = { text: `ステージ ${state.stageIndex + 1} ${STAGE_NAMES[state.stageIndex]}`, age: 0 };
   }
   // collisionStart は速度解決より前。相対速度と換算質量で衝撃を見積もる。
   Events.on(engine, "collisionStart", ({ pairs }) => {
@@ -98,9 +91,6 @@ export function createGame({ costume }) {
   function destroy(body) {
     const data = body.plugin.shot;
     if (body.isStatic || !state.pieces.includes(body)) return;
-    const points = data.kind === "ufo" ? 100 : data.kind === "ember" ? 30 : 10;
-    state.score += points;
-    pop.add(`+${points}`, body.position.x, body.position.y - 20, points === 100 ? COLORS.cyan : COLORS.beak, 22);
     if (data.kind === "ufo") state.dizzy.push({ x: body.position.x, y: body.position.y, age: 0 });
     state.pieces = state.pieces.filter((p) => p !== body);
     Composite.remove(engine.world, body);
@@ -126,7 +116,7 @@ export function createGame({ costume }) {
     state.particles = state.particles.filter((p) => p.life > 0);
     if (state.clearWait > 0) {
       state.clearWait -= STEP;
-      if (state.clearWait <= 0) { state.stageIndex++; startStage(); }
+      if (state.clearWait <= 0) state.over = true;
       return;
     }
     Engine.update(engine, STEP * 1000);
@@ -147,19 +137,22 @@ export function createGame({ costume }) {
     state.quiet = moving ? 0 : state.quiet + STEP;
     if (state.shotAge < 1.5) return;
     if (!state.pieces.some((b) => b.plugin.shot.kind === "ufo")) {
-      state.score += 300 + state.ammo * 200;
-      state.clearWait = 2; state.drag = null;
-      state.banner = { text: `クリア！ ${"★".repeat(state.ammo + 1)} +${300 + state.ammo * 200}`, age: 0 };
+      state.result = { cleared: true, stars: state.ammo + 1, stage: state.stageIndex };
+      state.clearWait = 1.2; state.drag = null;
+      state.banner = { text: `クリア！ ${"★".repeat(state.ammo + 1)}`, age: 0 };
     } else if (state.quiet >= 0.45 || state.shotAge >= 7) {
       if (state.bird) Composite.remove(engine.world, state.bird);
       state.bird = null; state.flying = false;
-      if (state.ammo === 0) state.over = true;
+      if (state.ammo === 0) {
+        state.result = { cleared: false, stars: 0, stage: state.stageIndex };
+        state.over = true;
+      }
     }
   }
   startStage();
   return {
     state,
-    get score() { return state.score; }, get over() { return state.over; },
+    get result() { return state.result; }, get over() { return state.over; },
     pointer(type, x, y) {
       if (state.over || state.clearWait > 0 || state.age < 1) return;
       if (state.flying) {
@@ -238,11 +231,11 @@ export function createGame({ costume }) {
       }
       pop.draw(ctx);
       ctx.restore();
-      drawHud(ctx, `${state.score.toLocaleString()}点`, `ステージ${state.stageIndex % STAGES.length + 1}`);
+      drawHud(ctx, `ステージ ${state.stageIndex + 1} ${STAGE_NAMES[state.stageIndex]}`, "");
       ctx.font = `700 17px ${FONT}`; ctx.textAlign = "left"; ctx.fillStyle = "#fff";
       ctx.fillText(`のこり弾 ${state.ammo} / 3`, 14, 52);
       ctx.font = `700 15px ${FONT}`; ctx.textAlign = "center";
-      ctx.fillText(state.flying ? state.burstUsed ? "どかーん！" : "タップで どかーん！" : state.clearWait ? "つぎの砦へ！" : "どこでも 引っぱって はなそう", W / 2, 620);
+      ctx.fillText(state.flying ? state.burstUsed ? "どかーん！" : "タップで どかーん！" : state.clearWait ? "クリア！" : "どこでも 引っぱって はなそう", W / 2, 620);
       if (state.banner.age < 2) {
         ctx.globalAlpha = Math.min(1, (2 - state.banner.age) * 2);
         ctx.fillStyle = "rgba(42,31,92,0.8)"; ctx.fillRect(view.x0, 137, view.x1 - view.x0, 50);

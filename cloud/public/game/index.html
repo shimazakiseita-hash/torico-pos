@@ -39,6 +39,26 @@
   <p class="small center">あそぶと やきとりポイントが たまるよ。ガチャで きせかえ、ショップで ゲームを つよく しよう</p>
 </main>
 
+<main id="shot-map" class="view" hidden>
+  <header class="top"><button class="back" type="button" data-go="hub">← もどる</button></header>
+  <h1 class="title">とりこショット</h1>
+  <p id="shot-total" class="center"></p>
+  <div id="shot-stages" class="shot-stages" aria-label="ステージマップ"></div>
+</main>
+<main id="shot-result" class="view" hidden>
+  <section class="card center">
+    <p class="label">とりこショット</p>
+    <h1 id="shot-outcome"></h1>
+    <p id="shot-points"></p>
+    <p id="shot-complete" hidden>ぜんぶ クリア！</p>
+  </section>
+  <div class="actions">
+    <button id="shot-next" class="btn pink" type="button">つぎのステージ</button>
+    <button id="shot-again" class="btn ghost" type="button">もういちど</button>
+    <button class="btn ghost" type="button" data-go="shot-map">マップへ</button>
+  </div>
+</main>
+
 <main id="dress" class="view" hidden>
   <header class="top"><button class="back" type="button" data-go="hub">← もどる</button></header>
   <h1 class="title">きせかえ</h1>
