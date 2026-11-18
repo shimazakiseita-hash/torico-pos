@@ -42,7 +42,16 @@
 <main id="shot-map" class="view" hidden>
   <header class="top"><button class="back" type="button" data-go="hub">← もどる</button></header>
   <div class="shot-scenery" aria-hidden="true">
-    <div class="shot-moon"></div><div class="shot-mountains"></div>
+    <div class="shot-moon"></div>
+    <div id="shot-landscapes"></div>
+    <template id="shot-landscape-template">
+    <div class="shot-landscape">
+    <div class="shot-mountains"></div>
+    <svg class="shot-stalls" viewBox="0 0 390 70" preserveAspectRatio="none">
+      <path d="M-8 38h406v32H-8z" fill="#101b2c"/>
+      <path d="M-8 38l12-13h43l12 13z M75 43l13-15h36l14 15z M163 35l12-13h45l13 13z M255 43l11-12h41l13 12z M339 37l12-15h38l13 15z" fill="#51404e"/>
+      <path d="M7 43h35v10H7z M89 47h31v8H89z M178 40h39v11h-39z M269 47h33v8h-33z M354 42h31v10h-31z" fill="#d99e67" opacity=".6"/>
+    </svg>
     <svg class="shot-lanterns" viewBox="0 0 390 160" preserveAspectRatio="none">
       <path d="M-15 30 Q85 135 190 35 M200 35 Q305 135 405 30" fill="none" stroke="#ad888a" stroke-width="2"/>
       <g stroke="#eeb596" stroke-width="2">
@@ -51,6 +60,8 @@
       <g fill="#db637c"><ellipse cx="25" cy="94" rx="11" ry="16"/><ellipse cx="133" cy="107" rx="11" ry="16"/><ellipse cx="314" cy="115" rx="11" ry="16"/></g>
       <g fill="#d74852"><ellipse cx="76" cy="115" rx="12" ry="17"/><ellipse cx="257" cy="107" rx="12" ry="17"/><ellipse cx="365" cy="94" rx="12" ry="17"/></g>
     </svg>
+    </div>
+    </template>
   </div>
   <p id="shot-total" class="center"></p>
   <div class="shot-route">

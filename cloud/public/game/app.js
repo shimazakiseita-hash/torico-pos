@@ -90,6 +90,14 @@ function renderShotMap() {
   const routePoints = [...points, goal];
   const height = goal.y + 70;
   $("shot-stages").style.height = `${height}px`;
+  // 固定ピクセル間隔の景色を、ルートの長さに合わせて必要な分だけ置く。
+  const landscapes = document.createDocumentFragment();
+  for (let y = 0; y < height + 180; y += 640) {
+    const landscape = $("shot-landscape-template").content.firstElementChild.cloneNode(true);
+    landscape.style.top = `${y}px`;
+    landscapes.appendChild(landscape);
+  }
+  $("shot-landscapes").replaceChildren(landscapes);
   const route = document.querySelector(".shot-route > svg");
   route.setAttribute("viewBox", `0 0 100 ${height}`);
   route.querySelector("path").setAttribute("d", routePoints.map((p, i) => i ? `C${routePoints[i - 1].x} ${p.y - 38} ${p.x} ${p.y - 38} ${p.x} ${p.y}` : `M${p.x} ${p.y}`).join(" "));
