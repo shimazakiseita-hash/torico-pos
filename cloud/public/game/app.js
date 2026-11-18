@@ -404,7 +404,17 @@ function finishShot() {
   save.points += gained;
   save.plays++;
   writeSave(save);
-  $("shot-outcome").textContent = cleared ? shotStars(stars) : "☆☆☆";
+  const outcome = $("shot-outcome");
+  outcome.replaceChildren();
+  if (cleared && stage === shot.STAGE_COUNT - 1) {
+    const title = document.createElement("span");
+    title.textContent = "ぜんぶクリア！";
+    title.style.cssText = "display:block;font-size:clamp(24px,8vw,36px);white-space:nowrap";
+    const rating = document.createElement("span");
+    rating.textContent = shotStars(stars);
+    rating.style.cssText = "display:block;font-size:56px;line-height:1.3";
+    outcome.append(title, rating);
+  } else outcome.textContent = cleared ? shotStars(stars) : "☆☆☆";
   $("shot-outcome").classList.toggle("failed", !cleared);
   $("shot-points").textContent = gained ? `+${gained}pt` : "";
   const unlocked = shot.SKILLS.filter((skill) => !before.includes(skill.id) && shotSkills().includes(skill.id));

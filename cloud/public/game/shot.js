@@ -1,5 +1,5 @@
 // とりこショット：16の砦を順にクリアして★を集めるステージ制ゲーム。
-import { COLORS, FONT, Popups, W, STAGE_COUNT, drawHud, drawMascot, view } from "./common.js";
+import { COLORS, FONT, Popups, W, STAGE_COUNT, drawHud, drawMascot, drawSkewer, star, view } from "./common.js";
 
 export { STAGE_COUNT } from "./common.js";
 
@@ -244,7 +244,135 @@ export function createGame({ costume, stage = 0, skills = ["boom"] }) {
     const factor = Math.min(1, MAX_PULL / (Math.hypot(dx, dy) || 1));
     state.drag.dx = dx * factor; state.drag.dy = dy * factor;
   }
+  // 演出の時計だけを進め、物理・材料・通常のエフェクトは凍結する。
+  const heat = document.createElement("canvas");
+  heat.width = heat.height = 160;
+  const heatCtx = heat.getContext("2d");
+  function startEnding() {
+    if (state.over || state.ending || state.stageIndex !== STAGE_COUNT - 1) return;
+    state.result = { cleared: true, stars: Math.min(3, state.ammo + 1), stage: state.stageIndex };
+    state.drag = null;
+    state.clearWait = 0;
+    state.ending = { age: 0 };
+  }
+  function drawEnding(ctx) {
+    const t = state.ending.age;
+    const { x0, y0, x1, y1 } = view;
+    const w = x1 - x0, h = y1 - y0;
+    const climb = Math.min(1, t / 1.1);
+    const speed = t < 3.6 ? Math.min(1, t * 2) : Math.max(0, 1 - (t - 3.6) * 2);
+    ctx.fillStyle = "#101326"; ctx.fillRect(x0, y0, w, h);
+    // 既存の背景キャッシュをそのまま下へ流す（表示範囲は変えない）。
+    ctx.save(); ctx.translate(0, climb * (h + 120)); background(ctx, state.t); ctx.restore();
+    // 移動と逆向き（左下）へ流れる、短い光跡と遠い星。
+    for (let i = 0; i < 22; i++) {
+      const px = x0 + ((i * 97.31 - t * 65 * speed) % w + w) % w;
+      const py = y0 + ((i * 53.79 + t * 540) % h);
+      ctx.fillStyle = "#dfe8ff88";
+      ctx.beginPath(); ctx.arc(px, py, .7, 0, Math.PI * 2); ctx.fill();
+      if (i >= 14 || speed <= 0) continue;
+      const dx = -3 * speed, dy = 15 * speed;
+      const light = ctx.createLinearGradient(px, py, px - dx, py - dy);
+      light.addColorStop(0, "#eff6ffbb"); light.addColorStop(1, "#dfe8ff00");
+      ctx.strokeStyle = light; ctx.lineWidth = .7;
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px - dx, py - dy); ctx.stroke();
+    }
+    const x = SLING.x + (W * .57 - SLING.x) * (1 - (1 - climb) ** 3);
+    const y = SLING.y + (y0 + h * .31 - SLING.y) * (1 - (1 - climb) ** 3);
+    ctx.save();
+    if (t > 1 && t < 3.6) ctx.translate(Math.sin(t * 91) * 2, Math.cos(t * 79) * 2);
+    if (t < 3.6) {
+      // 最大84粒（煙16・炎54・火の粉14）。演出時計から求め、停止中は動かない。
+      const intensity = Math.min(1, Math.max(0, (t - .7) / .8));
+      for (let i = 0; i < 16; i++) {
+        const life = (t * .55 + i * .137) % 1;
+        const px = x - 20 - life * 65 + Math.sin(i * 2.4) * (10 + life * 22);
+        const py = y + 35 + life * 125;
+        const r = 9 + life * 26;
+        const smoke = ctx.createRadialGradient(px, py, 0, px, py, r);
+        smoke.addColorStop(0, `rgba(139,142,155,${intensity * (1 - life) * .22})`);
+        smoke.addColorStop(1, "rgba(100,104,120,0)");
+        ctx.fillStyle = smoke; ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalCompositeOperation = "lighter";
+      const glow = ctx.createRadialGradient(x, y, 10, x, y, 91);
+      glow.addColorStop(0, `rgba(255,190,66,${intensity * .27})`);
+      glow.addColorStop(.5, `rgba(255,83,16,${intensity * .16})`);
+      glow.addColorStop(1, "rgba(255,48,0,0)");
+      ctx.fillStyle = glow; ctx.fillRect(x - 91, y - 91, 182, 182);
+      for (let i = 0; i < 54; i++) {
+        const life = (t * 1.35 + i * .137) % 1;
+        const spread = Math.sin(i * 2.399) * (12 + life * 17);
+        const px = x - 9 - life * 50 + spread;
+        const py = y + 22 + life * 105 + Math.cos(i * 2.399) * 12;
+        const r = 5 + life * 17;
+        const fire = ctx.createRadialGradient(px, py, 0, px, py, r);
+        fire.addColorStop(0, `rgba(255,${Math.round(245 - life * 145)},${Math.round(205 * (1 - life))},${intensity * (1 - life) * .8})`);
+        fire.addColorStop(.25, `rgba(255,${Math.round(210 - life * 130)},20,${intensity * (1 - life) * .65})`);
+        fire.addColorStop(.55, `rgba(255,65,5,${intensity * (1 - life) * .4})`);
+        fire.addColorStop(1, "rgba(220,20,0,0)");
+        ctx.fillStyle = fire; ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+      }
+      for (let i = 0; i < 14; i++) {
+        const life = (t * .9 + i * .173) % 1;
+        ctx.globalAlpha = intensity * Math.sin(life * Math.PI);
+        ctx.fillStyle = i % 2 ? "#fff9ce" : "#ffbd49";
+        ctx.beginPath(); ctx.arc(x - life * 83 + Math.sin(i * 7) * 40, y + 30 + life * 155, 1 + (1 - life), 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "source-over";
+      // source-atop により体ときせかえの輪郭だけを赤〜オレンジに染める。
+      heatCtx.clearRect(0, 0, 160, 160);
+      drawMascot(heatCtx, 80, 80, 34, costume, { t, tilt: .4 });
+      heatCtx.globalCompositeOperation = "source-atop";
+      const char = Math.min(1, Math.max(0, (t - 2.55) / .95));
+      heatCtx.fillStyle = `rgba(${Math.round(255 - char * 168)},${Math.round(115 - char * 72)},${Math.round(20 - char * 3)},${Math.min(.82, Math.max(0, t - .8) * .3)})`;
+      heatCtx.fillRect(0, 0, 160, 160);
+      heatCtx.globalCompositeOperation = "source-over";
+      ctx.drawImage(heat, x - 80, y - 80);
+      if (t > .8) {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(-1.05);
+        ctx.globalCompositeOperation = "lighter";
+        ctx.strokeStyle = "#ffbf7066"; ctx.lineWidth = 9; ctx.beginPath(); ctx.arc(0, 0, 47, -.95, .95); ctx.stroke();
+        ctx.strokeStyle = "#fff9e8"; ctx.lineWidth = 2; ctx.stroke();
+        ctx.globalCompositeOperation = "source-over"; ctx.restore();
+      }
+    } else {
+      const fall = Math.min(1, (t - 3.6) / 1.4);
+      const bounce = Math.sin(Math.min(1, (t - 3.6) / .65) * Math.PI) * 18 * Math.exp(-(t - 3.6) * 2);
+      const sx = x + (W / 2 - x) * fall, sy = y + (y0 + h * .5 - y) * fall - bounce;
+      for (let i = 0; i < 20; i++) {
+        const phase = (t * .6 + i * .173) % 1;
+        ctx.globalAlpha = Math.sin(phase * Math.PI);
+        ctx.fillStyle = "#ffeaa0";
+        star(ctx, sx + Math.cos(i * 2.4) * (65 + phase * 65), sy + Math.sin(i * 2.4) * (40 + phase * 65), 3 + phase * 4, 1.5); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      drawSkewer(ctx, sx, sy, Math.PI * 2 * (1 - (1 - fall) ** 2) - .25, ["tare", "negi", "tare", "negi"], 2.8);
+      ctx.strokeStyle = "#fff3df88"; ctx.lineWidth = 2;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        for (let j = 0; j < 18; j++) { const px = sx - 35 + i * 30 + Math.sin(t * 3 + j * .3 + i) * 5, py = sy - 25 - j * 3; if (!j) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+        ctx.stroke();
+      }
+      const burst = (t - 3.6) / .4;
+      if (burst < 1) {
+        for (let i = 0; i < 16; i++) {
+          const angle = i * 2.399;
+          ctx.globalAlpha = 1 - burst;
+          ctx.fillStyle = i % 3 ? "#ffc56e" : "#a45b32";
+          ctx.save(); ctx.translate(x + Math.cos(angle) * (25 + burst * 110), y + Math.sin(angle) * (25 + burst * 110) + burst * burst * 35);
+          ctx.rotate(angle + burst * 5); ctx.fillRect(-2, -2, 3 + (1 - burst) * 2, 3); ctx.restore();
+        }
+        ctx.globalAlpha = 1 - burst; ctx.strokeStyle = "#fff5d7"; ctx.lineWidth = 8 * (1 - burst);
+        ctx.beginPath(); ctx.arc(x, y, 25 + burst * 135, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = "#fff"; ctx.globalAlpha = Math.max(0, 1 - burst * 2); ctx.fillRect(x0, y0, w, h);
+      }
+    }
+    ctx.restore();
+  }
   function tick() {
+    if (state.ending) { state.ending.age += STEP; if (state.ending.age >= 6) state.over = true; return; }
     state.t += STEP; state.age += STEP; state.banner.age += STEP;
     pop.update(STEP);
     state.shake = Math.max(0, state.shake - STEP);
@@ -286,6 +414,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"] }) {
     if (state.shotAge < 1.5) return;
     if (!state.pieces.some((b) => b.plugin.shot.kind === "ufo")) {
       state.result = { cleared: true, stars: state.ammo + 1, stage: state.stageIndex };
+      if (state.stageIndex === STAGE_COUNT - 1) { startEnding(); return; }
       state.clearWait = 1.2; state.drag = null;
       state.banner = { text: "★".repeat(state.ammo + 1) + "☆".repeat(2 - state.ammo), age: 0 };
     } else if (state.quiet >= 0.45 || state.shotAge >= 7) {
@@ -301,8 +430,10 @@ export function createGame({ costume, stage = 0, skills = ["boom"] }) {
   startStage();
   return {
     state,
+    ...(new URLSearchParams(location.search).has("debug") ? { debugEnding: startEnding } : {}),
     get result() { return state.result; }, get over() { return state.over; },
     pointer(type, x, y) {
+      if (state.ending && !state.over) { if (type === "down") state.over = true; return; }
       if (state.over || state.clearWait > 0 || state.age < 1) return;
       if (state.flying) {
         if (type === "down") activateSkill();
@@ -335,6 +466,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"] }) {
       for (let i = 0; i < 3 && accumulator >= STEP; i++) { accumulator -= STEP; tick(); if (state.over) break; }
     },
     draw(ctx) {
+      if (state.ending) { drawEnding(ctx); return; }
       background(ctx, state.t);
       ctx.save();
       if (state.shake > 0) ctx.translate(Math.sin(state.t * 91) * 3, Math.cos(state.t * 79) * 2);
