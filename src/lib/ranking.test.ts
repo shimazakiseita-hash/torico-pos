@@ -61,10 +61,10 @@ describe("containsNgWord", () => {
 describe("maxPlausibleScore / isPlausibleScore", () => {
   it("shot の最速クリアと途中得点を通し、上限超過を弾く", () => {
     expect(GAME_IDS).toContain("shot");
-    expect(MAX_POINTS_PER_SECOND.shot).toBeGreaterThanOrEqual(1260 / 2.5 * 1.2);
-    expect(isPlausibleScore("shot", 560, 1000)).toBe(true);
+    expect(MAX_POINTS_PER_SECOND.shot).toBeGreaterThanOrEqual(1030 / 2.5 * 1.2);
+    expect(isPlausibleScore("shot", 330, 1000)).toBe(true);
     for (let stages = 1; stages <= 12; stages++) {
-      expect(isPlausibleScore("shot", stages * 1260, (2.5 + (stages - 1) * 4.5) * 1000)).toBe(true);
+      expect(isPlausibleScore("shot", stages * 1030, (2.5 + (stages - 1) * 4.5) * 1000)).toBe(true);
     }
     const limit = maxPlausibleScore("shot", 10);
     expect(isPlausibleScore("shot", limit, 10000)).toBe(true);

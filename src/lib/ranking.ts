@@ -60,7 +60,7 @@ export const GAME_NAMES: Record<GameId, string> = {
 export const MAX_POINTS_PER_SECOND: Record<GameId, number> = {
   tsumi: 240,
   flight: 200,
-  shot: 650,
+  shot: 500,
 };
 
 /** 開始から seconds 秒で取りうる点数の上限（理論上の最大に1.5倍＋100点の余裕） */
