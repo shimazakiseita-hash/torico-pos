@@ -81,7 +81,10 @@ function renderShotMap() {
   $("shot-total").textContent = `★ ${shotTotal()} / ${shot.STAGE_COUNT * 3}`;
   $("shot-stages").textContent = "";
   const firstUncleared = save.shot.stars.findIndex((n) => n === 0);
-  const positions = [20, 48, 78, 70, 40, 18, 46, 78, 70, 40, 18, 32, 64, 78, 48, 20];
+  const originalPositions = [20, 48, 78, 70, 40, 18, 46, 78, 70, 40, 18, 32, 64, 78, 48, 20];
+  const continuation = [32, 64, 78, 48, 20, 32, 64, 78];
+  const positions = Array.from({ length: shot.STAGE_COUNT }, (_, i) =>
+    originalPositions[i] ?? continuation[(i - originalPositions.length) % continuation.length]);
   const points = positions.map((x, stage) => ({ x, y: 48 + stage * 76 }));
   const goal = { x: 48, y: points.at(-1).y + 90 };
   const routePoints = [...points, goal];
