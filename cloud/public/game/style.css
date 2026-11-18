@@ -153,3 +153,8 @@ button { cursor: pointer; touch-action: manipulation; }
 #shot-result h1 { margin: 1rem 0; font-size: clamp(2.5rem, 12vw, 3.5rem); color: #b87b24; letter-spacing: .08em; }
 #shot-result h1.failed { opacity: .3; }
 #shot-points { font-size: 1.5rem; }
+
+#shot-unlock { margin: 1rem auto; padding: 1rem; border: 2px solid #e6b86d; border-radius: 24px 8px 24px 8px; background: #fff3d9; color: #603d65; box-shadow: 0 4px 0 #edd0a5; }
+#shot-unlock-skills { margin: .6rem 0 0; font-size: 1.3rem; font-weight: 900; }
+#shot-unlock-skills span { display: inline-flex; align-items: center; gap: .4rem; }
+#shot-unlock-skills canvas { width: 40px; height: 40px; }

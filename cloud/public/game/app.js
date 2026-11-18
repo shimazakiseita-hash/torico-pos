@@ -74,6 +74,7 @@ function renderHub() {
   }
 }
 
+const shotSkills = () => shot.SKILLS.filter((skill) => skill.stage < 0 || save.shot.stars[skill.stage] > 0).map((skill) => skill.id);
 const shotTotal = () => save.shot.stars.reduce((sum, n) => sum + n, 0);
 const shotStars = (n) => "★".repeat(n) + "☆".repeat(3 - n);
 function renderShotMap() {
@@ -246,7 +247,7 @@ for (const [ev, type] of [["pointerdown", "down"], ["pointermove", "move"], ["po
 function openGame(g, stage = shotStage) {
   if (g.META.mode === "map") shotStage = stage;
   current = g;
-  game = g.createGame({ costume: save.costume, up: save.upgrades, stage });
+  game = g.createGame({ costume: save.costume, up: save.upgrades, stage, skills: shotSkills() });
   started = false;
   if (["localhost", "127.0.0.1"].includes(location.hostname) && new URLSearchParams(location.search).has("debug")) window.__game = game;
   $("ready-title").textContent = g.META.title;
@@ -387,6 +388,7 @@ $("call-close").addEventListener("click", () => {
 // ── 結果 ──
 function finishShot() {
   const { cleared, stars, stage } = game.result;
+  const before = shotSkills();
   const gained = Math.max(0, stars - save.shot.stars[stage]) * 20;
   save.shot.stars[stage] = Math.max(stars, save.shot.stars[stage]);
   save.points += gained;
@@ -395,6 +397,20 @@ function finishShot() {
   $("shot-outcome").textContent = cleared ? shotStars(stars) : "☆☆☆";
   $("shot-outcome").classList.toggle("failed", !cleared);
   $("shot-points").textContent = gained ? `+${gained}pt` : "";
+  const unlocked = shot.SKILLS.filter((skill) => !before.includes(skill.id) && shotSkills().includes(skill.id));
+  $("shot-unlock").hidden = unlocked.length === 0;
+  $("shot-unlock-skills").replaceChildren();
+  for (const skill of unlocked) {
+    const badge = document.createElement("span");
+    const icon = document.createElement("canvas");
+    icon.width = icon.height = 64;
+    icon.setAttribute("aria-hidden", "true");
+    const ctx = icon.getContext("2d");
+    ctx.fillStyle = ctx.strokeStyle = "#603d65";
+    shot.drawSkillIcon(ctx, skill.id, 32, 32, 48);
+    badge.append(icon, document.createTextNode(skill.name));
+    $("shot-unlock-skills").appendChild(badge);
+  }
   $("shot-next").hidden = !cleared || stage === 7;
   show("shot-result");
 }

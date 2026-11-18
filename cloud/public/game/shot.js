@@ -3,7 +3,7 @@ import { COLORS, FONT, Popups, W, drawHud, drawMascot, view } from "./common.js"
 
 export const META = {
   id: "shot", mode: "map", title: "とりこショット",
-  howto: "とりこを 引っぱって はなすと とぶよ。砦を くずして UFOの 手下を ぜんぶ たおせば クリア！とんでいる とちゅうで タップすると どかーん！",
+  howto: "とりこを 引っぱって はなすと とぶよ。砦を くずして UFOの 手下を ぜんぶ たおせば クリア！とんでいる とちゅうで タップすると えらんだ わざが つかえるよ！",
 };
 const STEP = 1 / 60;
 // 半分の距離で従来と同じ最大速度・見た目の引き幅にする。
@@ -55,12 +55,50 @@ const STAGES = [
   [["coal",206,550,32,80],["coal",314,550,32,80],["mesh",260,502,140,16],["ufo",260,536,18],["ember",260,572,36,36],["grill",220,416,100,16],["negima",235,355,40,74],["coal",317,355,24,74],["mesh",276,310,82,16],["ufo",280,338,18],["ember",280,374,36,36],["coal",317,451,24,86],["mesh",280,400,120,16],["coal",155,520,24,140]],
 ];
 
-export function createGame({ costume, stage = 0 }) {
+export const SKILLS = [
+  { id: "boom", name: "どかーん", color: "#ffbf69", stage: -1 },
+  { id: "dash", name: "ぎゅーん", color: "#79e2ee", stage: 1 },
+  { id: "drop", name: "ずしーん", color: "#c5afff", stage: 3 },
+  { id: "split", name: "ぶんしん", color: "#ffabd4", stage: 5 },
+];
+// とりこの丸い顔とくちばしを組み合わせた、技ごとの小さな紋章。
+export function drawSkillIcon(ctx, id, x, y, size = 24) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(size / 24, size / 24);
+  ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.lineJoin = "round";
+  const face = (x, y, r) => {
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + r + 3, y + 2); ctx.lineTo(x + r - 1, y + 3); ctx.stroke();
+  };
+  if (id === "boom") {
+    ctx.beginPath();
+    for (let i = 0; i < 16; i++) {
+      const a = i * Math.PI / 8, r = i % 2 ? 5 : 11;
+      ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.closePath(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, 2, 0, Math.PI * 2); ctx.fill();
+  } else if (id === "dash") {
+    face(2, -1, 6);
+    for (const y of [-6, 0, 6]) { ctx.beginPath(); ctx.moveTo(-12, y); ctx.lineTo(-7, y - 1); ctx.stroke(); }
+  } else if (id === "drop") {
+    face(0, -6, 5);
+    ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(0, 10); ctx.moveTo(-4, 6); ctx.lineTo(0, 10); ctx.lineTo(4, 6); ctx.moveTo(-9, 11); ctx.lineTo(9, 11); ctx.stroke();
+  } else {
+    face(-7, 4, 4); face(0, -5, 4); face(7, 4, 4);
+  }
+  ctx.restore();
+}
+// モジュール内で保持し、次のステージでも選択を引き継ぐ。
+let selectedSkill = "boom";
+export function createGame({ costume, stage = 0, skills = ["boom"] }) {
   const { Engine, Bodies, Body, Composite, Events, Sleeping } = window.Matter;
+  const available = SKILLS.filter((skill) => skill.id === "boom" || skills.includes(skill.id));
+  const skillButtons = available.map((skill, i) => ({ ...skill, x: W / 2 + (i - (available.length - 1) / 2) * 65, y: 612 }));
+  if (!available.some((skill) => skill.id === selectedSkill)) selectedSkill = "boom";
   const pop = new Popups();
   const engine = Engine.create({ enableSleeping: true });
   const state = { over: false, result: null, t: 0, stageIndex: Number.isInteger(stage) && stage >= 0 && stage < 8 ? stage : 0, ammo: 3, age: 0,
-    flying: false, shotAge: 0, quiet: 0, clearWait: 0, pieces: [], bird: null,
+    skill: selectedSkill, birds: [], trails: [], flying: false, shotAge: 0, quiet: 0, clearWait: 0, pieces: [], bird: null,
     drag: null, particles: [], rings: [], dizzy: [], shake: 0, burstUsed: false, banner: { text: "", age: 0 } };
   const background = festivalBackground(state.stageIndex);
   let accumulator = 0;
@@ -70,7 +108,7 @@ export function createGame({ costume, stage = 0 }) {
     Engine.clear(engine);
     pending.clear();
     Object.assign(state, { age: 0, ammo: 3, flying: false, shotAge: 0, quiet: 0,
-      clearWait: 0, pieces: [], bird: null, drag: null, rings: [], dizzy: [], shake: 0, burstUsed: false, particles: [] });
+      birds: [], trails: [], clearWait: 0, pieces: [], bird: null, drag: null, rings: [], dizzy: [], shake: 0, burstUsed: false, particles: [] });
     pop.items = [];
     // 地面は画面より広い。画面外の動的ボディは下の固定境界で回収。
     Composite.add(engine.world, Bodies.rectangle(180, FLOOR + 30, 2400, 60, { isStatic: true, friction: 0.7 }));
@@ -91,11 +129,19 @@ export function createGame({ costume, stage = 0 }) {
   Events.on(engine, "collisionStart", ({ pairs }) => {
     if (state.age < 1 || !state.flying || state.clearWait > 0) return;
     for (const { bodyA: a, bodyB: b } of pairs) {
+      for (const bird of state.birds) {
+        if (bird.plugin.drop && (a === bird || b === bird)) {
+          state.shake = Math.max(state.shake, 0.12);
+          bird.plugin.drop = false;
+        }
+      }
       const speed = Math.hypot(a.velocity.x - b.velocity.x, a.velocity.y - b.velocity.y);
       if (speed < 3.1) continue;
       if (speed > 6) state.shake = Math.max(state.shake, 0.18);
       const mass = a.isStatic ? b.mass : b.isStatic ? a.mass : a.mass * b.mass / (a.mass + b.mass);
-      const damage = speed * speed * Math.max(0.3, mass) * 0.7;
+      // 加速・落下は貫通の運動量を増やし、接触ダメージの急増は抑える。
+      const skillImpact = [a, b].some((body) => body.plugin.dash || body.plugin.heavy) ? 0.15 : 1;
+      const damage = speed * speed * Math.max(0.3, mass) * 0.7 * skillImpact;
       for (const body of [a, b]) if (body.plugin.shot && !body.isStatic) pending.set(body, (pending.get(body) || 0) + damage);
     }
   });
@@ -115,6 +161,46 @@ export function createGame({ costume, stage = 0 }) {
       body.plugin.shot.hp -= 26 * k;
     }
   }
+  function activateSkill() {
+    const bird = state.bird;
+    if (!bird || state.burstUsed) return;
+    state.burstUsed = true;
+    const skill = available.find((s) => s.id === state.skill) || available[0];
+    const { x, y } = bird.position;
+    const { x: vx, y: vy } = bird.velocity;
+    selectedSkill = skill.id;
+    if (skill.id === "boom") {
+      explode(x, y);
+      Composite.remove(engine.world, bird);
+      state.birds = []; state.bird = null;
+      return;
+    }
+    pop.add(`${skill.name}！`, x, y - 30, skill.color, 23);
+    if (skill.id === "dash") {
+      const speed = Math.hypot(vx, vy);
+      const boost = Math.max(8, speed * 1.8) / (speed || 1);
+      Body.setDensity(bird, 0.02);
+      Body.setVelocity(bird, { x: speed ? vx * boost : 8, y: vy * boost });
+      bird.plugin.dash = true;
+      bird.plugin.trailUntil = state.shotAge + 0.4;
+    } else if (skill.id === "drop") {
+      Body.setDensity(bird, 0.02);
+      Body.setVelocity(bird, { x: 0, y: Math.max(10, Math.abs(vy)) });
+      bird.plugin.drop = true;
+      bird.plugin.heavy = true;
+    } else {
+      Body.scale(bird, 0.75, 0.75);
+      // 羽どうしは衝突させず、砦には3羽とも当たる。
+      const group = Body.nextGroup(true);
+      bird.collisionFilter.group = group;
+      for (const angle of [-Math.PI / 15, Math.PI / 15]) {
+        const clone = Bodies.circle(x, y, 12, { density: 0.008, restitution: 0.25, friction: 0.6, collisionFilter: { group } });
+        Body.setVelocity(clone, { x: vx * Math.cos(angle) - vy * Math.sin(angle), y: vx * Math.sin(angle) + vy * Math.cos(angle) });
+        state.birds.push(clone);
+        Composite.add(engine.world, clone);
+      }
+    }
+  }
   function destroy(body) {
     const data = body.plugin.shot;
     if (body.isStatic || !state.pieces.includes(body)) return;
@@ -123,7 +209,7 @@ export function createGame({ costume, stage = 0 }) {
     Composite.remove(engine.world, body);
     if (data.kind === "ember") explode(body.position.x, body.position.y);
     for (const piece of state.pieces) Sleeping.set(piece, false);
-    if (state.bird) Sleeping.set(state.bird, false);
+    for (const bird of state.birds) Sleeping.set(bird, false);
     for (let i = 0; i < 7; i++) state.particles.push({ x: body.position.x, y: body.position.y,
       vx: (Math.random() - 0.5) * 110, vy: -40 - Math.random() * 100, life: 0.65, color: TYPES[data.kind].color });
   }
@@ -136,6 +222,11 @@ export function createGame({ costume, stage = 0 }) {
     state.t += STEP; state.age += STEP; state.banner.age += STEP;
     pop.update(STEP);
     state.shake = Math.max(0, state.shake - STEP);
+    for (const trail of state.trails) trail.life -= STEP;
+    state.trails = state.trails.filter((trail) => trail.life > 0);
+    for (const bird of state.birds) if (bird.plugin.dash && bird.speed > 2 && state.shotAge < bird.plugin.trailUntil) {
+      state.trails.push({ x: bird.position.x, y: bird.position.y, life: 0.16 });
+    }
     for (const effect of [...state.rings, ...state.dizzy]) effect.age += STEP;
     state.rings = state.rings.filter((e) => e.age < 0.45);
     state.dizzy = state.dizzy.filter((e) => e.age < 0.8);
@@ -143,7 +234,11 @@ export function createGame({ costume, stage = 0 }) {
     state.particles = state.particles.filter((p) => p.life > 0);
     if (state.clearWait > 0) {
       state.clearWait -= STEP;
-      if (state.clearWait <= 0) state.over = true;
+      if (state.clearWait <= 0) {
+        for (const bird of state.birds) Composite.remove(engine.world, bird);
+        state.birds = []; state.bird = null; state.flying = false;
+        state.over = true;
+      }
       return;
     }
     Engine.update(engine, STEP * 1000);
@@ -160,7 +255,7 @@ export function createGame({ costume, stage = 0 }) {
     } while (removed);
     if (!state.flying) return;
     state.shotAge += STEP;
-    const moving = [...state.pieces, state.bird].filter(Boolean).some((b) => !b.isSleeping && (b.speed > 0.22 || b.angularSpeed > 0.025) && b.position.y < 700 && b.position.x > -60 && b.position.x < W + 60);
+    const moving = [...state.pieces, ...state.birds].some((b) => !b.isSleeping && (b.speed > 0.22 || b.angularSpeed > 0.025) && b.position.y < 700 && b.position.x > -60 && b.position.x < W + 60);
     state.quiet = moving ? 0 : state.quiet + STEP;
     if (state.shotAge < 1.5) return;
     if (!state.pieces.some((b) => b.plugin.shot.kind === "ufo")) {
@@ -168,7 +263,8 @@ export function createGame({ costume, stage = 0 }) {
       state.clearWait = 1.2; state.drag = null;
       state.banner = { text: "★".repeat(state.ammo + 1) + "☆".repeat(2 - state.ammo), age: 0 };
     } else if (state.quiet >= 0.45 || state.shotAge >= 7) {
-      if (state.bird) Composite.remove(engine.world, state.bird);
+      for (const bird of state.birds) Composite.remove(engine.world, bird);
+      state.birds = [];
       state.bird = null; state.flying = false;
       if (state.ammo === 0) {
         state.result = { cleared: false, stars: 0, stage: state.stageIndex };
@@ -183,15 +279,14 @@ export function createGame({ costume, stage = 0 }) {
     pointer(type, x, y) {
       if (state.over || state.clearWait > 0 || state.age < 1) return;
       if (state.flying) {
-        if (type === "down" && state.bird && !state.burstUsed) {
-          state.burstUsed = true;
-          explode(state.bird.position.x, state.bird.position.y);
-          Composite.remove(engine.world, state.bird);
-          state.bird = null;
-        }
+        if (type === "down") activateSkill();
         return;
       }
       if (type === "cancel") { state.drag = null; return; }
+      if (type === "down") {
+        const button = skillButtons.find((b) => Math.hypot(x - b.x, y - b.y) <= 20);
+        if (button) { state.skill = selectedSkill = button.id; state.drag = null; return; }
+      }
       if (type === "down") state.drag = { x, y, dx: 0, dy: 0 };
       if (!state.drag) return;
       if (type === "move") pull(x, y);
@@ -202,6 +297,7 @@ export function createGame({ costume, stage = 0 }) {
         if (Math.hypot(dx, dy) < 4) return;
         state.bird = Bodies.circle(SLING.x, SLING.y, 16, { density: 0.008, restitution: 0.25, friction: 0.6 });
         Body.setVelocity(state.bird, { x: -dx * SHOT_SPEED, y: -dy * SHOT_SPEED });
+        state.birds = [state.bird];
         Composite.add(engine.world, state.bird);
         state.burstUsed = false;
         state.ammo--; state.flying = true; state.shotAge = 0; state.quiet = 0;
@@ -227,7 +323,12 @@ export function createGame({ costume, stage = 0 }) {
         ctx.beginPath(); ctx.moveTo(x, 469); ctx.lineTo(bx, by); ctx.stroke();
       }
       if (!state.flying && !state.clearWait) drawMascot(ctx, bx, by, 20, costume, { t: state.t });
-      if (state.bird) drawMascot(ctx, state.bird.position.x, state.bird.position.y, 20, costume, { t: state.t, tilt: state.bird.angle });
+      for (const trail of state.trails) {
+        ctx.globalAlpha = trail.life * 2;
+        drawMascot(ctx, trail.x, trail.y, 18, costume);
+      }
+      ctx.globalAlpha = 1;
+      for (const bird of state.birds) drawMascot(ctx, bird.position.x, bird.position.y, bird.circleRadius * 1.25, costume, { t: state.t, tilt: bird.angle });
       if (state.drag) {
         // 最初の約0.4秒だけ。実際と同じ重力・空気抵抗の簡易予測。
         let x = SLING.x, y = SLING.y, vx = -dx * SHOT_SPEED, vy = -dy * SHOT_SPEED;
@@ -264,7 +365,24 @@ export function createGame({ costume, stage = 0 }) {
         drawMascot(ctx, x, 59, 8, costume);
       }
       ctx.font = `700 15px ${FONT}`; ctx.textAlign = "center";
-      ctx.fillText(state.flying ? state.burstUsed ? "どかーん！" : "タップで どかーん！" : state.clearWait ? "クリア！" : "どこでも 引っぱって はなそう", W / 2, 620);
+      const skillName = (available.find((s) => s.id === state.skill) || available[0]).name;
+      for (const button of skillButtons) {
+        ctx.save();
+        const chosen = button.id === state.skill;
+        ctx.globalAlpha = state.flying ? 0.6 : 1;
+        ctx.shadowColor = button.color; ctx.shadowBlur = chosen ? 14 : 0;
+        ctx.fillStyle = chosen ? button.color : "#302b48";
+        ctx.strokeStyle = chosen ? "#fff7da" : button.color; ctx.lineWidth = chosen ? 3 : 1.5;
+        ctx.beginPath(); ctx.arc(button.x, button.y, 20, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.shadowBlur = 0; ctx.fillStyle = chosen ? "#302340" : button.color;
+        ctx.font = `900 23px ${FONT}`; ctx.textBaseline = "middle";
+        ctx.strokeStyle = ctx.fillStyle;
+        drawSkillIcon(ctx, button.id, button.x, button.y, 22);
+        ctx.fillStyle = "#fff4e2"; ctx.font = `700 8px ${FONT}`; ctx.textBaseline = "bottom";
+        ctx.fillText(button.name, button.x, button.y + 28);
+        ctx.restore();
+      }
+      ctx.fillText(state.flying ? state.burstUsed ? `${skillName}！` : `タップで ${skillName}！` : state.clearWait ? "クリア！" : "どこでも 引っぱって はなそう", W / 2, 118);
       if (state.banner.age < 2) {
         ctx.globalAlpha = Math.min(1, (2 - state.banner.age) * 2);
         ctx.fillStyle = "rgba(42,31,92,0.8)"; ctx.fillRect(view.x0, 137, view.x1 - view.x0, 50);
