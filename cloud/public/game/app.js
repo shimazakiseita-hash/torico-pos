@@ -3,11 +3,10 @@
 import { COSTUMES, H, W, drawMascot, mascotReady, view, fetchRanking, loadSave, startSession, submitScore, writeSave } from "./common.js";
 import { GACHA_COST, GACHA_REFUND, UPGRADES, buy, level, nextCost, pull } from "./shop.js";
 import * as flight from "./flight.js";
-import * as tsumi from "./tsumi.js";
 import * as shot from "./shot.js";
 
 /** ゲームの一覧（並び順のまま表示） */
-const GAMES = [tsumi, flight, shot];
+const GAMES = [flight, shot];
 
 const RANKED_GAMES = GAMES.filter((g) => g.META.mode !== "map");
 let shotStage = 0;

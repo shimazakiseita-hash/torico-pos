@@ -75,6 +75,7 @@ button { cursor: pointer; touch-action: manipulation; }
 .row { display: flex; gap: 0.5rem; }
 .row input { flex: 1; min-width: 0; height: 3.5rem; padding: 0 0.75rem; border: 3px solid var(--lav-300); border-radius: 18px; color: var(--ink); font-size: 1.15rem; }
 .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem; }
+#rank-games { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
 .tabs button { min-height: 3rem; border: 3px solid var(--lav-300); border-radius: 999px; background: #fff; color: var(--ink); font-weight: 900; }
 .tabs button[aria-selected="true"] { border-color: var(--magenta); background: var(--magenta); color: #fff; }
 .ranking { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.25rem; }

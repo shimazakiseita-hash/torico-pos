@@ -478,9 +478,13 @@ export function loadSave() {
   if (!owned.includes("none")) owned.unshift("none");
   const costume = typeof data.costume === "string" && owned.includes(data.costume) ? data.costume : "none";
   const upgrades = typeof data.upgrades === "object" && data.upgrades ? data.upgrades : {};
-  const hadPass = Object.hasOwn(upgrades, "tsumiPass");
-  const refund = upgrades.tsumiPass === 1 ? 150 : upgrades.tsumiPass === 2 ? 450 : 0;
+  const hadRemovedUpgrade = ["tsumiPass", "tsumiLife", "tsumiSlow"].some((id) => Object.hasOwn(upgrades, id));
+  const refund = (upgrades.tsumiPass === 1 ? 150 : upgrades.tsumiPass === 2 ? 450 : 0)
+    + (upgrades.tsumiLife === 1 ? 400 : 0)
+    + (upgrades.tsumiSlow === 1 ? 150 : 0);
   delete upgrades.tsumiPass;
+  delete upgrades.tsumiLife;
+  delete upgrades.tsumiSlow;
   const resetShot = data.shot?.v !== 2;
   const save = {
     player: data.player,
@@ -496,8 +500,8 @@ export function loadSave() {
     }) },
     plays: Number.isInteger(data.plays) ? data.plays : 0,
   };
-  // 廃止したパス強化の返金・ショットの旧記録のリセット後、次に読む前に保存する
-  if (hadPass || resetShot || data.shot?.stars?.length !== STAGE_COUNT) writeSave(save);
+  // 廃止した強化の返金・ショットの旧記録のリセット後、次に読む前に保存する
+  if (hadRemovedUpgrade || resetShot || data.shot?.stars?.length !== STAGE_COUNT) writeSave(save);
   return save;
 }
 

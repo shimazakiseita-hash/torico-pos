@@ -58,9 +58,9 @@ PUBLIC_STATUS_URL=https://torico-status.<サブドメイン>.workers.dev
 PUBLIC_STATUS_TOKEN=<PUSH_TOKEN と同じ値>
 ```
 
-お客さん用ページでは、ミニゲーム「つみつみ串」「とりこフライト」（`cloud/public/game/`）を遊べる。
+お客さん用ページでは、ミニゲーム「とりこフライト」「とりこショット」（`cloud/public/game/`）を遊べる。
 やきとりポイントでガチャ（きせかえ）とショップ（強化）を利用でき、自分の番号ができあがるとゲームを止めて知らせる。
-ランキングの確認・削除は `npm run ranking -- flight`（ゲーム名は tsumi・flight）。
+ランキングの確認・削除は `npm run ranking -- flight`（ゲーム名は flight）。
 
 整理券は `npm run tickets -- 1 1 500` と `npm run tickets -- 2 1 500` で `print/tickets-day1.html`・`print/tickets-day2.html` を作り、ブラウザで A4・倍率100%・背景のグラフィックありで印刷する（日を指定し、番号を省略すると1〜500番）。1日目はピンク、2日目は水色で、日付も表示する。
 

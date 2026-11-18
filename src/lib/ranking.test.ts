@@ -57,17 +57,17 @@ describe("containsNgWord", () => {
 });
 
 describe("maxPlausibleScore / isPlausibleScore", () => {
-  it("遊んだ時間に比例して上限が上がる（ゲームごとに傾きが違う）", () => {
-    expect(maxPlausibleScore("tsumi", 0)).toBe(100);
+  it("遊んだ時間に比例して上限が上がる", () => {
+    expect(maxPlausibleScore("flight", 0)).toBe(100);
     expect(maxPlausibleScore("flight", 60)).toBe(60 * 200 * 1.5 + 100);
-    expect(maxPlausibleScore("tsumi", 30)).toBeLessThan(maxPlausibleScore("tsumi", 60));
+    expect(maxPlausibleScore("flight", 30)).toBeLessThan(maxPlausibleScore("flight", 60));
   });
 
   it("時間に見合わない点数・マイナスの点数は通らない", () => {
     expect(isPlausibleScore("flight", 5000, 60_000)).toBe(true);
     expect(isPlausibleScore("flight", 10000, 30_000)).toBe(false);
-    expect(isPlausibleScore("tsumi", 1300, 3_000)).toBe(false);
-    expect(isPlausibleScore("tsumi", -1, 30_000)).toBe(false);
+    expect(isPlausibleScore("flight", 1300, 3_000)).toBe(false);
+    expect(isPlausibleScore("flight", -1, 30_000)).toBe(false);
   });
 });
 
@@ -102,7 +102,9 @@ describe("rankingSubmitSchema", () => {
   it("ゲーム・プレイヤーID・名前・点数・合言葉を受け付ける（遊んだ時間は受け取らない）", () => {
     const ok = { game: "flight", player: "a1b2c3d4e5f6", name: "とりこ", score: 5, session: "0123456789abcdef.1790000000000.sig" };
     expect(rankingSubmitSchema.safeParse(ok).success).toBe(true);
-    expect(rankingSubmitSchema.safeParse({ ...ok, game: "catch" }).success).toBe(false);
+    for (const game of ["tsumi", "shot", "catch"]) {
+      expect(rankingSubmitSchema.safeParse({ ...ok, game }).success).toBe(false);
+    }
     expect(rankingSubmitSchema.safeParse({ ...ok, player: "short" }).success).toBe(false);
     expect(rankingSubmitSchema.safeParse({ ...ok, player: "ABCDEF123456" }).success).toBe(false);
     expect(rankingSubmitSchema.safeParse({ ...ok, name: "x".repeat(41) }).success).toBe(false);

@@ -44,11 +44,10 @@ export function containsNgWord(name: string): boolean {
 }
 
 /** ミニゲーム（cloud/public/game/）。ランキングはゲームごとに分ける */
-export const GAME_IDS = ["tsumi", "flight"] as const;
+export const GAME_IDS = ["flight"] as const;
 export type GameId = (typeof GAME_IDS)[number];
 
 export const GAME_NAMES: Record<GameId, string> = {
-  tsumi: "つみつみ串",
   flight: "とりこフライト",
 };
 
@@ -57,7 +56,6 @@ export const GAME_NAMES: Record<GameId, string> = {
  * ゲームの点数の付け方を変えたら、ここも見直す
  */
 export const MAX_POINTS_PER_SECOND: Record<GameId, number> = {
-  tsumi: 240,
   flight: 200,
 };
 
