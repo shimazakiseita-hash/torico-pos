@@ -1,5 +1,5 @@
 // とりこショット：8つの砦を順にクリアして★を集めるステージ制ゲーム。
-import { COLORS, FONT, Popups, W, drawHud, drawMascot, drawSpace, view } from "./common.js";
+import { COLORS, FONT, Popups, W, drawHud, drawMascot, view } from "./common.js";
 
 export const META = {
   id: "shot", mode: "map", title: "とりこショット",
@@ -17,7 +17,6 @@ const TYPES = {
   grill: { hp: Infinity, density: 0.002, color: "#8999ae" },
   ufo: { hp: 13, density: 0.001, color: "#bba1d3" },
 };
-export const STAGE_NAMES = ["はじめの砦", "高い塔", "宙の焼き台", "ひの炭", "ころころ坂", "炭の守り", "上と下", "大きな砦"];
 
 // [種類, 中心x, 中心y, 幅（円は半径）, 高さ, 角度]。焼き台は固定物。
 const STAGES = [
@@ -38,6 +37,7 @@ export function createGame({ costume, stage = 0 }) {
   const state = { over: false, result: null, t: 0, stageIndex: Number.isInteger(stage) && stage >= 0 && stage < 8 ? stage : 0, ammo: 3, age: 0,
     flying: false, shotAge: 0, quiet: 0, clearWait: 0, pieces: [], bird: null,
     drag: null, particles: [], rings: [], dizzy: [], shake: 0, burstUsed: false, banner: { text: "", age: 0 } };
+  const background = festivalBackground(state.stageIndex);
   let accumulator = 0;
   const pending = new Map();
   function startStage() {
@@ -58,7 +58,7 @@ export function createGame({ costume, stage = 0 }) {
       state.pieces.push(body);
       Composite.add(engine.world, body);
     }
-    state.banner = { text: `ステージ ${state.stageIndex + 1} ${STAGE_NAMES[state.stageIndex]}`, age: 0 };
+    state.banner = { text: `${state.stageIndex + 1}`, age: 0 };
   }
   // collisionStart は速度解決より前。相対速度と換算質量で衝撃を見積もる。
   Events.on(engine, "collisionStart", ({ pairs }) => {
@@ -139,7 +139,7 @@ export function createGame({ costume, stage = 0 }) {
     if (!state.pieces.some((b) => b.plugin.shot.kind === "ufo")) {
       state.result = { cleared: true, stars: state.ammo + 1, stage: state.stageIndex };
       state.clearWait = 1.2; state.drag = null;
-      state.banner = { text: `クリア！ ${"★".repeat(state.ammo + 1)}`, age: 0 };
+      state.banner = { text: "★".repeat(state.ammo + 1) + "☆".repeat(2 - state.ammo), age: 0 };
     } else if (state.quiet >= 0.45 || state.shotAge >= 7) {
       if (state.bird) Composite.remove(engine.world, state.bird);
       state.bird = null; state.flying = false;
@@ -186,11 +186,9 @@ export function createGame({ costume, stage = 0 }) {
       for (let i = 0; i < 3 && accumulator >= STEP; i++) { accumulator -= STEP; tick(); if (state.over) break; }
     },
     draw(ctx) {
-      drawSpace(ctx, state.t);
+      background(ctx, state.t);
       ctx.save();
       if (state.shake > 0) ctx.translate(Math.sin(state.t * 91) * 3, Math.cos(state.t * 79) * 2);
-      ctx.fillStyle = "#443354"; ctx.fillRect(view.x0, FLOOR, view.x1 - view.x0, Math.max(0, view.y1 - FLOOR));
-      ctx.fillStyle = "#a9d190"; ctx.fillRect(view.x0, FLOOR, view.x1 - view.x0, 5);
       for (const b of state.pieces) drawPiece(ctx, b);
       const dx = state.drag?.dx || 0, dy = state.drag?.dy || 0;
       const bx = SLING.x + dx * 0.3, by = SLING.y + dy * 0.3;
@@ -231,15 +229,19 @@ export function createGame({ costume, stage = 0 }) {
       }
       pop.draw(ctx);
       ctx.restore();
-      drawHud(ctx, `ステージ ${state.stageIndex + 1} ${STAGE_NAMES[state.stageIndex]}`, "");
+      drawHud(ctx, `${state.stageIndex + 1} / 8`, "");
       ctx.font = `700 17px ${FONT}`; ctx.textAlign = "left"; ctx.fillStyle = "#fff";
-      ctx.fillText(`のこり弾 ${state.ammo} / 3`, 14, 52);
+      for (let i = 0; i < state.ammo; i++) {
+        const x = 24 + i * 27;
+        ctx.fillStyle = "#fff0cf"; ctx.beginPath(); ctx.arc(x, 59, 10, 0, Math.PI * 2); ctx.fill();
+        drawMascot(ctx, x, 59, 8, costume);
+      }
       ctx.font = `700 15px ${FONT}`; ctx.textAlign = "center";
       ctx.fillText(state.flying ? state.burstUsed ? "どかーん！" : "タップで どかーん！" : state.clearWait ? "クリア！" : "どこでも 引っぱって はなそう", W / 2, 620);
       if (state.banner.age < 2) {
         ctx.globalAlpha = Math.min(1, (2 - state.banner.age) * 2);
         ctx.fillStyle = "rgba(42,31,92,0.8)"; ctx.fillRect(view.x0, 137, view.x1 - view.x0, 50);
-        ctx.fillStyle = "#fff"; ctx.font = `900 23px ${FONT}`; ctx.textBaseline = "middle";
+        ctx.fillStyle = "#fff"; ctx.font = `900 36px ${FONT}`; ctx.textBaseline = "middle";
         ctx.fillText(state.banner.text, W / 2, 162, W - 20); ctx.globalAlpha = 1;
       }
     },
@@ -281,4 +283,81 @@ function drawPiece(ctx, body) {
     ctx.beginPath(); ctx.moveTo(-w / 3, -5); ctx.lineTo(0, 2); ctx.lineTo(-3, 8); ctx.lineTo(w / 3, 12); ctx.stroke();
   }
   ctx.restore();
+}
+
+// 静止した縁日は表示範囲が変わったときだけ描き直し、煙だけを動かす。
+function festivalBackground(stage) {
+  let cache, bounds = "";
+  return (ctx, t) => {
+    const { x0, y0, x1, y1 } = view;
+    const width = x1 - x0, height = y1 - y0;
+    const key = [x0, y0, x1, y1].join();
+    if (key !== bounds) {
+      bounds = key;
+      cache = document.createElement("canvas");
+      cache.width = Math.ceil(width); cache.height = Math.ceil(height);
+      const c = cache.getContext("2d");
+      c.translate(-x0, -y0);
+      const night = stage / 7;
+      const sky = c.createLinearGradient(0, y0, 0, FLOOR);
+      sky.addColorStop(0, `hsl(${235 - night * 8} 38% ${23 - night * 14}%)`);
+      sky.addColorStop(0.65, `hsl(${270 - night * 20} 25% ${29 - night * 13}%)`);
+      sky.addColorStop(1, `hsl(${335 - night * 65} 28% ${35 - night * 17}%)`);
+      c.fillStyle = sky; c.fillRect(x0, y0, width, height);
+      for (let i = 0; i < 65; i++) {
+        const x = x0 + ((i * 97.31) % width), y = y0 + ((i * 53.79) % Math.max(1, 410 - y0));
+        c.fillStyle = `rgba(245,228,204,${0.22 + (i % 4) * 0.1})`;
+        c.beginPath(); c.arc(x, y, i % 7 === 0 ? 1.3 : .7, 0, Math.PI * 2); c.fill();
+      }
+      const mx = x0 + width * .76, my = y0 + (FLOOR - y0) * .22;
+      const glow = c.createRadialGradient(mx, my, 10, mx, my, 66);
+      glow.addColorStop(0, "#ead9b41f"); glow.addColorStop(1, "#ead9b400");
+      c.fillStyle = glow; c.fillRect(mx - 66, my - 66, 132, 132);
+      c.fillStyle = "#d9ceac"; c.beginPath(); c.arc(mx, my, 22, 0, Math.PI * 2); c.fill();
+      c.fillStyle = "#bdbaa333";
+      for (let i = 0; i < 4; i++) { c.beginPath(); c.arc(mx - 12 + i * 7, my + Math.sin(i * 3) * 12, 3 + i % 3, 0, Math.PI * 2); c.fill(); }
+      for (let layer = 0; layer < 2; layer++) {
+        c.fillStyle = layer ? "#20283b" : "#303048";
+        c.beginPath(); c.moveTo(x0, FLOOR);
+        for (let x = x0; x <= x1 + 20; x += 20) c.lineTo(x, 395 + layer * 52 + Math.sin(x * .017 + layer * 2) * 32 + Math.cos(x * .037) * 15);
+        c.lineTo(x1, FLOOR); c.closePath(); c.fill();
+      }
+      for (let x = Math.floor(x0 / 84) * 84; x < x1; x += 84) {
+        const roof = 496 + Math.sin(x) * 9;
+        c.fillStyle = "#1d2534"; c.fillRect(x + 6, roof, 69, FLOOR - roof);
+        c.fillStyle = "#393044"; c.beginPath(); c.moveTo(x, roof); c.lineTo(x + 13, roof - 20); c.lineTo(x + 68, roof - 20); c.lineTo(x + 81, roof); c.closePath(); c.fill();
+        c.fillStyle = "#785143"; c.fillRect(x + 13, roof + 12, 55, 28);
+        c.fillStyle = "#302c38"; c.fillRect(x + 10, roof + 38, 61, 6);
+        for (let j = 0; j < 3; j++) {
+          const lx = x + 18 + j * 23;
+          const lamp = c.createRadialGradient(lx, roof + 6, 0, lx, roof + 6, 19);
+          lamp.addColorStop(0, "#d7875c40"); lamp.addColorStop(1, "#d7875c00");
+          c.fillStyle = lamp; c.fillRect(lx - 19, roof - 13, 38, 38);
+          c.fillStyle = j % 2 ? "#ac666b" : "#b86c52";
+          c.beginPath(); c.ellipse(lx, roof + 5, 4, 6, 0, 0, Math.PI * 2); c.fill();
+        }
+      }
+      c.fillStyle = "#38302e"; c.fillRect(x0, FLOOR, width, Math.max(0, y1 - FLOOR));
+      c.fillStyle = "#536044"; c.beginPath(); c.moveTo(x0, FLOOR + 5);
+      for (let x = x0; x <= x1 + 5; x += 5) { c.lineTo(x, FLOOR - 2 - (Math.sin(x * 7) + 1) * 3); c.lineTo(x + 2, FLOOR + 3); }
+      c.lineTo(x1, FLOOR + 8); c.lineTo(x0, FLOOR + 8); c.fill();
+      c.fillStyle = "#89745a55";
+      for (let i = 0; i < width * Math.max(0, y1 - FLOOR) / 200; i++) {
+        const x = x0 + (i * 61.7) % width, y = FLOOR + 12 + (i * 37.3) % Math.max(1, y1 - FLOOR - 12);
+        c.beginPath(); c.ellipse(x, y, 1.6, .8, i, 0, Math.PI * 2); c.fill();
+      }
+    }
+    ctx.save(); ctx.drawImage(cache, x0, y0, width, height);
+    ctx.strokeStyle = "#c1b6ba16"; ctx.lineWidth = 3; ctx.lineCap = "round";
+    for (let x = Math.floor(x0 / 84) * 84 + 40; x < x1; x += 84) {
+      ctx.beginPath();
+      for (let j = 0; j < 18; j++) {
+        const y = 477 - j * 4;
+        const sx = x + Math.sin(t * .8 + j * .35 + x) * (3 + j * .5);
+        if (!j) ctx.moveTo(sx, y); else ctx.lineTo(sx, y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  };
 }

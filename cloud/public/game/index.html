@@ -41,16 +41,27 @@
 
 <main id="shot-map" class="view" hidden>
   <header class="top"><button class="back" type="button" data-go="hub">← もどる</button></header>
-  <h1 class="title">とりこショット</h1>
+  <div class="shot-scenery" aria-hidden="true">
+    <div class="shot-moon"></div><div class="shot-mountains"></div>
+    <svg class="shot-lanterns" viewBox="0 0 390 160" preserveAspectRatio="none">
+      <path d="M-15 30 Q85 135 190 35 M200 35 Q305 135 405 30" fill="none" stroke="#ad888a" stroke-width="2"/>
+      <g stroke="#eeb596" stroke-width="2">
+        <path d="M25 64v17 M76 85v17 M133 77v17 M257 77v17 M314 85v17 M365 64v17"/>
+      </g>
+      <g fill="#db637c"><ellipse cx="25" cy="94" rx="11" ry="16"/><ellipse cx="133" cy="107" rx="11" ry="16"/><ellipse cx="314" cy="115" rx="11" ry="16"/></g>
+      <g fill="#d74852"><ellipse cx="76" cy="115" rx="12" ry="17"/><ellipse cx="257" cy="107" rx="12" ry="17"/><ellipse cx="365" cy="94" rx="12" ry="17"/></g>
+    </svg>
+  </div>
   <p id="shot-total" class="center"></p>
-  <div id="shot-stages" class="shot-stages" aria-label="ステージマップ"></div>
+  <div class="shot-route">
+    <svg aria-hidden="true" viewBox="0 0 100 650" preserveAspectRatio="none"><path d="M20 48 C20 90 48 82 48 124 S78 160 78 200 S70 240 70 276 S40 316 40 352 S18 392 18 428 S46 468 46 504 S78 544 78 580"/></svg>
+    <div id="shot-stages" class="shot-stages" aria-label="ステージマップ"></div>
+  </div>
 </main>
 <main id="shot-result" class="view" hidden>
   <section class="card center">
-    <p class="label">とりこショット</p>
     <h1 id="shot-outcome"></h1>
     <p id="shot-points"></p>
-    <p id="shot-complete" hidden>ぜんぶ クリア！</p>
   </section>
   <div class="actions">
     <button id="shot-next" class="btn pink" type="button">つぎのステージ</button>

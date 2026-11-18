@@ -80,11 +80,16 @@ function renderShotMap() {
   $("shot-total").textContent = `★ ${shotTotal()} / 24`;
   $("shot-stages").textContent = "";
   const firstUncleared = save.shot.stars.findIndex((n) => n === 0);
-  shot.STAGE_NAMES.forEach((name, stage) => {
+  save.shot.stars.forEach((stars, stage) => {
     const button = document.createElement("button");
     button.type = "button";
     button.disabled = save.shot.stars[stage] === 0 && firstUncleared !== -1 && stage > firstUncleared;
-    button.textContent = `${button.disabled ? "🔒 " : ""}${stage + 1} ${name}\n${shotStars(save.shot.stars[stage])}`;
+    button.className = stars ? "cleared" : button.disabled ? "locked" : "next";
+    button.style.setProperty("--stage-x", `${[20, 48, 78, 70, 40, 18, 46, 78][stage]}%`);
+    button.style.setProperty("--stage-y", `${48 + stage * 76}px`);
+    button.innerHTML = `<b>${stage + 1}</b><span>${shotStars(stars)}</span>${button.disabled ? '<i aria-hidden="true">🔒</i>' : ''}`;
+    button.setAttribute("aria-label", `${stage + 1} ${shotStars(stars)}${button.disabled ? " 🔒" : ""}`);
+    if (!stars && !button.disabled) button.setAttribute("aria-current", "step");
     button.addEventListener("click", () => openGame(shot, stage));
     $("shot-stages").appendChild(button);
   });
@@ -387,10 +392,10 @@ function finishShot() {
   save.points += gained;
   save.plays++;
   writeSave(save);
-  $("shot-outcome").textContent = cleared ? `クリア！ ${shotStars(stars)}` : "ざんねん…";
-  $("shot-points").textContent = gained ? `やきとりポイント +${gained}pt` : "";
+  $("shot-outcome").textContent = cleared ? shotStars(stars) : "☆☆☆";
+  $("shot-outcome").classList.toggle("failed", !cleared);
+  $("shot-points").textContent = gained ? `+${gained}pt` : "";
   $("shot-next").hidden = !cleared || stage === 7;
-  $("shot-complete").hidden = !cleared || stage !== 7;
   show("shot-result");
 }
 $("shot-next").addEventListener("click", () => openGame(shot, shotStage + 1));

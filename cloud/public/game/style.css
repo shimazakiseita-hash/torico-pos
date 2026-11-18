@@ -126,10 +126,30 @@ button { cursor: pointer; touch-action: manipulation; }
 .call p { margin: 0; }
 .call .btn { display: flex; align-items: center; justify-content: center; text-decoration: none; }
 
-/* 砦をつなぐジグザグの道 */
-.shot-stages { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; position: relative; padding: 1rem 0; }
-.shot-stages::before { content: ""; position: absolute; inset: 2rem 22%; border: 8px dashed var(--lav-300); border-radius: 45%; opacity: 0.6; pointer-events: none; }
-.shot-stages button { position: relative; grid-column: 1; min-height: 80px; white-space: pre-line; border: 3px solid var(--beak); border-radius: 24px; background: var(--pink-100); color: var(--ink); box-shadow: 0 5px 0 var(--magenta); font-size: 1rem; }
-.shot-stages button:nth-child(even) { grid-column: 2; transform: translateY(2rem); }
-.shot-stages button:disabled { background: var(--space-700); color: var(--lav-300); border-color: var(--lav-500); box-shadow: none; cursor: default; }
-#shot-result h1 { font-size: 1.6rem; }
+/* 月明かりの縁日。道とボタンは同じ座標系を使う。 */
+#shot-map { position: relative; isolation: isolate; min-height: 100dvh; max-width: 30rem; overflow: hidden; gap: 0; background: radial-gradient(ellipse at 70% 24%, #70547155, transparent 45%), linear-gradient(#111b38, #302b49 60%, #45303f); }
+#shot-map .top { position: relative; z-index: 2; }
+#shot-total { position: absolute; top: 1.25rem; right: 1.25rem; margin: 0; color: #ffe6a0; padding: .5rem .8rem; border: 1px solid #f6cf8740; border-radius: 24px; background: #141c3699; }
+.shot-scenery { position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: radial-gradient(1px 1px at 10% 23%, #fff9 90%, transparent), radial-gradient(1.5px 1.5px at 80% 35%, #ffe6bbaa 90%, transparent), radial-gradient(1px 1px at 45% 14%, #fff9 90%, transparent); background-size: 113px 191px, 173px 227px, 151px 157px; }
+.shot-moon { position: absolute; top: 100px; right: 18%; width: 43px; height: 43px; border-radius: 50%; background: #f8dfb2; box-shadow: 0 0 35px #f3dba53d, inset -9px -4px 0 #dcc89e; }
+.shot-mountains { position: absolute; inset: 36% -10% 0; background: #151e32; clip-path: polygon(0 28%, 16% 9%, 25% 21%, 42% 0, 61% 26%, 79% 10%, 100% 30%, 100% 100%, 0 100%); opacity: .8; }
+.shot-mountains::after { content: ""; position: absolute; inset: 40% 0 0; background: #101b2c; clip-path: polygon(0 19%, 30% 0, 48% 25%, 72% 7%, 100% 20%, 100% 100%, 0 100%); }
+.shot-lanterns { position: absolute; top: 44px; left: 0; width: 100%; height: 160px; filter: drop-shadow(0 4px 8px #ff756a66); }
+.shot-route { position: relative; margin-top: 105px; }
+.shot-route > svg { position: absolute; inset: 0; width: 100%; height: 650px; overflow: visible; filter: drop-shadow(0 0 5px #ffd68f88); }
+.shot-route path { fill: none; stroke: #edbd7b88; stroke-width: 3; vector-effect: non-scaling-stroke; stroke-dasharray: 3 9; stroke-linecap: round; }
+.shot-stages { position: relative; height: 650px; }
+.shot-stages button { position: absolute; left: var(--stage-x); top: var(--stage-y); transform: translate(-50%, -50%); width: 70px; height: 70px; padding: 2px; border: 2px solid #dcb987; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff0c8; background: repeating-linear-gradient(90deg, transparent 0 10px, #72324930 10px 12px), radial-gradient(ellipse at 50% 35%, #bd696b, #703848); box-shadow: 0 4px 0 #271e30, inset 0 0 10px #ffd79466; }
+.shot-stages b { font-size: 1.7rem; line-height: 1.1; text-shadow: 0 2px 3px #46263b; }
+.shot-stages span { font-size: .85rem; letter-spacing: 1px; color: #ffe4a0; }
+.shot-stages i { position: absolute; right: -5px; top: -5px; font-size: .9rem; font-style: normal; }
+.shot-stages .cleared { background-color: #ed925a; box-shadow: 0 4px 0 #543242, 0 0 20px #ffbf6755, inset 0 0 18px #ffc577; }
+.shot-stages .next { animation: lantern-breathe 2.8s ease-in-out infinite; border-color: #ffe8a8; }
+.shot-stages button:disabled { color: #a7a3af; border-color: #655d75; background: repeating-linear-gradient(90deg, transparent 0 10px, #151b3033 10px 12px), #303047; box-shadow: 0 4px 0 #111c2c; cursor: default; }
+.shot-stages button:disabled span { color: #a39baf; }
+.shot-stages button:focus-visible { outline: 3px solid #fff; outline-offset: 6px; }
+@keyframes lantern-breathe { 0%, 100% { box-shadow: 0 4px 0 #543242, 0 0 14px #ffd58b55; } 50% { box-shadow: 0 4px 0 #543242, 0 0 29px #ffd58baa; } }
+@media (prefers-reduced-motion: reduce) { .shot-stages .next { animation: none; box-shadow: 0 0 20px #ffd58b88; } }
+#shot-result h1 { margin: 1rem 0; font-size: clamp(2.5rem, 12vw, 3.5rem); color: #b87b24; letter-spacing: .08em; }
+#shot-result h1.failed { opacity: .3; }
+#shot-points { font-size: 1.5rem; }
