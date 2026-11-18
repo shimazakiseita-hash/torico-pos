@@ -45,7 +45,7 @@ async function main() {
     tickets.push(`<div class="ticket">
     <div class="pillar"><span>${day}日目</span><small>${shortDateLabel}</small></div>
     <div class="main">
-      <div class="top"><img src="../public/brand/logo.jpg" alt=""><div><b>やきとり TORI♡CO</b><small>寮友会執行役員会</small></div></div>
+      <div class="top"><img src="../public/brand/logo.png" alt=""><div><b>やきとり TORI♡CO</b><small>寮友会執行役員会</small></div></div>
       <div class="row"><div class="num" data-digits="${String(n).length}">${n}</div><div class="qr">${await qr(`${base}/?n=${n}&d=${date}`)}</div></div>
       <p class="msg">QRを読むと できあがりがスマホでわかります。待っている間は ミニゲームで遊べます</p>
     </div>

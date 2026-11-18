@@ -34,8 +34,8 @@ export const PAGE_HTML = `<!doctype html>
   /* できあがったら画面全体の色を変えて気づけるようにする */
   body.done { background: linear-gradient(180deg, #5fd39b, var(--ok) 55%, #1d6b45); }
   main { max-width: 26rem; margin: 0 auto; padding: 1rem 1rem calc(2rem + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 0.875rem; text-align: center; }
-  .logo { display: block; width: clamp(6rem, 30vw, 9.5rem); margin: 0 auto; padding: 0.25rem; border-radius: 20px; background: #fff; }
-  .logo img { display: block; width: 100%; height: auto; border-radius: 16px; }
+  .logo { display: block; width: clamp(6rem, 30vw, 9.5rem); margin: 0 auto; }
+  .logo img { display: block; width: 100%; height: auto; }
   .card { padding: 1rem 1rem 1.125rem; border-radius: 28px; background: #fff; color: var(--ink); box-shadow: 0 6px 0 rgb(0 0 0 / 0.15); }
   label, .my-label { display: block; margin: 0 0 0.5rem; font-size: 1rem; }
   .row { display: flex; gap: 0.5rem; }

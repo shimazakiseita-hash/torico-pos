@@ -13,12 +13,12 @@ export default function Home() {
   return (
     <main className="bg-space flex min-h-dvh flex-1 flex-col items-center justify-center gap-8 px-4 py-8">
       <Image
-        src="/brand/logo.jpg"
+        src="/brand/logo.png"
         alt="やきとり TORI♡CO"
         width={800}
         height={795}
         priority
-        className="h-auto w-[min(70vw,20rem)] rounded-[28px] bg-white p-3 shadow-[0_0.5rem_0_rgb(0_0_0/0.35)]"
+        className="h-auto w-[min(70vw,20rem)] drop-shadow-[0_0.5rem_0_rgb(0_0_0/0.35)]"
       />
       <nav aria-label="画面を選ぶ" className="w-full max-w-2xl">
         <ul className="grid gap-4 sm:grid-cols-2">

@@ -10,18 +10,18 @@ type Props = {
   error: boolean | null;
 };
 
-/** 共通ヘッダー：キャンディ背景の上に、白枠のロゴと画面名、右端に補足と接続状態 */
+/** 共通ヘッダー：キャンディ背景の上に、ロゴと画面名、右端に補足と接続状態 */
 export function AppHeader({ title, note, error }: Props) {
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 px-3 text-white sm:gap-3 sm:px-4">
       <Link href="/" aria-label="トップへ" className="shrink-0">
         <Image
-          src="/brand/logo.jpg"
+          src="/brand/logo.png"
           alt=""
           width={52}
           height={52}
           priority
-          className="h-[52px] w-[52px] rounded-xl bg-white p-0.5 shadow-[0_3px_0_rgb(0_0_0/0.15)]"
+          className="h-[52px] w-[52px] drop-shadow-[0_3px_0_rgb(0_0_0/0.15)]"
         />
       </Link>
       <h1 className="shrink-0 whitespace-nowrap text-xl font-black tracking-wider drop-shadow-[0_2px_0_rgb(0_0_0/0.15)] sm:shrink sm:whitespace-normal sm:text-2xl">{title}</h1>

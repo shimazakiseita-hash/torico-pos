@@ -64,14 +64,14 @@ export function DisplayScreen() {
 
         {/* ロゴ・焼いている番号・キャッチコピー */}
         <aside className="flex min-h-0 flex-col gap-4 text-center">
-          <div className="panel shrink-0 p-2">
+          <div className="shrink-0">
             <Image
-              src="/brand/logo.jpg"
+              src="/brand/logo.png"
               alt="やきとり TORI♡CO"
               width={800}
               height={795}
               priority
-              className="mx-auto h-auto max-h-[38dvh] w-auto rounded-[20px]"
+              className="mx-auto h-auto max-h-[38dvh] w-auto drop-shadow-[0_0.3rem_0_rgb(0_0_0/0.25)]"
             />
           </div>
           <section aria-labelledby="baking-h" className="flex min-h-0 flex-1 flex-col rounded-[28px] bg-white/15 p-4">
