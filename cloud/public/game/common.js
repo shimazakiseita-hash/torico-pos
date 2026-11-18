@@ -480,6 +480,7 @@ export function loadSave() {
   const hadPass = Object.hasOwn(upgrades, "tsumiPass");
   const refund = upgrades.tsumiPass === 1 ? 150 : upgrades.tsumiPass === 2 ? 450 : 0;
   delete upgrades.tsumiPass;
+  const resetShot = data.shot?.v !== 2;
   const save = {
     player: data.player,
     name: typeof data.name === "string" ? data.name : "",
@@ -488,14 +489,14 @@ export function loadSave() {
     costume,
     upgrades,
     best: typeof data.best === "object" && data.best ? data.best : {},
-    shot: { stars: Array.from({ length: 8 }, (_, i) => {
-      const n = Array.isArray(data.shot?.stars) ? data.shot.stars[i] : 0;
+    shot: { v: 2, stars: Array.from({ length: 8 }, (_, i) => {
+      const n = !resetShot && Array.isArray(data.shot?.stars) ? data.shot.stars[i] : 0;
       return Number.isInteger(n) && n >= 0 && n <= 3 ? n : 0;
     }) },
     plays: Number.isInteger(data.plays) ? data.plays : 0,
   };
-  // 廃止したパス強化を返金し、次に読む前に保存する
-  if (hadPass) writeSave(save);
+  // 廃止したパス強化の返金・ショットの旧記録のリセット後、次に読む前に保存する
+  if (hadPass || resetShot) writeSave(save);
   return save;
 }
 
