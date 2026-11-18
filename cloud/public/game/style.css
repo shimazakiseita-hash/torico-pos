@@ -50,6 +50,8 @@ button { cursor: pointer; touch-action: manipulation; }
 .game h2 { margin: 0; font-size: 1.3rem; font-weight: 900; }
 .game p { grid-column: 1 / -1; margin: 0; font-size: 0.9rem; line-height: 1.5; }
 .game .best { margin: 0; font-size: 0.9rem; color: var(--lav-500); }
+.game .best { grid-column: 1; }
+.game .rank-link { grid-column: 1; justify-self: start; min-height: 2rem; padding: 0.2rem 0.6rem; border: 2px solid var(--lav-300); border-radius: 999px; background: #fff; color: var(--ink); font-size: 0.8rem; }
 .game .btn { grid-row: 1 / 3; grid-column: 2; }
 
 .costumes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.625rem; margin: 0; padding: 0; list-style: none; }
@@ -76,10 +78,13 @@ button { cursor: pointer; touch-action: manipulation; }
 .tabs button { min-height: 3rem; border: 3px solid var(--lav-300); border-radius: 999px; background: #fff; color: var(--ink); font-weight: 900; }
 .tabs button[aria-selected="true"] { border-color: var(--magenta); background: var(--magenta); color: #fff; }
 .ranking { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.25rem; }
-.ranking li { display: grid; grid-template-columns: 2.5rem 1fr auto; gap: 0.5rem; padding: 0.4rem 0.5rem; border-radius: 12px; }
+.ranking li { display: grid; grid-template-columns: 2.5rem minmax(0, 1fr) auto; gap: 0.5rem; padding: 0.4rem 0.5rem; border-radius: 12px; }
 .ranking li:nth-child(odd) { background: var(--lav-100); }
 .ranking li.me { outline: 3px solid var(--cyan); }
 .ranking .rank { font-weight: 900; color: var(--magenta); }
+.ranking .small { grid-column: 1 / -1; }
+.ranking .nm { overflow-wrap: anywhere; min-width: 0; }
+.tabs button { min-width: 0; }
 .ranking .sc { font-weight: 900; }
 .actions { display: grid; gap: 0.75rem; }
 

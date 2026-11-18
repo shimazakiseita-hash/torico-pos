@@ -61,6 +61,7 @@ export function createGame({ costume, up = {} }) {
     vy: 0,
     flying: false, // 最初のタップまでは浮いて待つ
     cols: [],
+    lastCenter: null,
     ufos: [],
     meteors: [],
     shots: [], // たれビーム
@@ -101,7 +102,14 @@ export function createGame({ costume, up = {} }) {
 
   function addColumn() {
     const g = gap();
-    const center = 90 + g / 2 + Math.random() * (FLOOR - 150 - g);
+    const lo = 90 + g / 2;
+    const hi = lo + (FLOOR - 150 - g);
+    // となりのすきまとの高さの差に上限をつけ、通れない組み合わせを出さない（ゆれる分も差し引く）
+    const step = Math.max(40, 200 - ((speed() - 150) / 120) * 40 - move());
+    const min = state.lastCenter === null ? lo : Math.max(lo, state.lastCenter - step);
+    const max = state.lastCenter === null ? hi : Math.min(hi, state.lastCenter + step);
+    const center = min <= max ? min + Math.random() * (max - min) : Math.max(lo, Math.min(hi, state.lastCenter));
+    state.lastCenter = center;
     // アイテム運の強化で、串以外のアイテムが出やすくなる
     const table = [
       ["gold", 0.05],
@@ -202,6 +210,7 @@ export function createGame({ costume, up = {} }) {
 
   function nextStage() {
     state.stageIndex++;
+    if (state.stageIndex % STAGES.length === 0) state.lastCenter = null;
     state.sinceStage = 0;
     const l = lap();
     banner(`${l > 0 ? `${l + 1}しゅうめ ` : ""}ステージ${(state.stageIndex % STAGES.length) + 1} ${stage().name}`);

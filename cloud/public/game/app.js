@@ -15,10 +15,13 @@ let session = null;
 let started = false; // スタートを押したか（ひとやすみから戻るときは合言葉を取り直さない）
 let lastScore = 0;
 let board = "today";
+let rankGame = GAMES[0];
+let rankBoard = "today";
+const rankingRequests = new WeakMap();
 
 // ── 画面の切り替え ──
 function show(view) {
-  for (const id of ["hub", "dress", "gacha", "shop", "play", "result"]) $(id).hidden = id !== view;
+  for (const id of ["hub", "dress", "gacha", "shop", "play", "result", "rank"]) $(id).hidden = id !== view;
   if (view === "hub") renderHub();
   if (view === "dress") renderDress();
   if (view === "gacha") renderGacha(true);
@@ -56,11 +59,12 @@ function renderHub() {
     const li = document.createElement("li");
     li.className = "game";
     const best = save.best[g.META.id];
-    li.innerHTML = `<h2></h2><p class="best"></p><button class="btn pink" type="button">あそぶ</button><p></p>`;
+    li.innerHTML = `<h2></h2><p class="best"></p><button class="btn pink" type="button">あそぶ</button><button class="rank-link" type="button">ランキング</button><p></p>`;
     li.querySelector("h2").textContent = g.META.title;
     li.querySelector(".best").textContent = best ? `じこベスト ${best.toLocaleString()}点` : "まだ あそんでいない";
     li.querySelector("p:last-child").textContent = g.META.howto;
     li.querySelector("button").addEventListener("click", () => openGame(g));
+    li.querySelector(".rank-link").addEventListener("click", () => openRanking(g));
     list.appendChild(li);
   }
 }
@@ -377,12 +381,18 @@ function finish(score) {
   loadRanking();
 }
 
-async function loadRanking(highlight) {
-  for (const b of document.querySelectorAll("[data-board]")) b.setAttribute("aria-selected", String(b.dataset.board === board));
-  const ol = $("ranking");
+function loadRanking(highlight) {
+  for (const b of $("result").querySelectorAll("[data-board]")) b.setAttribute("aria-selected", String(b.dataset.board === board));
+  return renderRanking($("ranking"), current, board, highlight);
+}
+
+async function renderRanking(ol, game, board, highlight) {
+  const request = (rankingRequests.get(ol) ?? 0) + 1;
+  rankingRequests.set(ol, request);
   ol.textContent = "";
   try {
-    const top = await fetchRanking(current.META.id, board);
+    const top = await fetchRanking(game.META.id, board);
+    if (rankingRequests.get(ol) !== request) return;
     if (top.length === 0) {
       ol.innerHTML = `<li class="small">まだ だれも のっていないよ</li>`;
       return;
@@ -398,17 +408,51 @@ async function loadRanking(highlight) {
       ol.appendChild(li);
     }
   } catch (e) {
+    if (rankingRequests.get(ol) !== request) return;
     ol.innerHTML = `<li class="small"></li>`;
     ol.firstChild.textContent = e.message;
   }
 }
 
-for (const b of document.querySelectorAll("[data-board]")) {
+for (const b of $("result").querySelectorAll("[data-board]")) {
   b.addEventListener("click", () => {
     board = b.dataset.board;
     loadRanking();
   });
 }
+
+function openRanking(g) {
+  rankGame = g;
+  rankBoard = "today";
+  show("rank");
+  loadRankScreen();
+}
+
+function loadRankScreen() {
+  for (const b of $("rank").querySelectorAll("[data-game]")) b.setAttribute("aria-selected", String(b.dataset.game === rankGame.META.id));
+  for (const b of $("rank").querySelectorAll("[data-board]")) b.setAttribute("aria-selected", String(b.dataset.board === rankBoard));
+  return renderRanking($("rank-ranking"), rankGame, rankBoard);
+}
+
+for (const g of GAMES) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.setAttribute("role", "tab");
+  b.dataset.game = g.META.id;
+  b.textContent = g.META.title;
+  b.addEventListener("click", () => {
+    rankGame = g;
+    loadRankScreen();
+  });
+  $("rank-games").appendChild(b);
+}
+for (const b of $("rank").querySelectorAll("[data-board]")) {
+  b.addEventListener("click", () => {
+    rankBoard = b.dataset.board;
+    loadRankScreen();
+  });
+}
+$("rank-play").addEventListener("click", () => openGame(rankGame));
 
 $("submit-form").addEventListener("submit", async (e) => {
   e.preventDefault();

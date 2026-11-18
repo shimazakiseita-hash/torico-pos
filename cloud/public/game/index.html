@@ -105,6 +105,19 @@
     <button class="btn ghost" type="button" data-go="hub">ゲームをえらぶ</button>
   </div>
 </main>
+<main id="rank" class="view" hidden>
+  <header class="top"><button class="back" type="button" data-go="hub">← もどる</button></header>
+  <h1 class="title">ランキング</h1>
+  <section class="card">
+    <div id="rank-games" class="tabs" role="tablist" aria-label="ゲーム"></div>
+    <div class="tabs" role="tablist" aria-label="ランキング">
+      <button type="button" role="tab" data-board="today" aria-selected="true">今日</button>
+      <button type="button" role="tab" data-board="all" aria-selected="false">歴代</button>
+    </div>
+    <ol id="rank-ranking" class="ranking" aria-live="polite"></ol>
+  </section>
+  <button id="rank-play" class="btn pink" type="button">この ゲームで あそぶ</button>
+</main>
 <div id="call" class="call" role="alertdialog" aria-labelledby="call-title" hidden>
   <div class="card center">
     <p class="label">あなたの番号</p>
