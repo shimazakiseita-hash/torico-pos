@@ -1,4 +1,4 @@
-// とりこショット：24の砦を順にクリアして★を集めるステージ制ゲーム。
+// とりこショット：20の砦を順にクリアして★を集めるステージ制ゲーム。
 import { COLORS, FONT, Popups, W, STAGE_COUNT, drawHud, drawMascot, drawSkewer, star, view } from "./common.js";
 
 export { STAGE_COUNT } from "./common.js";
@@ -21,6 +21,7 @@ const TYPES = {
   mesh: { hp: 10, density: 0.0007, color: "#b8c6d4" },
   ember: { hp: 12, density: 0.002, color: "#ef6241" },
   grill: { hp: Infinity, density: 0.002, color: "#8999ae" },
+  boss: { hp: 380, density: 0.001, color: "#763c9c" },
   ufo: { hp: 28, density: 0.001, color: "#bba1d3" },
 };
 
@@ -46,11 +47,7 @@ const STAGE_DURABILITY = [
   { structure: 0.1, ufo: 0.05 },
   { structure: 3, ufo: 3 },
   { structure: 4, ufo: 2.5 },
-  { structure: 3, ufo: 1.5 },
-  { structure: 2, ufo: 0.6 },
-  { structure: 2, ufo: 0.6 },
-  { structure: 4, ufo: 1 },
-  { structure: 2, ufo: 1 },
+  { structure: 1, ufo: 0.2, boss: 1 },
 ];
 
 // [種類, 中心x, 中心y, 幅（円は半径）, 高さ, 角度]。焼き台は固定物。
@@ -93,16 +90,8 @@ const STAGES = [
   [["coal",151.0,545.0,16,90],["negima",231.0,545.0,16,90],["mesh",191,492,96,16],["ufo",191,536,16],["ember",191,572,32,36],["grill",292,448,100,16],["coal",252.0,395.0,16,90],["negima",332.0,395.0,16,90],["mesh",292,342,96,16],["ufo",292,386,16],["ember",292,422,32,36]],
   // 焼き台のはざま：二つの固定網の間へ撃ち込む。
   [["coal",138.0,545.0,16,90],["negima",222.0,545.0,16,90],["mesh",180,492,100,16],["ufo",180,536,16],["ember",180,572,32,36],["grill",290,438,108,16],["grill",290,318,108,16],["coal",247,382,18,96],["negima",333,382,18,96],["ufo",290,392,18],["ember",290,420,36,20]],
-  // 二本の坂：つくねの留め具を外して連鎖を運ぶ。
-  [["coal",153.0,545.0,16,90],["negima",217.0,545.0,16,90],["mesh",185,492,80,16],["ufo",185,536,16],["ember",185,572,32,36],["coal",268.0,545.0,16,90],["negima",332.0,545.0,16,90],["mesh",300,492,80,16],["ufo",300,536,16],["ember",300,572,32,36],["grill",175,325,130,16,0.12],["negima",173,304.7,18,24,0.12],["tsukune",142.5,290.1,23],["grill",276,422,130,16,0.12],["negima",274,401.7,18,24,0.12],["tsukune",243.5,387.1,23]],
-  // 分厚い炭壁：加速で前壁を貫き奥の火種へ。
-  [["coal",180.0,545.0,16,90],["negima",252.0,545.0,16,90],["coal",216,492,88,16],["ufo",216,536,16],["ember",216,572,32,36],["coal",270.0,535.0,16,110],["negima",334.0,535.0,16,110],["mesh",302,472,80,16],["ufo",302,536,16],["ember",302,572,32,36],["coal",133,515,44,150]],
-  // 重い屋根：真上から落として二つの支えを抜く。
-  [["coal",136.0,534.0,16,112],["negima",220.0,534.0,16,112],["coal",178,470,100,16],["ufo",178,536,16],["ember",178,572,32,36],["coal",250.0,534.0,16,112],["negima",334.0,534.0,16,112],["coal",292,470,100,16],["ufo",292,536,16],["ember",292,572,32,36],["coal",178,450,100,24],["coal",292,450,100,24]],
-  // 横長の砦：分身で左右の囲いを同時に崩す。
-  [["coal",123,535,24,110],["negima",333,535,24,110],["mesh",228,472,234,16],["negima",228,535,16,110],["ufo",172,536,16],["ember",172,572,32,36],["ufo",282,536,16],["ember",282,572,32,36]],
-  // 最後の砦：坂、炭壁、上下の火種へ四つの技で挑む。
-  [["coal",138.0,545.0,16,90],["negima",222.0,545.0,16,90],["coal",180,492,100,16],["ufo",180,536,16],["ember",180,572,32,36],["grill",292,448,100,16],["coal",252.0,395.0,16,90],["negima",332.0,395.0,16,90],["mesh",292,342,96,16],["ufo",292,386,16],["ember",292,422,32,36],["coal",119,530,24,120],["grill",180,350,130,16,0.12],["negima",178,329.7,18,24,0.12],["tsukune",147.5,315.1,23]],
+  // 親玉と二つの小砦。
+  [["boss",275,420,34],["coal",190,550,16,80],["negima",250,550,16,80],["mesh",220,502,76,16],["ufo",220,572,18],["ember",220,536,28,36],["grill",320,570,70,16],["ufo",320,544,18]],
 ];
 
 export const SKILLS = [
@@ -157,7 +146,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
     Composite.clear(engine.world, false);
     Engine.clear(engine);
     pending.clear();
-    Object.assign(state, { age: 0, ammo: 3, flying: false, shotAge: 0, quiet: 0,
+    Object.assign(state, { age: 0, ammo: state.stageIndex === STAGE_COUNT - 1 ? 5 : 3, bossPhase: 0, bossDefeat: 0, flying: false, shotAge: 0, quiet: 0,
       birds: [], trails: [], clearWait: 0, pieces: [], bird: null, drag: null, rings: [], dizzy: [], shake: 0, burstUsed: false, particles: [] });
     pop.items = [];
     // 地面は画面より広い。画面外の動的ボディは下の固定境界で回収。
@@ -166,9 +155,9 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
       const spec = TYPES[kind];
       const durability = STAGE_DURABILITY[state.stageIndex];
       const hp = spec.hp * (durability[kind] ?? durability.structure);
-      const opts = { isStatic: kind === "grill", angle, density: spec.density, friction: kind === "tsukune" ? 0.12 : 0.9, frictionStatic: 5, restitution: 0.06, frictionAir: 0.006 };
+      const opts = { isStatic: kind === "grill" || kind === "boss", angle, density: spec.density, friction: kind === "tsukune" ? 0.12 : 0.9, frictionStatic: 5, restitution: 0.06, frictionAir: 0.006 };
       // 手下は底を平らにして、わずかな傾きで勝手に転がるのを防ぐ。
-      const body = kind === "ufo" ? Bodies.rectangle(x, y, w * 2, w * 2, { ...opts, chamfer: { radius: 7 } }) : h ? Bodies.rectangle(x, y, w, h, opts) : Bodies.circle(x, y, w, opts);
+      const body = (kind === "ufo" || kind === "boss") ? Bodies.rectangle(x, y, w * 2, w * 2, { ...opts, chamfer: { radius: 7 } }) : h ? Bodies.rectangle(x, y, w, h, opts) : Bodies.circle(x, y, w, opts);
       body.plugin.shot = { kind, w, h, maxHp: hp, hp };
       state.pieces.push(body);
       Composite.add(engine.world, body);
@@ -192,7 +181,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
       // 加速・落下は貫通の運動量を増やし、接触ダメージの急増は抑える。
       const skillImpact = [a, b].some((body) => body.plugin.dash || body.plugin.heavy) ? 0.15 : 1;
       const damage = speed * speed * Math.max(0.3, mass) * 0.7 * skillImpact;
-      for (const body of [a, b]) if (body.plugin.shot && !body.isStatic) pending.set(body, (pending.get(body) || 0) + damage);
+      for (const body of [a, b]) if (body.plugin.shot && (!body.isStatic || body.plugin.shot.kind === "boss")) pending.set(body, (pending.get(body) || 0) + damage);
     }
   });
   function explode(x, y) {
@@ -200,14 +189,16 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
     state.rings.push({ x, y, age: 0 });
     pop.add("どかーん！", x, y - 30, COLORS.beak, 23);
     for (const body of state.pieces) {
-      if (body.isStatic) continue;
+      if (body.isStatic && body.plugin.shot.kind !== "boss") continue;
       const dx = body.position.x - x, dy = body.position.y - y;
       const distance = Math.hypot(dx, dy);
       if (distance > 52) continue;
       const k = 1 - distance / 62;
-      Sleeping.set(body, false);
-      Body.setVelocity(body, { x: body.velocity.x + dx / (distance || 1) * 5.5 * k,
-        y: body.velocity.y + dy / (distance || 1) * 5.5 * k - 2 * k });
+      if (body.plugin.shot.kind !== "boss") {
+        Sleeping.set(body, false);
+        Body.setVelocity(body, { x: body.velocity.x + dx / (distance || 1) * 5.5 * k,
+          y: body.velocity.y + dy / (distance || 1) * 5.5 * k - 2 * k });
+      }
       body.plugin.shot.hp -= 26 * k;
     }
   }
@@ -253,7 +244,12 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
   }
   function destroy(body) {
     const data = body.plugin.shot;
-    if (body.isStatic || !state.pieces.includes(body)) return;
+    if ((body.isStatic && data.kind !== "boss") || !state.pieces.includes(body)) return;
+    if (data.kind === "boss") {
+      state.bossDefeat = 1; state.shake = 1;
+      for (let i = 0; i < 4; i++) state.rings.push({ x: body.position.x + (i - 1.5) * 14, y: body.position.y, age: -i * 0.14 });
+      for (let i = 0; i < 65; i++) state.particles.push({ x: body.position.x, y: body.position.y, vx: (Math.random() - 0.5) * 340, vy: -80 - Math.random() * 250, life: 1, color: i % 2 ? "#edd263" : "#b76bdd" });
+    }
     if (data.kind === "ufo") state.dizzy.push({ x: body.position.x, y: body.position.y, age: 0 });
     state.pieces = state.pieces.filter((p) => p !== body);
     Composite.remove(engine.world, body);
@@ -419,8 +415,22 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
       }
       return;
     }
+    state.bossDefeat = Math.max(0, state.bossDefeat - STEP);
+    const boss = state.pieces.find((b) => b.plugin.shot.kind === "boss");
+    if (boss) {
+      const data = boss.plugin.shot, angry = data.hp < data.maxHp / 2;
+      data.rage = Math.min(1, (data.rage || 0) + (angry ? STEP * 2 : 0));
+      state.bossPhase += STEP * (0.7 + data.rage * 0.8);
+      const next = { x: 275 + Math.sin(state.bossPhase) * (15 + data.rage * 10), y: 415 + Math.sin(state.bossPhase * 2) * (30 + data.rage * 10) };
+      const velocity = { x: next.x - boss.position.x, y: next.y - boss.position.y };
+      Body.setPosition(boss, next); Body.setVelocity(boss, velocity);
+      data.flash = Math.max(0, (data.flash || 0) - STEP);
+      data.previousHp ??= data.hp;
+    }
     Engine.update(engine, STEP * 1000);
     for (const [body, damage] of pending) body.plugin.shot.hp -= damage;
+    if (boss && boss.plugin.shot.hp < boss.plugin.shot.previousHp) boss.plugin.shot.flash = 0.18;
+    if (boss) boss.plugin.shot.previousHp = boss.plugin.shot.hp;
     pending.clear();
     // 連鎖は各物を一度だけ除去。後ろから前への連鎖も同じ刻みで解決する。
     let removed;
@@ -428,17 +438,17 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
       removed = false;
       for (const body of [...state.pieces]) {
         const { x, y } = body.position;
-        if (!body.isStatic && state.age >= 1 && state.flying && (body.plugin.shot.hp <= 0 || x < -60 || x > W + 60 || y > 700)) { destroy(body); removed = true; }
+        if ((!body.isStatic || body.plugin.shot.kind === "boss") && state.age >= 1 && state.flying && (body.plugin.shot.hp <= 0 || x < -60 || x > W + 60 || y > 700)) { destroy(body); removed = true; }
       }
     } while (removed);
     if (!state.flying) return;
     state.shotAge += STEP;
-    const moving = [...state.pieces, ...state.birds].some((b) => !b.isSleeping && (b.speed > 0.22 || b.angularSpeed > 0.025) && b.position.y < 700 && b.position.x > -60 && b.position.x < W + 60);
+    const moving = [...state.pieces, ...state.birds].some((b) => !b.isStatic && !b.isSleeping && (b.speed > 0.22 || b.angularSpeed > 0.025) && b.position.y < 700 && b.position.x > -60 && b.position.x < W + 60);
     state.quiet = moving ? 0 : state.quiet + STEP;
     if (state.shotAge < 1.5) return;
-    if (!state.pieces.some((b) => b.plugin.shot.kind === "ufo")) {
-      state.result = { cleared: true, stars: state.ammo + 1, stage: state.stageIndex };
-      if (state.stageIndex === STAGE_COUNT - 1) { startEnding(); return; }
+    if (!state.pieces.some((b) => (b.plugin.shot.kind === "ufo" || b.plugin.shot.kind === "boss"))) {
+      state.result = { cleared: true, stars: Math.min(3, state.ammo + 1), stage: state.stageIndex };
+      if (state.stageIndex === STAGE_COUNT - 1) { if (state.bossDefeat <= 0) startEnding(); return; }
       state.clearWait = 1.2; state.drag = null;
       state.banner = { text: "★".repeat(state.ammo + 1) + "☆".repeat(2 - state.ammo), age: 0 };
     } else if (state.quiet >= 0.45 || state.shotAge >= 7) {
@@ -459,7 +469,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
     get result() { return state.result; }, get over() { return state.over; },
     pointer(type, x, y) {
       if (state.ending && !state.over) { if (type === "down") state.over = true; return; }
-      if (state.over || state.clearWait > 0 || state.age < 1) return;
+      if (state.over || state.bossDefeat > 0 || state.clearWait > 0 || state.age < 1) return;
       if (state.flying) {
         if (type === "down") activateSkill();
         return;
@@ -525,6 +535,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
       for (const p of state.particles) { ctx.globalAlpha = p.life / 0.65; ctx.fillStyle = p.color; ctx.fillRect(p.x - 2, p.y - 2, 4, 4); }
       ctx.globalAlpha = 1;
       for (const e of state.rings) {
+        if (e.age < 0) continue;
         ctx.globalAlpha = 1 - e.age / 0.45;
         ctx.strokeStyle = COLORS.beak; ctx.lineWidth = 6 * ctx.globalAlpha;
         ctx.beginPath(); ctx.arc(e.x, e.y, 78 * e.age / 0.45, 0, Math.PI * 2); ctx.stroke();
@@ -566,11 +577,19 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
         ctx.restore();
       }
       ctx.fillText(state.flying ? state.burstUsed ? `${skillName}！` : `タップで ${skillName}！` : state.clearWait ? "クリア！" : "どこでも 引っぱって はなそう", W / 2, 118);
+      const boss = state.pieces.find((b) => b.plugin.shot.kind === "boss");
+      if (boss) {
+        const data = boss.plugin.shot;
+        ctx.fillStyle = "#24142f"; ctx.fillRect(64, 203, 232, 12);
+        ctx.fillStyle = data.flash > 0 ? "#fff" : data.hp < data.maxHp / 2 ? "#e55373" : "#b077e4";
+        ctx.fillRect(66, 205, 228 * Math.max(0, data.hp / data.maxHp), 8);
+        ctx.strokeStyle = "#edc77f"; ctx.lineWidth = 1.5; ctx.strokeRect(64, 203, 232, 12);
+      }
       if (state.banner.age < 2) {
         ctx.globalAlpha = Math.min(1, (2 - state.banner.age) * 2);
-        ctx.fillStyle = "rgba(42,31,92,0.8)"; ctx.fillRect(view.x0, 137, view.x1 - view.x0, 50);
+        ctx.fillStyle = state.stageIndex === STAGE_COUNT - 1 ? "rgba(101,24,71,0.9)" : "rgba(42,31,92,0.8)"; ctx.fillRect(view.x0, 137, view.x1 - view.x0, 50);
         ctx.fillStyle = "#fff"; ctx.font = `900 36px ${FONT}`; ctx.textBaseline = "middle";
-        ctx.fillText(state.banner.text, W / 2, 162, W - 20); ctx.globalAlpha = 1;
+        ctx.fillText(state.banner.text, W / 2 + (state.stageIndex === STAGE_COUNT - 1 ? Math.sin(state.t * 36) * 2 : 0), 162, W - 20); ctx.globalAlpha = 1;
       }
     },
   };
@@ -580,7 +599,19 @@ function drawPiece(ctx, body) {
   const { kind, w, h, hp, maxHp } = body.plugin.shot;
   ctx.save(); ctx.translate(body.position.x, body.position.y); ctx.rotate(body.angle);
   ctx.fillStyle = TYPES[kind].color; ctx.strokeStyle = "#382b41"; ctx.lineWidth = 1.5;
-  if (kind === "ufo") {
+  if (kind === "boss") {
+    const flash = body.plugin.shot.flash || 0;
+    if (flash > 0) ctx.translate(Math.sin(flash * 160) * 3, 0);
+    ctx.scale(w / 24, w / 24);
+    ctx.fillStyle = flash > 0 ? "#fff" : hp < maxHp / 2 ? "#ba385f" : TYPES.boss.color;
+    ctx.beginPath(); ctx.ellipse(0, 0, 23, 19, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(0, 12, 28, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#edd263";
+    ctx.beginPath(); ctx.moveTo(-13, -16); ctx.lineTo(-17, -29); ctx.lineTo(-6, -23); ctx.lineTo(0, -34); ctx.lineTo(7, -23); ctx.lineTo(17, -29); ctx.lineTo(13, -16); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = "#fff1cd"; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(-14, -5); ctx.lineTo(-5, -1); ctx.moveTo(5, -1); ctx.lineTo(14, -5); ctx.stroke();
+    for (const x of [-17, 0, 17]) { ctx.beginPath(); ctx.arc(x, 13, 2, 0, Math.PI * 2); ctx.fill(); }
+  } else if (kind === "ufo") {
     ctx.scale(w / 13, w / 13);
     ctx.fillStyle = COLORS.cyan; ctx.beginPath(); ctx.ellipse(0, -1, 8, 8, 0, Math.PI, 0); ctx.fill();
     ctx.fillStyle = TYPES.ufo.color; ctx.beginPath(); ctx.ellipse(0, 6, 15, 6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -606,7 +637,7 @@ function drawPiece(ctx, body) {
       ctx.strokeStyle = "#77717c"; ctx.beginPath(); ctx.moveTo(-w / 3, -h / 3); ctx.lineTo(0, 0); ctx.lineTo(-4, h / 3); ctx.moveTo(0, 0); ctx.lineTo(w / 3, -h / 5); ctx.stroke();
     }
   }
-  if (kind !== "ufo" && hp < maxHp / 2) {
+  if (kind !== "ufo" && kind !== "boss" && hp < maxHp / 2) {
     ctx.strokeStyle = "#382b41"; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(-w / 3, -5); ctx.lineTo(0, 2); ctx.lineTo(-3, 8); ctx.lineTo(w / 3, 12); ctx.stroke();
   }
@@ -630,9 +661,9 @@ function festivalBackground(stage) {
       const originalNightSpan = 7;
       const night = Math.min(stage / originalNightSpan, 1);
       const sky = c.createLinearGradient(0, y0, 0, FLOOR);
-      sky.addColorStop(0, `hsl(${235 - night * 8} 38% ${23 - night * 14}%)`);
-      sky.addColorStop(0.65, `hsl(${270 - night * 20} 25% ${29 - night * 13}%)`);
-      sky.addColorStop(1, `hsl(${335 - night * 65} 28% ${35 - night * 17}%)`);
+      sky.addColorStop(0, stage === STAGE_COUNT - 1 ? "#180d23" : `hsl(${235 - night * 8} 38% ${23 - night * 14}%)`);
+      sky.addColorStop(0.65, stage === STAGE_COUNT - 1 ? "#301329" : `hsl(${270 - night * 20} 25% ${29 - night * 13}%)`);
+      sky.addColorStop(1, stage === STAGE_COUNT - 1 ? "#581e35" : `hsl(${335 - night * 65} 28% ${35 - night * 17}%)`);
       c.fillStyle = sky; c.fillRect(x0, y0, width, height);
       for (let i = 0; i < 65; i++) {
         const x = x0 + ((i * 97.31) % width), y = y0 + ((i * 53.79) % Math.max(1, 410 - y0));

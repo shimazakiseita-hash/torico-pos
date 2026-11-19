@@ -172,3 +172,7 @@ button { cursor: pointer; touch-action: manipulation; }
 .shot-stages .shot-goal { background: radial-gradient(ellipse at 50% 35%, #ce884e, #7c413a); border-color: #ffe8a8; box-shadow: 0 4px 0 #543242, 0 0 24px #ffbf6799, inset 0 0 18px #ffc577; }
 .shot-goal svg { width: 60px; height: 60px; }
 .shot-goal:disabled svg { opacity: .35; filter: saturate(.25); }
+
+.shot-stages .shot-boss { width: 80px; height: 80px; background: radial-gradient(ellipse at 50% 30%, #783d91, #6c203c); border-color: #e9bc78; }
+.shot-boss svg { width: 42px; height: 27px; flex-shrink: 0; }
+.shot-stages .shot-boss b { font-size: 1.4rem; }

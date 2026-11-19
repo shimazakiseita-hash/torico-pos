@@ -108,6 +108,10 @@ function renderShotMap() {
     button.style.setProperty("--stage-x", `${points[stage].x}%`);
     button.style.setProperty("--stage-y", `${points[stage].y}px`);
     button.innerHTML = `<b>${stage + 1}</b><span>${shotStars(stars)}</span>${button.disabled ? '<i aria-hidden="true">🔒</i>' : ''}`;
+    if (stage === shot.STAGE_COUNT - 1) {
+      button.classList.add("shot-boss");
+      button.insertAdjacentHTML("afterbegin", '<svg viewBox="0 0 64 40" aria-hidden="true"><path d="M18 15 14 3 26 9 32 0 38 9 50 3 46 15" fill="#edd263" stroke="#382b41"/><ellipse cx="32" cy="23" rx="21" ry="13" fill="#9654b5"/><ellipse cx="32" cy="30" rx="29" ry="8" fill="#763c9c" stroke="#edc77f"/><path d="m20 18 8 4m8 0 8-4" stroke="#fff0cf" stroke-width="3"/></svg>');
+    }
     button.setAttribute("aria-label", `${stage + 1} ${shotStars(stars)}${button.disabled ? " 🔒" : ""}`);
     if (!stars && !button.disabled) button.setAttribute("aria-current", "step");
     button.addEventListener("click", () => openGame(shot, stage));
