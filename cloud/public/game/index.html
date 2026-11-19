@@ -34,6 +34,17 @@
     <button class="btn ghost" type="button" data-go="shop">ショップ</button>
     <button class="btn ghost" type="button" data-go="dress">きせかえ</button>
   </div>
+  <button id="hub-ranking" class="card hub-ranking" type="button" hidden>
+    <svg class="trophy" viewBox="0 0 32 32" aria-hidden="true"><path d="M9 5H4v5c0 5 4 7 8 7m11-12h5v5c0 5-4 7-8 7" fill="none" stroke="currentColor" stroke-width="3"/><path d="M8 3h16v8c0 6-4 10-8 10s-8-4-8-10z" fill="var(--beak)" stroke="currentColor" stroke-width="2"/><path d="M16 21v6m-6 2h12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+    <span class="hub-ranking-content">
+      <span class="hub-ranking-title">ランキング</span>
+      <span class="hub-ranking-label">今日の トップ3</span>
+      <span id="hub-ranking-top" class="hub-ranking-top" aria-live="polite"></span>
+      <span id="hub-ranking-me" class="hub-ranking-note" hidden></span>
+      <span class="hub-ranking-note">みんなの きろくを 見る</span>
+    </span>
+    <span class="hub-ranking-arrow" aria-hidden="true">›</span>
+  </button>
   <h1 class="title">ミニゲーム</h1>
   <ul id="games" class="games"></ul>
   <p class="small center">あそぶと やきとりポイントが たまるよ。ガチャで きせかえ、ショップで ゲームを つよく しよう</p>

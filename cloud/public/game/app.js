@@ -20,6 +20,8 @@ let board = "today";
 let rankGame = GAMES[0];
 let rankBoard = "today";
 const rankingRequests = new WeakMap();
+const trophyIcon = $("hub-ranking").querySelector(".trophy").outerHTML;
+$("hub-ranking").addEventListener("click", () => openRanking(RANKED_GAMES[0]));
 
 // ── 画面の切り替え ──
 function show(view) {
@@ -54,6 +56,7 @@ function paintMascot(canvas, costume) {
 const stars = (n) => "★".repeat(n);
 
 function renderHub() {
+  renderHubRanking();
   $("points").textContent = `${save.points.toLocaleString()} pt`;
   $("owned-count").textContent = `きせかえ ${save.owned.length - 1} / ${COSTUMES.length - 1}${save.points >= GACHA_COST ? "・ガチャが まわせるよ！" : ""}`;
   paintMascot($("me"), save.costume);
@@ -63,7 +66,7 @@ function renderHub() {
     const li = document.createElement("li");
     li.className = "game";
     const best = save.best[g.META.id];
-    li.innerHTML = `<h2></h2><p class="best"></p><button class="btn pink" type="button">あそぶ</button><button class="rank-link" type="button">ランキング</button><p></p>`;
+    li.innerHTML = `<h2></h2><p class="best"></p><button class="btn pink" type="button">あそぶ</button><button class="rank-link" type="button">${trophyIcon}ランキング</button><p></p>`;
     li.querySelector("h2").textContent = g.META.title;
     li.querySelector(".best").textContent = g.META.mode === "map" ? `★ ${shotTotal()} / ${shot.STAGE_COUNT * 3}` : best ? `じこベスト ${best.toLocaleString()}点` : "まだ あそんでいない";
     li.querySelector("p:last-child").textContent = g.META.howto;
@@ -71,6 +74,49 @@ function renderHub() {
     if (g.META.mode === "map") li.querySelector(".rank-link").remove();
     else li.querySelector(".rank-link").addEventListener("click", () => openRanking(g));
     list.appendChild(li);
+  }
+}
+
+async function renderHubRanking() {
+  const card = $("hub-ranking");
+  const request = (rankingRequests.get(card) ?? 0) + 1;
+  rankingRequests.set(card, request);
+  card.hidden = RANKED_GAMES.length === 0;
+  const top = $("hub-ranking-top");
+  const mine = $("hub-ranking-me");
+  top.replaceChildren();
+  mine.hidden = true;
+  card.classList.remove("offline");
+  if (card.hidden) return;
+  try {
+    const rows = await fetchRanking(RANKED_GAMES[0].META.id, "today");
+    if (rankingRequests.get(card) !== request) return;
+    if (rows.length === 0) {
+      top.textContent = "まだ だれも のっていないよ。1位を ねらおう！";
+      return;
+    }
+    const myTag = save.player.slice(0, 6);
+    const leaders = rows.slice(0, 3);
+    for (const r of leaders) {
+      const row = document.createElement("span");
+      row.className = "hub-ranking-row";
+      row.classList.toggle("first", r.rank === 1);
+      row.classList.toggle("me", r.tag === myTag);
+      row.innerHTML = `<span></span><span class="nm"></span><span></span>`;
+      row.children[0].textContent = `${r.rank}位`;
+      row.children[1].textContent = r.name;
+      row.children[2].textContent = `${r.score.toLocaleString()}点`;
+      top.appendChild(row);
+    }
+    const me = rows.find((r) => r.tag === myTag);
+    if (me && !leaders.some((r) => r.tag === myTag)) {
+      mine.textContent = `あなたは ${me.rank}位`;
+      mine.hidden = false;
+    }
+  } catch {
+    if (rankingRequests.get(card) !== request) return;
+    top.replaceChildren();
+    card.classList.add("offline");
   }
 }
 
