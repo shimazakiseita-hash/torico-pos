@@ -264,7 +264,14 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
   function pull(x, y) {
     const dx = x - state.drag.x, dy = y - state.drag.y;
     const factor = Math.min(1, MAX_PULL / (Math.hypot(dx, dy) || 1));
-    state.drag.dx = dx * factor; state.drag.dy = dy * factor;
+    const angle = Math.atan2(dy, -dx), maxAngle = 80 * Math.PI / 180;
+    if (angle < 0 || angle > maxAngle) {
+      const length = Math.min(MAX_PULL, Math.hypot(dx, dy));
+      const clamped = Math.max(0, Math.min(maxAngle, angle));
+      state.drag.dx = -Math.cos(clamped) * length; state.drag.dy = Math.sin(clamped) * length;
+    } else {
+      state.drag.dx = dx * factor; state.drag.dy = dy * factor;
+    }
   }
   // 演出の時計だけを進め、物理・材料・通常のエフェクトは凍結する。
   const heat = document.createElement("canvas");
