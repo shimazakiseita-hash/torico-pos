@@ -458,6 +458,26 @@ export function drawHearts(ctx, lives, max, x = W - 14, y = 52) {
 
 // ── このスマホに保存する記録（ベスト・やきとりポイント・きせかえ・名前） ──
 const KEY = "torico-game";
+let vibrationEnabled = true;
+let lastBuzz = -Infinity;
+let lastStrength = 0;
+let buzzUntil = -Infinity;
+
+export function buzz(pattern) {
+  if (!vibrationEnabled || typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
+  const pulses = Array.isArray(pattern) ? pattern : [pattern];
+  const strength = pulses.reduce((sum, ms, i) => sum + (i % 2 ? 0 : ms), 0);
+  const now = performance.now();
+  if ((now - lastBuzz < 60 || now < buzzUntil) && strength <= lastStrength) return;
+  try {
+    navigator.vibrate(pattern);
+    lastBuzz = now;
+    lastStrength = strength;
+    buzzUntil = now + pulses.reduce((sum, ms) => sum + ms, 0);
+  } catch {
+    // 振動できなくても遊べる。
+  }
+}
 
 /** このスマホに保存した記録を読む（壊れていても遊べるよう、足りないところは初期値） */
 export function loadSave() {
@@ -487,6 +507,7 @@ export function loadSave() {
   delete upgrades.tsumiSlow;
   const resetShot = data.shot?.v !== 2;
   const save = {
+    vibrate: typeof data.vibrate === "boolean" ? data.vibrate : true,
     player: data.player,
     name: typeof data.name === "string" ? data.name : "",
     points: points + refund,
@@ -502,10 +523,12 @@ export function loadSave() {
   };
   // 廃止した強化の返金・ショットの旧記録のリセット後、次に読む前に保存する
   if (hadRemovedUpgrade || resetShot || data.shot?.stars?.length !== STAGE_COUNT) writeSave(save);
+  vibrationEnabled = save.vibrate;
   return save;
 }
 
 export function writeSave(save) {
+  vibrationEnabled = save.vibrate !== false;
   try {
     localStorage.setItem(KEY, JSON.stringify(save));
   } catch {

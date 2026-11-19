@@ -203,3 +203,5 @@ button { cursor: pointer; touch-action: manipulation; }
 #shot-howto ol { margin: 0 0 .5rem; padding-left: 1.5rem; line-height: 1.7; }
 .ready-skill { display: flex; align-items: center; gap: .5rem; margin-top: .5rem; font-size: .8rem; }
 .ready-skill canvas { width: 36px; height: 36px; flex-shrink: 0; }
+
+#vibration-toggle { padding: 6px 12px; margin: 4px auto 12px; border: 1px solid currentColor; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }

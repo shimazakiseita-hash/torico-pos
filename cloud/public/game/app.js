@@ -12,6 +12,18 @@ const RANKED_GAMES = GAMES.filter((g) => g.META.mode !== "map");
 let shotStage = 0;
 const save = loadSave();
 const $ = (id) => document.getElementById(id);
+const vibrationToggle = $("vibration-toggle");
+vibrationToggle.hidden = typeof navigator.vibrate !== "function";
+function renderVibration() {
+  vibrationToggle.textContent = `ぶるぶる ${save.vibrate ? "オン" : "オフ"}`;
+  vibrationToggle.setAttribute("aria-pressed", String(save.vibrate));
+}
+vibrationToggle.addEventListener("click", () => {
+  save.vibrate = !save.vibrate;
+  writeSave(save);
+  renderVibration();
+});
+renderVibration();
 let current = null; // 遊んでいるゲームのモジュール
 let session = null;
 let started = false; // スタートを押したか（ひとやすみから戻るときは合言葉を取り直さない）

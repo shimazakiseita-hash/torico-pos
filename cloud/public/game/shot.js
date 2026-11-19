@@ -1,5 +1,5 @@
 // とりこショット：20の砦を順にクリアして★を集めるステージ制ゲーム。
-import { COLORS, FONT, Popups, W, STAGE_COUNT, drawHud, drawMascot, drawSkewer, star, view } from "./common.js";
+import { buzz, COLORS, FONT, Popups, W, STAGE_COUNT, drawHud, drawMascot, drawSkewer, star, view } from "./common.js";
 
 export { STAGE_COUNT } from "./common.js";
 
@@ -141,6 +141,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
     drag: null, particles: [], rings: [], dizzy: [], shake: 0, burstUsed: false, banner: { text: "", age: 0 } };
   const background = festivalBackground(state.stageIndex);
   let accumulator = 0;
+  let hitStop = 0;
   let idle = 0;
   let touched = false;
   const pending = new Map();
@@ -187,6 +188,8 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
     }
   });
   function explode(x, y, radius = 52, power = 26) {
+    hitStop = Math.max(hitStop, radius > 52 ? 0.08 : 0.04);
+    buzz(radius > 52 ? [60, 30, 60] : 40);
     const scale = radius / 52;
     state.shake = 0.3 * scale;
     state.rings.push({ x, y, age: 0, radius: 78 * scale });
@@ -256,10 +259,13 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
     const data = body.plugin.shot;
     if ((body.isStatic && data.kind !== "boss") || !state.pieces.includes(body)) return;
     if (data.kind === "boss") {
+      hitStop = Math.max(hitStop, 0.15);
+      buzz([80, 40, 80, 40, 160]);
       state.bossDefeat = 1; state.shake = 1;
       for (let i = 0; i < 4; i++) state.rings.push({ x: body.position.x + (i - 1.5) * 14, y: body.position.y, age: -i * 0.14 });
       for (let i = 0; i < 65; i++) state.particles.push({ x: body.position.x, y: body.position.y, vx: (Math.random() - 0.5) * 340, vy: -80 - Math.random() * 250, life: 1, color: i % 2 ? "#edd263" : "#b76bdd" });
     }
+    if (data.kind === "ufo") buzz(25);
     if (data.kind === "ufo") state.dizzy.push({ x: body.position.x, y: body.position.y, age: 0 });
     state.pieces = state.pieces.filter((p) => p !== body);
     Composite.remove(engine.world, body);
@@ -288,7 +294,10 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
   const heatCtx = heat.getContext("2d");
   function startEnding() {
     if (state.over || state.ending || state.stageIndex !== STAGE_COUNT - 1) return;
-    if (!endingOnly) state.result = { cleared: true, stars: Math.min(3, state.ammo + 1), stage: state.stageIndex };
+    if (!endingOnly) {
+      buzz([30, 50, 30]);
+      state.result = { cleared: true, stars: Math.min(3, state.ammo + 1), stage: state.stageIndex };
+    }
     state.drag = null;
     state.clearWait = 0;
     state.ending = { age: 0 };
@@ -455,14 +464,18 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
     ctx.restore();
   }
   function tick() {
-    if (state.ending) { state.ending.age += STEP; if (state.ending.age >= 6) state.over = true; return; }
-    if (!state.flying && !state.drag) idle += STEP;
-    state.t += STEP; state.age += STEP; state.banner.age += STEP;
+    if (state.ending) {
+      if (state.ending.age < 3.6 && state.ending.age + STEP >= 3.6) buzz([50, 30, 120]);
+      state.ending.age += STEP;
+      if (state.ending.age >= 6) state.over = true;
+      return;
+    }
+    state.t += STEP; state.banner.age += STEP;
     pop.update(STEP);
     state.shake = Math.max(0, state.shake - STEP);
     for (const trail of state.trails) trail.life -= STEP;
     state.trails = state.trails.filter((trail) => trail.life > 0);
-    for (const bird of state.birds) if (bird.plugin.dash && bird.speed > 2 && state.shotAge < bird.plugin.trailUntil) {
+    if (hitStop <= 0) for (const bird of state.birds) if (bird.plugin.dash && bird.speed > 2 && state.shotAge < bird.plugin.trailUntil) {
       state.trails.push({ x: bird.position.x, y: bird.position.y, life: 0.16 });
     }
     for (const effect of [...state.rings, ...state.dizzy]) effect.age += STEP;
@@ -470,6 +483,10 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
     state.dizzy = state.dizzy.filter((e) => e.age < 0.8);
     for (const p of state.particles) { p.life -= STEP; p.x += p.vx * STEP; p.y += p.vy * STEP; p.vy += 220 * STEP; }
     state.particles = state.particles.filter((p) => p.life > 0);
+    // 停止中は演出だけ進め、物理と判定の時計は同じ刻みに保つ。
+    if (hitStop > 0) { hitStop = Math.max(0, hitStop - STEP - Number.EPSILON); return; }
+    if (!state.flying && !state.drag) idle += STEP;
+    state.age += STEP;
     if (state.clearWait > 0) {
       state.clearWait -= STEP;
       if (state.clearWait <= 0) {
@@ -493,7 +510,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
     }
     Engine.update(engine, STEP * 1000);
     for (const [body, damage] of pending) body.plugin.shot.hp -= damage;
-    if (boss && boss.plugin.shot.hp < boss.plugin.shot.previousHp) boss.plugin.shot.flash = 0.18;
+    if (boss && boss.plugin.shot.hp < boss.plugin.shot.previousHp) { boss.plugin.shot.flash = 0.18; buzz(20); }
     if (boss) boss.plugin.shot.previousHp = boss.plugin.shot.hp;
     pending.clear();
     // 連鎖は各物を一度だけ除去。後ろから前への連鎖も同じ刻みで解決する。
@@ -513,6 +530,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
     if (!state.pieces.some((b) => (b.plugin.shot.kind === "ufo" || b.plugin.shot.kind === "boss"))) {
       state.result = { cleared: true, stars: Math.min(3, state.ammo + 1), stage: state.stageIndex };
       if (state.stageIndex === STAGE_COUNT - 1) { if (state.bossDefeat <= 0) startEnding(); return; }
+      buzz([30, 50, 30]);
       state.clearWait = 1.2; state.drag = null;
       state.banner = { text: "★".repeat(state.ammo + 1) + "☆".repeat(2 - state.ammo), age: 0 };
     } else if (state.quiet >= 0.45 || state.shotAge >= 7) {
@@ -560,6 +578,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
         state.birds = [state.bird];
         Composite.add(engine.world, state.bird);
         state.burstUsed = false;
+        buzz(10);
         state.ammo--; state.flying = true; state.shotAge = 0; state.quiet = 0;
       }
     },

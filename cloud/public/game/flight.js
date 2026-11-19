@@ -11,7 +11,7 @@
 //   ボス戦は 1秒に約5.5発 × 2 ＝ 11点/秒 ＋ たおしたとき 1回だけ
 //   （上限は余裕をみて200）
 
-import { COLORS, FONT, H, Popups, W, drawHud, drawMascot, drawSkewer, drawSpace, heart, star, view } from "./common.js";
+import { buzz, COLORS, FONT, H, Popups, W, drawHud, drawMascot, drawSkewer, drawSpace, heart, star, view } from "./common.js";
 
 export const META = {
   id: "flight",
@@ -169,6 +169,7 @@ export function createGame({ costume, up = {} }) {
 
   /** つくねばくだん：画面の敵とたまを ぜんぶ消す */
   function explode() {
+    buzz(60);
     let gain = 0;
     for (const u of state.ufos) {
       if (u.hp > 0 && u.x < W + 20) {
@@ -199,6 +200,7 @@ export function createGame({ costume, up = {} }) {
   function endBoss(defeated) {
     const b = state.boss;
     if (defeated) {
+      buzz([80, 40, 80, 40, 160]);
       const bonus = 150 + 50 * lap();
       state.score += bonus;
       pop.add(`たおした！ +${bonus}`, W / 2, H * 0.35, COLORS.beak, 30);
@@ -222,12 +224,14 @@ export function createGame({ costume, up = {} }) {
   function hurt() {
     if (state.safe > 0) return false;
     if (state.shield) {
+      buzz([40, 30, 40]);
       state.shield = false;
       state.safe = SAFE_SECONDS;
       state.shake = 0.3;
       pop.add("バリアで セーフ！", X + 40, state.y - 40, COLORS.cyan, 22);
       return false;
     }
+    buzz(120);
     state.over = true;
     state.shake = 0.4;
     pop.add("ごつん！", X, state.y - 40, COLORS.danger, 30);
@@ -236,9 +240,11 @@ export function createGame({ costume, up = {} }) {
 
   function takeItem(kind, x, y) {
     if (kind === "skewer") {
+      buzz(10);
       state.score += 30;
       pop.add("+30", x, y - 24, COLORS.beak, 22);
     } else if (kind === "gold") {
+      buzz([20, 30, 20]);
       state.score += 100;
       pop.add("金の串！ +100", x, y - 24, COLORS.beak, 24);
     } else if (kind === "bomb") {
@@ -404,6 +410,7 @@ export function createGame({ costume, up = {} }) {
       for (const s of state.shots) {
         for (const u of state.ufos) {
           if (u.hp > 0 && Math.hypot(s.x - u.x, s.y - u.y) < 24) {
+            buzz(15);
             u.hp = 0;
             s.dead = true;
             state.score += 20;
@@ -412,6 +419,7 @@ export function createGame({ costume, up = {} }) {
         }
         for (const m of state.meteors) {
           if (m.hp > 0 && Math.hypot(s.x - m.x, s.y - m.y) < 18) {
+            buzz(15);
             m.hp = 0;
             s.dead = true;
             state.score += 10;
