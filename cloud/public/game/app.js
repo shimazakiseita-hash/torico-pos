@@ -29,6 +29,7 @@ function show(view) {
   if (view === "dress") renderDress();
   if (view === "gacha") renderGacha(true);
   if (view === "shop") renderShop();
+  $("pause").hidden = true;
   window.scrollTo(0, 0);
 }
 document.addEventListener("click", (e) => {
@@ -262,6 +263,7 @@ function fit() {
   canvas.width = Math.round(vw * dpr);
   canvas.height = Math.round(vh * dpr);
   ctx.setTransform(scale * dpr, 0, 0, scale * dpr, offX * dpr, offY * dpr);
+  view.pauseInset = (56 + (parseFloat(getComputedStyle($("pause")).right) || 0)) / scale;
   if (game) game.draw(ctx);
 }
 window.addEventListener("resize", fit);
@@ -289,6 +291,12 @@ function openGame(g, stage = shotStage, endingOnly = false) {
   if (["localhost", "127.0.0.1"].includes(location.hostname) && new URLSearchParams(location.search).has("debug")) window.__game = game;
   $("ready-title").textContent = g.META.title;
   $("ready-howto").textContent = g.META.howto;
+  $("ready-howto").hidden = g === shot;
+  $("shot-howto").hidden = g !== shot;
+  $("restart").hidden = true;
+  $("start").textContent = "スタート";
+  $("quit").dataset.go = g === shot ? "shot-map" : "hub";
+  if (g === shot) renderShotHowto();
   $("ready").hidden = endingOnly;
   show("play");
   fit();
@@ -297,6 +305,41 @@ function openGame(g, stage = shotStage, endingOnly = false) {
     raf = requestAnimationFrame(loop);
   }
 }
+
+function renderShotHowto() {
+  const box = $("shot-howto");
+  box.innerHTML = `<ol><li>引っぱる（どこでもOK）</li><li>はなすと とぶ</li><li>とんでいる とちゅうで タップ → わざ</li></ol><p class="small">★ 少ない 玉で クリアするほど ★が ふえる<br>1発目で クリア → ★★★</p>`;
+  const descriptions = { boom: "ばくはつして まわりを ふきとばす", dash: "いっきに かそくして つきぬける", drop: "まっすぐ 下に おちて おしつぶす", split: "3わに わかれる" };
+  for (const skill of shot.SKILLS.filter((s) => shotSkills().includes(s.id))) {
+    const row = document.createElement("div");
+    row.className = "ready-skill";
+    const icon = document.createElement("canvas");
+    icon.width = icon.height = 64;
+    icon.setAttribute("aria-hidden", "true");
+    const c = icon.getContext("2d");
+    c.fillStyle = c.strokeStyle = "#603d65";
+    shot.drawSkillIcon(c, skill.id, 32, 32, 48);
+    const label = document.createElement("span");
+    const name = document.createElement("b");
+    name.textContent = skill.name;
+    label.append(name, document.createElement("br"), descriptions[skill.id]);
+    row.append(icon, label);
+    box.append(row);
+  }
+  if (shotStage === shot.STAGE_COUNT - 1) {
+    const boss = document.createElement("p");
+    boss.textContent = "ボス：玉は5発";
+    box.append(boss);
+  }
+}
+
+$("pause").addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  pause();
+});
+$("pause").addEventListener("click", (e) => { e.stopPropagation(); pause(); });
+$("restart").addEventListener("click", () => openGame(current, shotStage));
 
 $("start").addEventListener("click", () => {
   $("ready").hidden = true;
@@ -312,6 +355,7 @@ $("start").addEventListener("click", () => {
 function stopLoop() {
   cancelAnimationFrame(raf);
   raf = 0;
+  $("pause").hidden = true;
 }
 
 function loop(now) {
@@ -319,6 +363,7 @@ function loop(now) {
   last = now;
   game.update(dt);
   game.draw(ctx);
+  $("pause").hidden = !started || game.over || game.ending || $("play").hidden;
   if (game.over) {
     stopLoop();
     // 終わった画面を少し見せてから結果へ
@@ -331,10 +376,14 @@ function loop(now) {
 
 /** 遊んでいる途中で止めて、「つづきから」の案内を出す */
 function pause() {
-  if (!raf) return;
+  if (!raf || !started || game.over || game.ending || $("play").hidden) return;
+  game.pointer("cancel");
   stopLoop();
   $("ready-title").textContent = "ひとやすみ";
-  $("ready-howto").textContent = "つづきから あそべるよ";
+  $("ready-howto").hidden = true;
+  $("shot-howto").hidden = true;
+  $("start").textContent = "つづける";
+  $("restart").hidden = false;
   $("ready").hidden = false;
 }
 
@@ -451,6 +500,8 @@ function finishShot() {
     outcome.append(title, rating);
   } else outcome.textContent = cleared ? shotStars(stars) : "☆☆☆";
   $("shot-outcome").classList.toggle("failed", !cleared);
+  $("shot-shots").hidden = !cleared;
+  $("shot-shots").textContent = cleared ? `${game.shots}発で クリア` : "";
   $("shot-points").textContent = gained ? `+${gained}pt` : "";
   const unlocked = shot.SKILLS.filter((skill) => !before.includes(skill.id) && shotSkills().includes(skill.id));
   $("shot-unlock").hidden = unlocked.length === 0;

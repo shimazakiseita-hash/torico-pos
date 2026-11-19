@@ -176,3 +176,12 @@ button { cursor: pointer; touch-action: manipulation; }
 .shot-stages .shot-boss { width: 80px; height: 80px; background: radial-gradient(ellipse at 50% 30%, #783d91, #6c203c); border-color: #e9bc78; }
 .shot-boss svg { width: 42px; height: 27px; flex-shrink: 0; }
 .shot-stages .shot-boss b { font-size: 1.4rem; }
+
+#pause { position: absolute; top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); width: 48px; height: 48px; padding: 0; border: 2px solid #fff4d7; border-radius: 50%; background: #302b48dd; color: #fff4d7; font-size: 26px; touch-action: none; display: grid; place-items: center; }
+#pause svg { width: 22px; height: 22px; }
+#ready { overflow-y: auto; padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+#ready .card { max-height: 100%; overflow-y: auto; }
+#shot-howto { text-align: left; font-size: .9rem; }
+#shot-howto ol { margin: 0 0 .5rem; padding-left: 1.5rem; line-height: 1.7; }
+.ready-skill { display: flex; align-items: center; gap: .5rem; margin-top: .5rem; font-size: .8rem; }
+.ready-skill canvas { width: 36px; height: 36px; flex-shrink: 0; }

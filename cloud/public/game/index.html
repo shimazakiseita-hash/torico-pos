@@ -72,6 +72,7 @@
 <main id="shot-result" class="view" hidden>
   <section class="card center">
     <h1 id="shot-outcome"></h1>
+    <p id="shot-shots" class="small" hidden></p>
     <p id="shot-points"></p>
   </section>
   <div class="actions">
@@ -111,12 +112,15 @@
 
 <main id="play" class="view play" hidden>
   <canvas id="stage" aria-label="ゲーム画面"></canvas>
+  <button id="pause" type="button" aria-label="いちじていし" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="3" width="4" height="14" rx="1.5" fill="currentColor"/><rect x="12" y="3" width="4" height="14" rx="1.5" fill="currentColor"/></svg></button>
   <div id="ready" class="overlay">
     <div class="card">
       <h2 id="ready-title"></h2>
       <p id="ready-howto"></p>
+      <div id="shot-howto" hidden></div>
       <button id="start" class="btn pink" type="button">スタート</button>
-      <button class="btn ghost" type="button" data-go="hub">やめる</button>
+      <button id="restart" class="btn ghost" type="button" hidden>さいしょから</button>
+      <button id="quit" class="btn ghost" type="button" data-go="hub">やめる</button>
     </div>
   </div>
 </main>

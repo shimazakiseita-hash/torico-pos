@@ -141,6 +141,8 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
     drag: null, particles: [], rings: [], dizzy: [], shake: 0, burstUsed: false, banner: { text: "", age: 0 } };
   const background = festivalBackground(state.stageIndex);
   let accumulator = 0;
+  let idle = 0;
+  let touched = false;
   const pending = new Map();
   function startStage() {
     Composite.clear(engine.world, false);
@@ -391,8 +393,54 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
     }
     ctx.restore();
   }
+  function drawTouch(ctx, x, y, phase) {
+    ctx.save(); ctx.translate(x, y); ctx.scale(1.6, 1.6);
+    ctx.fillStyle = "#fff4d7"; ctx.strokeStyle = "#302340"; ctx.lineWidth = 1.5; ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(3, 15); ctx.lineTo(3, 2);
+    ctx.quadraticCurveTo(6, -2, 9, 2);
+    ctx.lineTo(9, 10); ctx.lineTo(16, 13);
+    ctx.quadraticCurveTo(20, 15, 17, 23);
+    ctx.lineTo(8, 23); ctx.lineTo(0, 15); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = "#fff4d7"; ctx.lineWidth = 2;
+    ctx.globalAlpha *= 1 - phase;
+    ctx.beginPath(); ctx.arc(6, 1, 8 + phase * 12, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+  function drawTutorial(ctx) {
+    if (state.clearWait || state.bossDefeat || state.over) return;
+    ctx.save();
+    if (!state.flying && !state.drag && state.ammo > 0 &&
+        (state.stageIndex === 0 ? state.ammo === 3 && !touched : idle >= 6)) {
+      const phase = (state.stageIndex === 0 ? state.t : idle - 6) % 2;
+      if (phase < 1.5) {
+        const pull = Math.min(1, phase / 1.2);
+        const dx = -32 * pull, dy = 30 * pull;
+        ctx.globalAlpha = 0.9;
+        ctx.strokeStyle = "#fff4d7"; ctx.lineWidth = 2; ctx.setLineDash([3, 5]);
+        ctx.beginPath(); ctx.moveTo(SLING.x, SLING.y); ctx.lineTo(SLING.x + dx, SLING.y + dy); ctx.stroke();
+        ctx.setLineDash([]);
+        let x = SLING.x, y = SLING.y, vx = -dx * SHOT_SPEED, vy = -dy * SHOT_SPEED;
+        ctx.fillStyle = "#fff4d7";
+        for (let i = 0; i < 24; i++) {
+          vx *= 0.99; vy = vy * 0.99 + engine.gravity.y * engine.gravity.scale * (STEP * 1000) ** 2;
+          x += vx; y += vy;
+          if (i % 4 === 0 && i < pull * 24) { ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill(); }
+        }
+        drawTouch(ctx, SLING.x + dx, SLING.y + dy, phase / 1.5);
+      }
+    } else if (state.stageIndex < 2 && state.flying && state.bird && !state.burstUsed) {
+      const phase = state.shotAge % 1;
+      const x = Math.max(view.x0 + 30, Math.min(view.x1 - 30, state.bird.position.x + 24));
+      const y = Math.max(view.y0 + 90, Math.min(FLOOR - 30, state.bird.position.y + 28));
+      ctx.globalAlpha = 0.45 + Math.sin(phase * Math.PI) * 0.4;
+      drawTouch(ctx, x, y, phase);
+    }
+    ctx.restore();
+  }
   function tick() {
     if (state.ending) { state.ending.age += STEP; if (state.ending.age >= 6) state.over = true; return; }
+    if (!state.flying && !state.drag) idle += STEP;
     state.t += STEP; state.age += STEP; state.banner.age += STEP;
     pop.update(STEP);
     state.shake = Math.max(0, state.shake - STEP);
@@ -467,7 +515,11 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
     state, endingOnly,
     ...(new URLSearchParams(location.search).has("debug") ? { debugEnding: startEnding } : {}),
     get result() { return state.result; }, get over() { return state.over; },
+    get ending() { return !!state.ending; },
+    get shots() { return (state.stageIndex === STAGE_COUNT - 1 ? 5 : 3) - state.ammo; },
     pointer(type, x, y) {
+      if (type === "cancel") { state.drag = null; idle = 0; return; }
+      if (type === "down" || type === "move" || type === "up") idle = 0;
       if (state.ending && !state.over) { if (type === "down") state.over = true; return; }
       if (state.over || state.bossDefeat > 0 || state.clearWait > 0 || state.age < 1) return;
       if (state.flying) {
@@ -479,7 +531,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
         const button = skillButtons.find((b) => Math.hypot(x - b.x, y - b.y) <= 20);
         if (button) { state.skill = selectedSkill = button.id; state.drag = null; return; }
       }
-      if (type === "down") state.drag = { x, y, dx: 0, dy: 0 };
+      if (type === "down") { touched = true; state.drag = { x, y, dx: 0, dy: 0 }; }
       if (!state.drag) return;
       if (type === "move") pull(x, y);
       if (type === "up") {
@@ -549,6 +601,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
         for (const x of [-6, 6]) { ctx.beginPath(); for (let a = 0; a < 12; a += 0.25) ctx.lineTo(x + Math.cos(a) * a / 4, -3 + Math.sin(a) * a / 4); ctx.stroke(); }
         ctx.restore();
       }
+      drawTutorial(ctx);
       pop.draw(ctx);
       ctx.restore();
       drawHud(ctx, `${state.stageIndex + 1} / ${STAGE_COUNT}`, "");

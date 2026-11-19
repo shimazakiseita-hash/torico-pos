@@ -434,7 +434,7 @@ export class Popups {
 }
 
 /** 上の帯：点数・残り時間など */
-export function drawHud(ctx, left, right) {
+export function drawHud(ctx, left, right, rightX = W - 14) {
   ctx.font = `900 22px ${FONT}`;
   ctx.textBaseline = "top";
   ctx.lineWidth = 4;
@@ -444,8 +444,8 @@ export function drawHud(ctx, left, right) {
   ctx.strokeText(left, 14, 14);
   ctx.fillText(left, 14, 14);
   ctx.textAlign = "right";
-  ctx.strokeText(right, W - 14, 14);
-  ctx.fillText(right, W - 14, 14);
+  ctx.strokeText(right, rightX, 14);
+  ctx.fillText(right, rightX, 14);
 }
 
 export function drawHearts(ctx, lives, max, x = W - 14, y = 52) {

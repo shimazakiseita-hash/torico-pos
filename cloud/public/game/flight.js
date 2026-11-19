@@ -572,7 +572,7 @@ export function createGame({ costume, up = {} }) {
       ctx.restore();
 
       pop.draw(ctx);
-      drawHud(ctx, `${state.score.toLocaleString()}点`, `${state.passed}こ`);
+      drawHud(ctx, `${state.score.toLocaleString()}点`, `${state.passed}こ`, Math.min(W - 14, view.x1 - (view.pauseInset || 70)));
 
       // 状態：たれビームの残り・ボスの体力と残り時間
       ctx.textAlign = "left";
