@@ -52,14 +52,18 @@ sudo ufw allow 3000/tcp
 ```bash
 # Node.js は開発機と同じメジャーバージョンを入れる（.nvmrc 参照）
 git clone <リポジトリ> ~/torico-pos && cd ~/torico-pos
+node -v          # 24系か確認。違えば nvm install 24 && nvm use 24
 npm ci            # node_modules はコピーせず、必ず本番機で入れ直す（better-sqlite3 がネイティブモジュールのため）
 npm run build
-sudo cp deploy/torico-pos.service /etc/systemd/system/   # User と WorkingDirectory を自分の環境に書き換えてから
+sudo cp deploy/torico-pos.service /etc/systemd/system/   # User と WorkingDirectory を自分の環境に書き換えてから（nvm なら ExecStart と PATH も）
 sudo systemctl daemon-reload
 sudo systemctl enable --now torico-pos
 systemctl status torico-pos        # 動作確認
 journalctl -u torico-pos -f        # ログ
 ```
+- Node を nvm で入れた場合、ユニットの `ExecStart` を `which npm` の絶対パスにし、`Environment=PATH=` の行も同じ `bin` を先頭にして有効にする。`/usr/bin/npm` のままだと OS の Node（24系でないことがある）で動く
+- npm 11 の `npm ci` で「install scripts not yet covered by allowScripts」という警告が出るが、そのままでよい（better-sqlite3 は同梱のビルド済みファイルで動く）。確認：`systemctl status torico-pos` のプロセスが `.nvm/versions/node/v24` の node で動いていること
+
 これでPCの電源を入れるだけで、Wi-Fi親機とアプリ（`npm run event`：サーバー・お客さん向けページへの送信・10分ごとのバックアップ）が立ち上がる。落ちても自動で再起動する。
 お客さん向けページへの送信には、リポジトリ直下に `.env.public` が要る（開発機からUSBメモリでコピーする。Git には入れない）。
 
