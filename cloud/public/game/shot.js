@@ -20,34 +20,34 @@ const TYPES = {
   coal: { hp: 65, density: 0.004, color: "#403c48" },
   mesh: { hp: 10, density: 0.0007, color: "#b8c6d4" },
   ember: { hp: 12, density: 0.002, color: "#ef6241" },
+  hanabi: { hp: 28, density: 0.002, color: "#ce3545" },
   grill: { hp: Infinity, density: 0.002, color: "#8999ae" },
   boss: { hp: 380, density: 0.001, color: "#763c9c" },
   ufo: { hp: 28, density: 0.001, color: "#bba1d3" },
 };
 
-// 配置と重さを保ち、1〜3面は耐久値を下げて練習しやすくする。
-// 7面は囲いを固くしつつ手下を弱め、上下を連鎖で倒す1発を残す。
+// 面ごとに崩れやすさを調整し、花火玉と留め具の耐久値を分ける。
 const STAGE_DURABILITY = [
-  { structure: 0.75, ufo: 0.5 },
-  { structure: 1.4, ufo: 0.8 },
-  { structure: 1.2, ufo: 0.9 },
-  { structure: 5, ufo: 1.2 },
-  { structure: 2, ufo: 1.2 },
-  { structure: 4, ufo: 0.7 },
-  { structure: 4, ufo: 0.3 },
-  { structure: 2, coal: 4, mesh: 1, ufo: 0.6 },
-  { structure: 3, ufo: 0.6 },
-  { structure: 4, ufo: 1 },
-  { structure: 5, ufo: 2.25 },
-  { structure: 3, ufo: 0.8 },
-  { structure: 2, ufo: 0.6 },
-  { structure: 0.7, ufo: 0.6 },
-  { structure: 4, ufo: 1 },
-  { structure: 1, ufo: 0.6 },
-  { structure: 0.1, ufo: 0.05 },
-  { structure: 3, ufo: 3 },
-  { structure: 4, ufo: 2.5 },
-  { structure: 1, ufo: 0.2, boss: 1 },
+  {"structure":0.75,"ufo":0.5},
+  {"structure":1.4,"ufo":0.8},
+  {"structure":0.3,"ufo":0.15},
+  {"structure":2.2,"ufo":2.2},
+  {"structure":0.5,"ufo":0.15,"negima":0.03,"tsukune":4,"coal":6},
+  {"structure":4,"ufo":0.75,"hanabi":1},
+  {"structure":0.1,"ufo":0.1},
+  {"structure":1.7,"ufo":1.8},
+  {"structure":1.3,"ufo":1.5},
+  {"structure":4,"ufo":0.8,"hanabi":1,"negima":0.1},
+  {"structure":1,"ufo":0.4},
+  {"structure":0.8,"ufo":0.4},
+  {"structure":3,"ufo":0.8,"mesh":0.4},
+  {"structure":2,"ufo":1},
+  {"structure":3,"ufo":4,"hanabi":1,"coal":1.5},
+  {"structure":2.6,"ufo":2.8},
+  {"structure":3,"ufo":2.3,"hanabi":1},
+  {"structure":2.5,"ufo":0.55,"hanabi":1,"ember":0.3,"coal":6,"mesh":0.4},
+  {"structure":2.8,"ufo":3.2,"hanabi":1,"negima":0.1,"coal":3.5},
+  {"structure":1,"ufo":0.2,"boss":1},
 ];
 
 // [種類, 中心x, 中心y, 幅（円は半径）, 高さ, 角度]。焼き台は固定物。
@@ -56,40 +56,40 @@ const STAGES = [
   [["negima",190,528,20,124],["coal",310,528,20,124],["mesh",250,458,140,16],["negima",250,570,70,40],["ufo",250,532,18]],
   // 高い塔：中段の焼き網を狙い、二重の屋根を落とす。
   [["coal",220,530,22,120],["coal",300,530,22,120],["mesh",260,462,102,16],["ufo",260,572,18],["coal",220,433,22,42],["coal",300,433,22,42],["negima",260,404,102,16]],
-  // 宙の焼き台：左の壁を抜くか、上から屋根へ。
-  [["grill",265,465,150,16],["negima",210,417,22,80],["coal",320,417,22,80],["mesh",265,369,132,16],["ufo",265,439,18]],
-  // ひの炭：壁際の火種から屋根下へ連鎖。
-  [["coal",200,550,30,80],["coal",320,550,24,80],["negima",260,502,144,16],["ember",229,572,32,36],["ember",261,572,32,36],["ufo",295,574,16]],
-  // 坂のつくね：坂の留め具を外して、下の砦へ転がす。
-  [["grill",215,410,130,16,0.12],["negima",213,389.7,18,24,0.12],["tsukune",182.5,375.1,23],["coal",230,550,24,80],["coal",326,550,24,80],["mesh",278,502,120,16],["ufo",278,572,18],["ember",250,480,28,28]],
-  // 固い守り：左下の火種と串の仕切りが入口。
-  [["coal",210,535,36,110],["coal",320,535,28,110],["coal",265,472,138,16],["negima",262,572,18,36],["ember",240,572,18,36],["ufo",285,572,18]],
-  // 高低二か所：二つの囲い。上の火種と下の台座を狙う。
-  [["grill",264,390,146,16],["negima",205,354,20,56],["coal",323,354,20,56],["mesh",264,318,138,16],["ufo",285,292,18],["ember",240,364,36,36],["negima",233,555,100,70],["ufo",233,502,18],["coal",205,284,20,52],["coal",323,284,20,52],["negima",264,250,138,16],["coal",173,534,20,112],["coal",293,534,20,112],["mesh",233,470,140,16]],
-  // 全部入り：前壁、宙の焼き網、上下の火種。右の支えを下段と共有。
-  [["coal",206,550,32,80],["coal",314,550,32,80],["mesh",260,502,140,16],["ufo",260,536,18],["ember",260,572,36,36],["grill",220,416,100,16],["negima",235,355,40,74],["coal",317,355,24,74],["mesh",276,310,82,16],["ufo",280,338,18],["ember",280,374,36,36],["coal",317,451,24,86],["mesh",280,400,120,16],["coal",155,520,24,140]],
-  // 双塔：高さの違う屋根を崩す。
-  [["coal",165,535,20,110],["negima",235,535,20,110],["mesh",200,472,90,16],["ufo",200,536,18],["ember",200,572,36,36],["coal",275,505,20,170],["negima",345,505,20,170],["mesh",310,412,90,16],["ufo",310,536,18],["ember",310,572,36,36]],
-  // 三段の宙砦：上下に狙いを切り替える。
-  [["grill",205,578,90,16],["coal",170,525,20,90],["negima",240,525,20,90],["mesh",205,472,90,16],["ufo",205,516,18],["ember",205,552,36,36],["grill",310,488,90,16],["coal",275,435,20,90],["negima",345,435,20,90],["mesh",310,382,90,16],["ufo",310,426,18],["ember",310,462,36,36],["grill",230,330,100,16]],
-  // 火種の回廊：長い連鎖で両端を崩す。
-  [["coal",165,535,20,110],["coal",345,535,20,110],["mesh",255,472,200,16],["ufo",215,536,18],["ufo",295,536,18],["ember",215,572,36,36],["ember",255,572,36,36],["ember",295,572,36,36]],
-  // 坂のつくね：留め具を抜いて下の砦へ。
-  [["coal",165,545,20,90],["negima",235,545,20,90],["mesh",200,492,90,16],["ufo",200,536,18],["ember",200,572,36,36],["coal",265,545,20,90],["negima",335,545,20,90],["mesh",300,492,90,16],["ufo",300,536,18],["ember",300,572,36,36],["grill",185,390,130,16,0.12],["negima",183,369.7,18,24,0.12],["tsukune",152.5,355.1,23]],
-  // 炭の箱：厚い屋根と横の入口。
-  [["coal",140,535,20,110],["negima",230,535,20,110],["coal",185,472,110,16],["ufo",185,536,18],["ember",185,572,36,36],["coal",265,545,20,90],["negima",335,545,20,90],["coal",300,492,90,16],["ufo",300,536,18],["ember",300,572,36,36]],
-  // 三方向の守り：分身で広く攻める。
-  [["coal",135,545,20,90],["negima",195,545,20,90],["mesh",165,492,80,16],["ember",165,572,36,36],["coal",275,545,20,90],["negima",335,545,20,90],["mesh",305,492,80,16],["ufo",305,536,18],["ember",305,572,36,36],["grill",235,470,110,16],["coal",190,417,20,90],["negima",280,417,20,90],["mesh",235,364,110,16],["ufo",235,408,18],["ember",235,444,36,36]],
-  // 二重屋根：重い落下で支えを崩す。
-  [["coal",145,525,20,130],["negima",225,525,20,130],["coal",185,452,100,16],["ufo",185,536,18],["ember",185,572,36,36],["coal",255,525,20,130],["negima",335,525,20,130],["coal",295,452,100,16],["ufo",295,536,18],["ember",295,572,36,36],["coal",185,436,100,16],["coal",295,436,100,16]],
-  // 奥の砦：前壁を加速で突破する。
-  [["coal",165,535,20,110],["negima",245,535,20,110],["coal",205,472,100,16],["ufo",205,536,18],["ember",205,572,36,36],["grill",290,408,110,16],["coal",245,355,20,90],["negima",335,355,20,90],["mesh",290,302,110,16],["ufo",290,346,18],["ember",290,382,36,36],["coal",125,515,28,150]],
-  // 三本の細塔：高さを変えた串と網を順に倒す。
-  [["coal",126.0,538.0,16,104],["negima",174.0,538.0,16,104],["mesh",150,478,64,16],["ufo",150,536,16],["ember",150,572,32,36],["coal",206.0,524.0,16,132],["negima",254.0,524.0,16,132],["mesh",230,450,64,16],["ufo",230,536,16],["ember",230,572,32,36],["coal",286.0,546.0,16,88],["negima",334.0,546.0,16,88],["mesh",310,494,64,16],["ufo",310,536,16],["ember",310,572,32,36]],
-  // 二段の火砦：下の火種から上の囲いへ連鎖。
-  [["coal",151.0,545.0,16,90],["negima",231.0,545.0,16,90],["mesh",191,492,96,16],["ufo",191,536,16],["ember",191,572,32,36],["grill",292,448,100,16],["coal",252.0,395.0,16,90],["negima",332.0,395.0,16,90],["mesh",292,342,96,16],["ufo",292,386,16],["ember",292,422,32,36]],
-  // 焼き台のはざま：二つの固定網の間へ撃ち込む。
-  [["coal",138.0,545.0,16,90],["negima",222.0,545.0,16,90],["mesh",180,492,100,16],["ufo",180,536,16],["ember",180,572,32,36],["grill",290,438,108,16],["grill",290,318,108,16],["coal",247,382,18,96],["negima",333,382,18,96],["ufo",290,392,18],["ember",290,420,36,20]],
+  // 宙の小砦：ぎゅーんで前壁を抜いて手下へ。
+  [["grill",245,424,108,12],["negima",204,388,18,60],["coal",286,388,18,60],["mesh",245,352,100,12],["ufo",245,400,18],["ember",219,400,12,36]],
+  // 串の見張り台：細い支えを折って手下を落とす。
+  [["grill",275,425,80,12],["negima",250,369,14,100],["negima",300,369,14,100],["mesh",275,313,70,12],["ufo",275,289,18]],
+  // 坂のつくね：留め具を抜いて下の高台へ転がす。
+  [["grill",165,326,80,12,0.45],["tsukune",168,300.796,18,0,0],["negima",194,299.481,16,60,0],["grill",194,333.481,16,8],["grill",205,424,40,12],["ufo",205,400,18],["coal",150,495,20,190]],
+  // 花火玉入門：棚から落として地上の小砦を割る。
+  [["grill",214,342,10,12],["grill",266,342,10,12],["mesh",240,330,64,12],["hanabi",240,311,14],["negima",224,572,16,36],["negima",296,572,16,36],["mesh",260,548,96,12],["ufo",260,572,18]],
+  // 離れた高台：ぶんしんで左右の手下を追う。
+  [["grill",165,465,80,12],["negima",140,434,14,50],["negima",190,434,14,50],["mesh",165,403,70,12],["ufo",165,379,18],["grill",300,430,80,12],["negima",275,399,14,50],["negima",325,399,14,50],["mesh",300,368,70,12],["ufo",300,344,18]],
+  // 上下二段の棚：上の手下を落として下段を巻き込む。
+  [["grill",270,500,140,12],["ufo",270,476,18],["negima",215,450,16,88],["negima",325,450,16,88],["mesh",270,400,126,12],["negima",240,349,16,90],["negima",300,349,16,90],["mesh",270,298,90,12],["ufo",270,274,18]],
+  // 地上の炭砦と空の見張り台：高低の守りを崩す。
+  [["coal",235,555,20,70],["coal",315,555,20,70],["mesh",275,514,110,12],["ufo",275,572,18],["negima",235,435,16,146],["negima",315,435,16,146],["mesh",275,356,100,12],["ufo",275,332,18]],
+  // 花火玉の坂：留め具を外して地上の砦へ送る。
+  [["grill",185,359,130,12,0.28],["hanabi",160,331.497,14,0,0],["negima",182,319.594,16,60,0],["grill",182,353.594,16,8],["coal",254.002,572,16,36],["coal",326.001,572,16,36],["mesh",290.004,548,100,12],["ufo",289.997,572.048,18],["coal",230,555,20,70]],
+  // 厚い炭壁：ぎゅーんで壁を抜いて奥の高台へ。
+  [["coal",205,515,30,150],["coal",205,365,30,150],["grill",287,420,108,12],["ufo",287,396,18],["negima",287,562,70,56]],
+  // 火種の空中回廊：屋根の上から連鎖を起こす。
+  [["grill",255,390,158,12],["negima",189,349,18,70],["coal",321,349,18,70],["mesh",255,308,150,12],["ufo",255,366,18],["ember",215,366,28,36],["ember",295,366,28,36],["ufo",255,284,18]],
+  // 高い屋根：ずしーんで上の手下ごと下段へ落とす。
+  [["grill",220,440,110,12],["coal",180,400,16,68],["coal",260,400,16,68],["mesh",220,360,100,12],["ufo",220,336,18],["ufo",220,416,18]],
+  // 三つの高台：分身で高さの違う網を崩す。
+  [["grill",145,470,80,12],["negima",120,439,14,50],["negima",170,439,14,50],["mesh",145,408,70,12],["ufo",145,384,18],["grill",235,450,80,12],["negima",210,419,14,50],["negima",260,419,14,50],["mesh",235,388,70,12],["ufo",235,364,18],["grill",310,415,70,12],["negima",285,384,14,50],["negima",335,384,14,50],["mesh",310,353,70,12],["ufo",310,329,18]],
+  // 花火玉の串塔：支えを折って隣の砦へ倒す。
+  [["grill",210,462,64,12],["negima",190,326,14,260],["negima",230,326,14,260],["mesh",210,190,64,12],["hanabi",210,171,14],["grill",300,444,80,12],["negima",275,413,14,50],["negima",325,413,14,50],["mesh",300,382,70,12],["ufo",300,358,18],["ember",300,426,18,24],["coal",252,420,16,40],["grill",252,446,24,12]],
+  // 坂のつくねと火種：転がる串団子から上下へ連鎖。
+  [["grill",195,305,145,12,0.28],["tsukune",155,266.444,20,0,0],["negima",183,263.006,16,60,0],["grill",183,297.006,16,8],["mesh",285,424,100,12],["ember",253,400.05,20,36],["ufo",292,399.9,18],["negima",220,555,18,70],["negima",330,555,18,70],["mesh",275,514,128,12],["ember",249,572,20,36],["ufo",289,572,18],["negima",245,469,14,78],["negima",320,469,14,78]],
+  // 地上の二段砦：上空の二つの花火玉を落とす。
+  [["coal",225,540,20,100],["coal",325,540,20,100],["mesh",275,484,120,12],["ufo",275,572,18],["negima",235,442,16,72],["negima",315,442,16,72],["mesh",275,400,110,12],["ufo",275,376,18],["grill",194,307,10,12],["grill",246,307,10,12],["mesh",220,295,64,12],["hanabi",220,276,14],["grill",279,307,10,12],["grill",331,307,10,12],["mesh",305,295,64,12],["hanabi",305,276,14]],
+  // 高低の見張り台：花火玉から火種へ連鎖させる。
+  [["grill",179,480,100,12],["negima",145,449,16,50],["negima",205,449,16,50],["mesh",175,418,90,12],["ufo",170,394,18],["ember",175,462,22,24],["grill",260,370,100,12],["ufo",255,346,18],["ember",233,346,8,36],["grill",136,332,10,12],["grill",204,332,10,12],["mesh",174,320,90,12],["hanabi",174,301,14],["negima",280,560,90,60],["ember",205,389,10,46],["coal",117,450,24,280]],
+  // 最後の砦：坂と花火玉で炭壁と高台を攻略。
+  [["grill",165,365,110,12,0.28],["hanabi",130,334.622,14],["negima",152,322.718,16,60],["grill",152,356.718,16,8],["coal",224.95,530.328,26,120],["coal",324.933,530.383,26,120],["mesh",275.064,464.946,126,12],["ufo",274.997,572.048,18],["ember",248,572.05,16,36],["coal",245.026,423.352,16,72],["coal",315.027,423.415,16,72],["mesh",279.886,381.516,100,12],["ufo",279.798,357.55,18]],
   // 親玉と二つの小砦。
   [["boss",275,420,34],["coal",190,550,16,80],["negima",250,550,16,80],["mesh",220,502,76,16],["ufo",220,572,18],["ember",220,536,28,36],["grill",320,570,70,16],["ufo",320,544,18]],
 ];
@@ -159,7 +159,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
       const hp = spec.hp * (durability[kind] ?? durability.structure);
       const opts = { isStatic: kind === "grill" || kind === "boss", angle, density: spec.density, friction: kind === "tsukune" ? 0.12 : 0.9, frictionStatic: 5, restitution: 0.06, frictionAir: 0.006 };
       // 手下は底を平らにして、わずかな傾きで勝手に転がるのを防ぐ。
-      const body = (kind === "ufo" || kind === "boss") ? Bodies.rectangle(x, y, w * 2, w * 2, { ...opts, chamfer: { radius: 7 } }) : h ? Bodies.rectangle(x, y, w, h, opts) : Bodies.circle(x, y, w, opts);
+      const body = (kind === "ufo" || kind === "boss") ? Bodies.rectangle(x, y, w * 2, w * 2, { ...opts, chamfer: { radius: 7 } }) : kind === "hanabi" ? Bodies.polygon(x, y, 12, w, opts) : h ? Bodies.rectangle(x, y, w, h, opts) : Bodies.circle(x, y, w, opts);
       body.plugin.shot = { kind, w, h, maxHp: hp, hp };
       state.pieces.push(body);
       Composite.add(engine.world, body);
@@ -186,22 +186,30 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
       for (const body of [a, b]) if (body.plugin.shot && (!body.isStatic || body.plugin.shot.kind === "boss")) pending.set(body, (pending.get(body) || 0) + damage);
     }
   });
-  function explode(x, y) {
-    state.shake = 0.3;
-    state.rings.push({ x, y, age: 0 });
+  function explode(x, y, radius = 52, power = 26) {
+    const scale = radius / 52;
+    state.shake = 0.3 * scale;
+    state.rings.push({ x, y, age: 0, radius: 78 * scale });
+    if (radius > 52) {
+      const colors = ["#ff5269", "#ffe678", "#8ee889", "#83e5f3"];
+      for (let i = 0; i < 48; i++) {
+        const angle = i * Math.PI * 2 / 48, speed = 110 + Math.random() * 130;
+        state.particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 0.65, color: colors[i % colors.length] });
+      }
+    }
     pop.add("どかーん！", x, y - 30, COLORS.beak, 23);
     for (const body of state.pieces) {
       if (body.isStatic && body.plugin.shot.kind !== "boss") continue;
       const dx = body.position.x - x, dy = body.position.y - y;
       const distance = Math.hypot(dx, dy);
-      if (distance > 52) continue;
-      const k = 1 - distance / 62;
+      if (distance > radius) continue;
+      const k = 1 - distance / (radius + 10);
       if (body.plugin.shot.kind !== "boss") {
         Sleeping.set(body, false);
-        Body.setVelocity(body, { x: body.velocity.x + dx / (distance || 1) * 5.5 * k,
-          y: body.velocity.y + dy / (distance || 1) * 5.5 * k - 2 * k });
+        Body.setVelocity(body, { x: body.velocity.x + dx / (distance || 1) * 5.5 * scale * k,
+          y: body.velocity.y + dy / (distance || 1) * 5.5 * scale * k - 2 * scale * k });
       }
-      body.plugin.shot.hp -= 26 * k;
+      body.plugin.shot.hp -= power * k;
     }
   }
   function activateSkill() {
@@ -256,6 +264,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
     state.pieces = state.pieces.filter((p) => p !== body);
     Composite.remove(engine.world, body);
     if (data.kind === "ember") explode(body.position.x, body.position.y);
+    if (data.kind === "hanabi") explode(body.position.x, body.position.y, 80, 45);
     for (const piece of state.pieces) Sleeping.set(piece, false);
     for (const bird of state.birds) Sleeping.set(bird, false);
     for (let i = 0; i < 7; i++) state.particles.push({ x: body.position.x, y: body.position.y,
@@ -597,7 +606,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
         if (e.age < 0) continue;
         ctx.globalAlpha = 1 - e.age / 0.45;
         ctx.strokeStyle = COLORS.beak; ctx.lineWidth = 6 * ctx.globalAlpha;
-        ctx.beginPath(); ctx.arc(e.x, e.y, 78 * e.age / 0.45, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(e.x, e.y, (e.radius ?? 78) * e.age / 0.45, 0, Math.PI * 2); ctx.stroke();
       }
       ctx.globalAlpha = 1;
       for (const e of state.dizzy) {
@@ -677,6 +686,16 @@ function drawPiece(ctx, body) {
     ctx.fillStyle = TYPES.ufo.color; ctx.beginPath(); ctx.ellipse(0, 6, 15, 6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.fillStyle = COLORS.beak;
     for (const x of [-9, 0, 9]) { ctx.beginPath(); ctx.arc(x, 6, 1.8, 0, Math.PI * 2); ctx.fill(); }
+  } else if (kind === "hanabi") {
+    ctx.beginPath(); ctx.arc(0, 0, w, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = "#f6dbad"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(0, 0, w * 0.45, w - 2, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-w + 2, 0); ctx.lineTo(w - 2, 0); ctx.stroke();
+    ctx.strokeStyle = "#715039"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, -w); ctx.quadraticCurveTo(0, -w - 7, 4, -w - 6); ctx.stroke();
+    const flicker = 1.5 + Math.sin(body.position.x + performance.now() / 70) * 0.6;
+    ctx.fillStyle = "#ffe678"; ctx.shadowColor = "#ff9e45"; ctx.shadowBlur = 7;
+    ctx.beginPath(); ctx.arc(4, -w - 6, flicker, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
   } else if (kind === "tsukune") {
     ctx.beginPath(); ctx.arc(0, 0, w, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.strokeStyle = "#62331d"; ctx.beginPath(); ctx.moveTo(-7, -4); ctx.lineTo(5, -6); ctx.moveTo(-4, 5); ctx.lineTo(7, 3); ctx.stroke();
