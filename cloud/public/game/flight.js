@@ -11,7 +11,7 @@
 //   ボス戦は 1秒に約5.5発 × 2 ＝ 11点/秒 ＋ たおしたとき 1回だけ
 //   （上限は余裕をみて200）
 
-import { buzz, COLORS, FONT, H, Popups, W, drawHud, drawMascot, drawSkewer, drawSpace, heart, star, view } from "./common.js";
+import { artRaster, drawArt, drawArtBackground, buzz, COLORS, FONT, H, Popups, W, drawHud, drawMascot, drawSkewer, drawSpace, heart, star, view } from "./common.js";
 
 export const META = {
   id: "flight",
@@ -511,10 +511,12 @@ export function createGame({ costume, up = {} }) {
       state.meteors = state.meteors.filter((m) => m.hp > 0 && m.y < view.y1 + 30 && m.x > -40);
     },
     draw(ctx) {
-      drawSpace(ctx, state.t, state.scroll);
-      ctx.fillStyle = stage().tint;
-      ctx.fillRect(view.x0, view.y0, view.x1 - view.x0, view.y1 - view.y0);
-      drawScenery(ctx, state.stageIndex % STAGES.length, state.scroll, state.t);
+      if (!drawArtBackground(ctx, ["flight-sky", "flight-moon", "flight-stardust", "flight-meteors"][state.stageIndex % STAGES.length], state.scroll)) {
+        drawSpace(ctx, state.t, state.scroll);
+        ctx.fillStyle = stage().tint;
+        ctx.fillRect(view.x0, view.y0, view.x1 - view.x0, view.y1 - view.y0);
+        drawScenery(ctx, state.stageIndex % STAGES.length, state.scroll, state.t);
+      }
 
       ctx.save();
       if (state.shake > 0) ctx.translate(Math.sin(state.t * 90) * 4, 0);
@@ -719,6 +721,8 @@ function drawScenery(ctx, i, scroll, t) {
 }
 
 function drawItem(ctx, kind, x, y, t) {
+  const name = { skewer: "skewer", gold: "golden-skewer", gun: "sauce", shield: "barrier", bomb: "tsukune-bomb", glide: "feather", small: "shiitake" }[kind];
+  if (drawArt(ctx, `flight-item-${name}`, x - 16, y - 16, 32, 32)) return;
   if (kind === "skewer") {
     drawSkewer(ctx, x, y, -Math.PI / 2, ["tare", "negi", "tare"], 0.85);
   } else if (kind === "gold") {
@@ -825,6 +829,7 @@ function drawSmallMeteor(ctx, m) {
   ctx.save();
   ctx.translate(m.x, m.y);
   ctx.rotate(m.rot);
+  if (drawArt(ctx, "flight-meteor-small", -11, -11, 22, 22)) { ctx.restore(); return; }
   ctx.fillStyle = "#6d6577";
   ctx.strokeStyle = "#3b3445";
   ctx.lineWidth = 2;
@@ -842,6 +847,21 @@ function drawSmallMeteor(ctx, m) {
 
 /** ボスの絵（種類ごと） */
 function drawBoss(ctx, b, t) {
+  const name = { ufo: "hungry-ufo", rock: "rolling-meteor", hole: "blackhole" }[b.type];
+  const w = b.type === "ufo" ? 120 : b.type === "rock" ? 104 : 68;
+  const h = b.type === "ufo" ? 68 : w;
+  const image = artRaster(`flight-boss-${name}`, w, h);
+  if (image) {
+    ctx.save(); ctx.translate(b.x, b.y);
+    if (b.type !== "ufo") ctx.rotate(t * (b.type === "hole" ? 2 : b.charge > 0 ? 6 : 0.8));
+    ctx.drawImage(image, -w / 2, -h / 2, w, h);
+    if (b.hit > 0 || b.charge > 0 || b.nextCharge < 0.8) {
+      ctx.globalAlpha = b.hit > 0 ? 0.75 : 0.4;
+      ctx.fillStyle = b.hit > 0 ? "#fff" : "#ff263f";
+      ctx.beginPath(); ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore(); return;
+  }
   if (b.type === "ufo") return drawUfo(ctx, b.x, b.y, 2.4, t, b.hit, true);
   if (b.type === "rock") {
     ctx.save();
@@ -901,6 +921,7 @@ function drawBoss(ctx, b, t) {
 
 /** UFO（boss のときは大きく、おなかをすかせた顔） */
 function drawUfo(ctx, x, y, s, t, hit, boss = false) {
+  if (!boss && drawArt(ctx, "flight-ufo-enemy", x - 29 * s, y - 24 * s, 58 * s, 48 * s)) return;
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(s, s);
@@ -945,6 +966,21 @@ function drawUfo(ctx, x, y, s, t, hit, boss = false) {
 /** いん石を積んだ柱（x は中心、y0〜y1 の範囲） */
 function drawRocks(ctx, x, y0, y1, seed) {
   if (y1 - y0 < 4) return;
+  const tile = artRaster("flight-meteor-tile", COL_W, 64);
+  const cap = artRaster("flight-meteor-cap", COL_W, 32);
+  if (tile && cap) {
+    ctx.save(); ctx.beginPath(); ctx.rect(x - COL_W / 2, y0, COL_W, y1 - y0); ctx.clip();
+    const ch = Math.min(32, y1 - y0), upper = y0 < 0;
+    const start = upper ? y0 : y0 + ch, end = upper ? y1 - ch : y1;
+    for (let y = start; y < end; y += 64) {
+      const height = Math.min(64, end - y);
+      ctx.drawImage(tile, 0, 0, tile.width, tile.height * height / 64, x - COL_W / 2, y, COL_W, height);
+    }
+    ctx.translate(x, upper ? y1 : y0);
+    if (upper) ctx.rotate(Math.PI);
+    ctx.drawImage(cap, -COL_W / 2, 0, COL_W, ch);
+    ctx.restore(); return;
+  }
   ctx.save();
   ctx.beginPath();
   ctx.rect(x - COL_W / 2 - 6, y0, COL_W + 12, y1 - y0);

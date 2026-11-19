@@ -61,3 +61,6 @@ next-env.d.ts
 /demo-out/
 .wrangler/
 /.demo-build/
+
+# デザイン依頼で受け取った公式原本（公開しない）
+/docs/design-brief/received/originals/

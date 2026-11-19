@@ -1,6 +1,6 @@
 // ミニゲームの画面の切り替え（えらぶ → あそぶ → 結果・ランキング）と、ガチャ・ショップ・きせかえ
 
-import { COSTUMES, H, W, drawMascot, mascotReady, view, fetchRanking, loadSave, startSession, submitScore, writeSave } from "./common.js";
+import { COSTUMES, H, W, drawMascot, gameArtReady, mascotReady, view, fetchRanking, loadSave, startSession, submitScore, writeSave } from "./common.js";
 import { GACHA_COST, GACHA_REFUND, UPGRADES, buy, level, nextCost, pull } from "./shop.js";
 import * as flight from "./flight.js";
 import * as shot from "./shot.js";
@@ -710,4 +710,8 @@ show("hub");
 mascotReady.then(() => {
   if (!$("hub").hidden) renderHub();
   if (!$("dress").hidden) renderDress();
+});
+
+gameArtReady.then(() => {
+  if (!$("play").hidden && current === shot) { renderShotHowto(); fit(); }
 });

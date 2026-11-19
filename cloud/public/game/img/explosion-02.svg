@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs>
+ <linearGradient id="pink" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f58dc3"/><stop offset="1" stop-color="#c5589d"/></linearGradient>
+ <linearGradient id="lilac" x1="0" y1="0" x2="0.6" y2="1"><stop stop-color="#f7ebff"/><stop offset="0.55" stop-color="#c9b3e6"/><stop offset="1" stop-color="#9075b8"/></linearGradient>
+ <linearGradient id="purple" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#9568c8"/><stop offset="1" stop-color="#5a3893"/></linearGradient>
+ <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#baffff"/><stop offset="1" stop-color="#51d7ea"/></linearGradient>
+ <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#a85d4a"/><stop offset=".32" stop-color="#e7aa7b"/><stop offset=".72" stop-color="#bb7554"/><stop offset="1" stop-color="#8e5360"/></linearGradient>
+ <linearGradient id="metal" x1="0" y1="0" x2="1" y2=".7"><stop stop-color="#f3faff"/><stop offset=".5" stop-color="#b7cbdb"/><stop offset="1" stop-color="#8195b3"/></linearGradient>
+ <radialGradient id="glow"><stop stop-color="#fff5c0"/><stop offset=".58" stop-color="#ffd56c"/><stop offset="1" stop-color="#ee7455"/></radialGradient>
+ <pattern id="grain" width="22" height="12" patternUnits="userSpaceOnUse"><path d="M5 1v8 M17 4v5" stroke="#8c4c5d" stroke-opacity=".23" stroke-width="1.5"/></pattern>
+ <pattern id="grill" width="13" height="13" patternUnits="userSpaceOnUse"><rect width="13" height="13" fill="#bdd1df"/><path d="M-3 -3L16 16 M-3 10L3 16 M10 -3L16 3" stroke="#55627f" stroke-width="2.2"/></pattern>
+ <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="3" stdDeviation="2" flood-color="#171034" flood-opacity=".26"/></filter>
+ </defs><polygon points="71.0,50.0 64.0,54.5 67.0,62.3 58.6,61.9 56.5,70.0 50.0,64.7 43.5,70.0 41.4,61.9 33.0,62.3 36.0,54.5 29.0,50.0 36.0,45.5 33.0,37.7 41.4,38.1 43.5,30.0 50.0,35.3 56.5,30.0 58.6,38.1 67.0,37.7 64.0,45.5" fill="#ffe7a3" opacity="0.8200000000000001"/><circle cx="50" cy="50" r="13" fill="#fff5db" opacity=".95"/><circle cx="74.0" cy="50.0" r="3" fill="#80f7fd"/><circle cx="67.0" cy="67.0" r="3" fill="#80f7fd"/><circle cx="50.0" cy="74.0" r="3" fill="#80f7fd"/><circle cx="33.0" cy="67.0" r="3" fill="#80f7fd"/><circle cx="26.0" cy="50.0" r="3" fill="#80f7fd"/><circle cx="33.0" cy="33.0" r="3" fill="#80f7fd"/><circle cx="50.0" cy="26.0" r="3" fill="#80f7fd"/><circle cx="67.0" cy="33.0" r="3" fill="#80f7fd"/></svg>

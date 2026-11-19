@@ -1,0 +1,326 @@
+[
+  {
+    "file": "sprites/common/ability-blast.svg",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "gameRenderSize": [
+      40,
+      40
+    ]
+  },
+  {
+    "file": "sprites/common/ability-clone.svg",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "gameRenderSize": [
+      40,
+      40
+    ]
+  },
+  {
+    "file": "sprites/common/ability-dash.svg",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "gameRenderSize": [
+      40,
+      40
+    ]
+  },
+  {
+    "file": "sprites/common/ability-drop.svg",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "gameRenderSize": [
+      40,
+      40
+    ]
+  },
+  {
+    "file": "sprites/common/ui-button-primary.svg",
+    "sourceWidth": 280,
+    "sourceHeight": 70
+  },
+  {
+    "file": "sprites/common/ui-button-secondary.svg",
+    "sourceWidth": 280,
+    "sourceHeight": 70
+  },
+  {
+    "file": "sprites/common/ui-card.svg",
+    "sourceWidth": 300,
+    "sourceHeight": 200
+  },
+  {
+    "file": "sprites/common/ui-gacha-capsule.svg",
+    "sourceWidth": 64,
+    "sourceHeight": 64
+  },
+  {
+    "file": "sprites/common/ui-heart.svg",
+    "sourceWidth": 64,
+    "sourceHeight": 64
+  },
+  {
+    "file": "sprites/common/ui-pause.svg",
+    "sourceWidth": 64,
+    "sourceHeight": 64
+  },
+  {
+    "file": "sprites/common/ui-star.svg",
+    "sourceWidth": 64,
+    "sourceHeight": 64
+  },
+  {
+    "file": "sprites/common/ui-trophy.svg",
+    "sourceWidth": 64,
+    "sourceHeight": 64
+  },
+  {
+    "file": "sprites/effects/clear-burst.svg",
+    "sourceWidth": 160,
+    "sourceHeight": 160
+  },
+  {
+    "file": "sprites/effects/explosion-01.svg",
+    "sourceWidth": 100,
+    "sourceHeight": 100
+  },
+  {
+    "file": "sprites/effects/explosion-02.svg",
+    "sourceWidth": 100,
+    "sourceHeight": 100
+  },
+  {
+    "file": "sprites/effects/explosion-03.svg",
+    "sourceWidth": 100,
+    "sourceHeight": 100
+  },
+  {
+    "file": "sprites/effects/explosion-04.svg",
+    "sourceWidth": 100,
+    "sourceHeight": 100
+  },
+  {
+    "file": "sprites/effects/gacha-reveal.svg",
+    "sourceWidth": 160,
+    "sourceHeight": 160
+  },
+  {
+    "file": "sprites/flight/flight-boss-blackhole.svg",
+    "sourceWidth": 128,
+    "sourceHeight": 128
+  },
+  {
+    "file": "sprites/flight/flight-boss-hungry-ufo.svg",
+    "sourceWidth": 150,
+    "sourceHeight": 96
+  },
+  {
+    "file": "sprites/flight/flight-boss-rolling-meteor.svg",
+    "sourceWidth": 116,
+    "sourceHeight": 116
+  },
+  {
+    "file": "sprites/flight/flight-item-barrier.svg",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "gameRenderSize": [
+      32,
+      32
+    ]
+  },
+  {
+    "file": "sprites/flight/flight-item-feather.svg",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "gameRenderSize": [
+      32,
+      32
+    ]
+  },
+  {
+    "file": "sprites/flight/flight-item-golden-skewer.svg",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "gameRenderSize": [
+      32,
+      32
+    ]
+  },
+  {
+    "file": "sprites/flight/flight-item-sauce.svg",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "gameRenderSize": [
+      32,
+      32
+    ]
+  },
+  {
+    "file": "sprites/flight/flight-item-shiitake.svg",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "gameRenderSize": [
+      32,
+      32
+    ]
+  },
+  {
+    "file": "sprites/flight/flight-item-skewer.svg",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "gameRenderSize": [
+      32,
+      32
+    ]
+  },
+  {
+    "file": "sprites/flight/flight-item-tsukune-bomb.svg",
+    "sourceWidth": 64,
+    "sourceHeight": 64,
+    "gameRenderSize": [
+      32,
+      32
+    ]
+  },
+  {
+    "file": "sprites/flight/flight-meteor-cap.svg",
+    "sourceWidth": 58,
+    "sourceHeight": 32
+  },
+  {
+    "file": "sprites/flight/flight-meteor-column.svg",
+    "sourceWidth": 58,
+    "sourceHeight": 192
+  },
+  {
+    "file": "sprites/flight/flight-meteor-small.svg",
+    "sourceWidth": 68,
+    "sourceHeight": 68
+  },
+  {
+    "file": "sprites/flight/flight-meteor-tile.svg",
+    "sourceWidth": 58,
+    "sourceHeight": 64,
+    "scaleHint": "repeat_vertical_64px"
+  },
+  {
+    "file": "sprites/flight/flight-ufo-enemy.svg",
+    "sourceWidth": 100,
+    "sourceHeight": 84,
+    "gameRenderSize": [
+      58,
+      48
+    ]
+  },
+  {
+    "file": "sprites/shot/shot-boss-angry.svg",
+    "sourceWidth": 136,
+    "sourceHeight": 136,
+    "gameRenderSize": [
+      68,
+      68
+    ]
+  },
+  {
+    "file": "sprites/shot/shot-boss-hit.svg",
+    "sourceWidth": 136,
+    "sourceHeight": 136,
+    "gameRenderSize": [
+      68,
+      68
+    ]
+  },
+  {
+    "file": "sprites/shot/shot-boss-idle.svg",
+    "sourceWidth": 136,
+    "sourceHeight": 136,
+    "gameRenderSize": [
+      68,
+      68
+    ]
+  },
+  {
+    "file": "sprites/shot/shot-charcoal-crack.svg",
+    "sourceWidth": 48,
+    "sourceHeight": 48
+  },
+  {
+    "file": "sprites/shot/shot-charcoal.svg",
+    "sourceWidth": 48,
+    "sourceHeight": 48
+  },
+  {
+    "file": "sprites/shot/shot-ember.svg",
+    "sourceWidth": 36,
+    "sourceHeight": 44
+  },
+  {
+    "file": "sprites/shot/shot-firework.svg",
+    "sourceWidth": 40,
+    "sourceHeight": 48,
+    "gameRenderSize": [
+      28,
+      34
+    ]
+  },
+  {
+    "file": "sprites/shot/shot-grill-base.svg",
+    "sourceWidth": 90,
+    "sourceHeight": 58
+  },
+  {
+    "file": "sprites/shot/shot-grill-mesh-crack.svg",
+    "sourceWidth": 230,
+    "sourceHeight": 30,
+    "scaleHint": "repeat_center_keep_ends"
+  },
+  {
+    "file": "sprites/shot/shot-grill-mesh.svg",
+    "sourceWidth": 230,
+    "sourceHeight": 30,
+    "scaleHint": "repeat_center_keep_ends"
+  },
+  {
+    "file": "sprites/shot/shot-negima-beam-crack.svg",
+    "sourceWidth": 230,
+    "sourceHeight": 28,
+    "scaleHint": "repeat_center_keep_ends"
+  },
+  {
+    "file": "sprites/shot/shot-negima-beam.svg",
+    "sourceWidth": 230,
+    "sourceHeight": 28,
+    "scaleHint": "repeat_center_keep_ends"
+  },
+  {
+    "file": "sprites/shot/shot-negima-post-crack.svg",
+    "sourceWidth": 28,
+    "sourceHeight": 170,
+    "scaleHint": "repeat_center_keep_ends"
+  },
+  {
+    "file": "sprites/shot/shot-negima-post.svg",
+    "sourceWidth": 28,
+    "sourceHeight": 170,
+    "scaleHint": "repeat_center_keep_ends"
+  },
+  {
+    "file": "sprites/shot/shot-tsukune.svg",
+    "sourceWidth": 46,
+    "sourceHeight": 46,
+    "gameRenderSize": [
+      46,
+      46
+    ]
+  },
+  {
+    "file": "sprites/shot/shot-ufo.svg",
+    "sourceWidth": 108,
+    "sourceHeight": 108,
+    "gameRenderSize": [
+      36,
+      36
+    ]
+  }
+]

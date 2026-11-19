@@ -1,5 +1,5 @@
 // とりこショット：20の砦を順にクリアして★を集めるステージ制ゲーム。
-import { buzz, COLORS, FONT, Popups, W, STAGE_COUNT, drawHud, drawMascot, drawSkewer, star, view } from "./common.js";
+import { drawArt, drawArtBackground, buzz, COLORS, FONT, Popups, W, STAGE_COUNT, drawHud, drawMascot, drawSkewer, star, view } from "./common.js";
 
 export { STAGE_COUNT } from "./common.js";
 
@@ -100,8 +100,8 @@ export const SKILLS = [
   { id: "drop", name: "ずしーん", color: "#c5afff", stage: 3 },
   { id: "split", name: "ぶんしん", color: "#ffabd4", stage: 5 },
 ];
-// とりこの丸い顔とくちばしを組み合わせた、技ごとの小さな紋章。
 export function drawSkillIcon(ctx, id, x, y, size = 24) {
+  if (drawArt(ctx, `ability-${({ boom: "blast", dash: "dash", drop: "drop", split: "clone" })[id]}`, x - size / 2, y - size / 2, size, size)) return;
   ctx.save(); ctx.translate(x, y); ctx.scale(size / 24, size / 24);
   ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.lineJoin = "round";
   const face = (x, y, r) => {
@@ -192,7 +192,7 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
     buzz(radius > 52 ? [60, 30, 60] : 40);
     const scale = radius / 52;
     state.shake = 0.3 * scale;
-    state.rings.push({ x, y, age: 0, radius: 78 * scale });
+    state.rings.push({ x, y, age: 0, radius: 78 * scale, explosion: true });
     if (radius > 52) {
       const colors = ["#ff5269", "#ffe678", "#8ee889", "#83e5f3"];
       for (let i = 0; i < 48; i++) {
@@ -623,6 +623,10 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
       ctx.globalAlpha = 1;
       for (const e of state.rings) {
         if (e.age < 0) continue;
+        if (e.explosion && e.age < 0.2) {
+          const size = (e.radius ?? 78) * 2;
+          drawArt(ctx, `explosion-0${Math.min(4, Math.floor(e.age / 0.05) + 1)}`, e.x - size / 2, e.y - size / 2, size, size);
+        }
         ctx.globalAlpha = 1 - e.age / 0.45;
         ctx.strokeStyle = COLORS.beak; ctx.lineWidth = 6 * ctx.globalAlpha;
         ctx.beginPath(); ctx.arc(e.x, e.y, (e.radius ?? 78) * e.age / 0.45, 0, Math.PI * 2); ctx.stroke();
@@ -686,6 +690,15 @@ export function createGame({ costume, stage = 0, skills = ["boom"], endingOnly =
 function drawPiece(ctx, body) {
   const { kind, w, h, hp, maxHp } = body.plugin.shot;
   ctx.save(); ctx.translate(body.position.x, body.position.y); ctx.rotate(body.angle);
+  const crack = hp < maxHp / 2 ? "-crack" : "";
+  const name = kind === "boss" ? `shot-boss-${body.plugin.shot.flash > 0 ? "hit" : crack ? "angry" : "idle"}`
+    : kind === "negima" ? `shot-negima-${h > w ? "post" : "beam"}${crack}`
+    : kind === "coal" ? `shot-charcoal${crack}`
+    : kind === "mesh" || kind === "grill" ? `shot-grill-mesh${kind === "mesh" ? crack : ""}`
+    : `shot-${kind === "hanabi" ? "firework" : kind}`;
+  const round = ["ufo", "boss", "tsukune", "hanabi"].includes(kind);
+  const aw = round ? w * 2 : w, ah = round ? w * 2 : h;
+  if (drawArt(ctx, name, -aw / 2, -ah / 2, aw, ah, ["negima", "coal", "mesh", "grill"].includes(kind))) { ctx.restore(); return; }
   ctx.fillStyle = TYPES[kind].color; ctx.strokeStyle = "#382b41"; ctx.lineWidth = 1.5;
   if (kind === "boss") {
     const flash = body.plugin.shot.flash || 0;
@@ -748,6 +761,16 @@ function festivalBackground(stage) {
   return (ctx, t) => {
     const { x0, y0, x1, y1 } = view;
     const width = x1 - x0, height = y1 - y0;
+    if (drawArtBackground(ctx, "shot-festival-night")) {
+      ctx.fillStyle = stage === STAGE_COUNT - 1 ? "rgba(90,0,22,0.48)" : `rgba(5,9,30,${Math.min(stage / 7, 1) * 0.4})`;
+      ctx.fillRect(x0, y0, width, height);
+      const top = ctx.createLinearGradient(0, y0, 0, 190);
+      top.addColorStop(0, "rgba(10,8,25,0.4)"); top.addColorStop(0.6, "rgba(10,8,25,0.25)"); top.addColorStop(1, "rgba(10,8,25,0)");
+      ctx.fillStyle = top; ctx.fillRect(x0, y0, width, Math.max(0, 190 - y0));
+      ctx.fillStyle = "#38302e"; ctx.fillRect(x0, FLOOR, width, Math.max(0, y1 - FLOOR));
+      ctx.fillStyle = "#536044"; ctx.fillRect(x0, FLOOR, width, 4);
+      return;
+    }
     const key = [x0, y0, x1, y1].join();
     if (key !== bounds) {
       bounds = key;

@@ -8,6 +8,78 @@ export const H = 640;
 /** 実際に見えている範囲（論理座標）。縦長のスマホでは上下が 0〜H より広くなる。app.js が画面に合わせて書きかえる */
 export const view = { x0: 0, y0: 0, x1: W, y1: H };
 
+// 未読込時は手描きへ戻し、SVGは表示寸法と端末解像度でキャッシュする。
+const artImages = new Map();
+const artCache = new Map();
+export function preloadArt(names) {
+  if (typeof Image === "undefined") return Promise.resolve();
+  return Promise.all(names.map((name) => {
+    if (artImages.has(name)) return artImages.get(name).ready;
+    const img = new Image();
+    const entry = { img, ready: null };
+    entry.ready = new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
+    artImages.set(name, entry);
+    img.src = `/game/img/${name}.${name.startsWith("background:") ? "webp" : "svg"}`.replace("background:", "");
+    return entry.ready;
+  }));
+}
+export function artRaster(name, w, h, repeat = false) {
+  const img = artImages.get(name)?.img;
+  if (!img?.complete || !img.naturalWidth || typeof document === "undefined") return null;
+  const dpr = Math.min(3, Math.max(1, globalThis.devicePixelRatio || 1));
+  const pw = Math.max(1, Math.ceil(w * dpr)), ph = Math.max(1, Math.ceil(h * dpr));
+  const key = `${name}:${pw}:${ph}:${repeat}`;
+  if (artCache.has(key)) return artCache.get(key);
+  const canvas = document.createElement("canvas"); canvas.width = pw; canvas.height = ph;
+  const c = canvas.getContext("2d");
+  if (!c) return null;
+  c.scale(pw / w, ph / h);
+  if (!repeat) c.drawImage(img, 0, 0, w, h);
+  else {
+    const sw = img.naturalWidth, sh = img.naturalHeight;
+    const edge = 12, ex = Math.min(edge, w / 2), ey = Math.min(edge, h / 2);
+    const xs = [0, edge, sw - edge, sw], ys = [0, edge, sh - edge, sh];
+    const dx = [0, ex, w - ex, w], dy = [0, ey, h - ey, h];
+    for (let row = 0; row < 3; row++) for (let col = 0; col < 3; col++) {
+      const tw = col === 1 ? sw - 2 * edge : dx[col + 1] - dx[col];
+      const th = row === 1 ? sh - 2 * edge : dy[row + 1] - dy[row];
+      if (tw <= 0 || th <= 0) continue;
+      for (let y = dy[row]; y < dy[row + 1]; y += th) for (let x = dx[col]; x < dx[col + 1]; x += tw) {
+        const dw = Math.min(tw, dx[col + 1] - x), dh = Math.min(th, dy[row + 1] - y);
+        c.drawImage(img, xs[col], ys[row], (xs[col + 1] - xs[col]) * dw / tw, (ys[row + 1] - ys[row]) * dh / th, x, y, dw, dh);
+      }
+    }
+  }
+  if (artCache.size >= 192) artCache.delete(artCache.keys().next().value);
+  artCache.set(key, canvas);
+  return canvas;
+}
+export function drawArt(ctx, name, x, y, w, h, repeat = false) {
+  const raster = artRaster(name, w, h, repeat);
+  if (!raster) return false;
+  ctx.drawImage(raster, x, y, w, h);
+  return true;
+}
+export function drawArtBackground(ctx, name, scroll = null) {
+  const img = artImages.get(`background:${name}`)?.img;
+  if (!img?.complete || !img.naturalWidth) return false;
+  const { x0, y0, x1, y1 } = view;
+  const w = x1 - x0, h = y1 - y0;
+  const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+  const bw = img.naturalWidth * scale, bh = img.naturalHeight * scale;
+  if (scroll === null) ctx.drawImage(img, x0 + (w - bw) / 2, y0 + (h - bh) / 2, bw, bh);
+  else {
+    const offset = ((scroll * 0.08 % (2 * bw)) + 2 * bw) % (2 * bw);
+    for (let i = -1; i < Math.ceil(w / bw) + 3; i++) {
+      ctx.save(); ctx.translate(x0 + i * bw - offset, y0 + (h - bh) / 2);
+      if (i % 2) { ctx.translate(bw, 0); ctx.scale(-1, 1); }
+      ctx.drawImage(img, 0, 0, bw, bh); ctx.restore();
+    }
+  }
+  return true;
+}
+export const gameArtReady = preloadArt(["flight-item-sauce", "flight-boss-blackhole", "shot-ufo", "ability-blast", "shot-charcoal", "shot-charcoal-crack", "shot-grill-mesh", "flight-meteor-cap", "flight-item-shiitake", "shot-negima-post", "explosion-04", "flight-meteor-tile", "flight-item-feather", "flight-boss-rolling-meteor", "explosion-01", "shot-boss-hit", "shot-firework", "explosion-03", "explosion-02", "flight-item-tsukune-bomb", "flight-item-barrier", "shot-ember", "flight-meteor-small", "flight-ufo-enemy", "flight-item-skewer", "shot-tsukune", "shot-grill-mesh-crack", "ability-dash", "shot-negima-beam", "shot-negima-post-crack", "shot-boss-idle", "ability-clone", "flight-boss-hungry-ufo", "flight-item-golden-skewer", "ability-drop", "shot-boss-angry", "shot-negima-beam-crack", "background:flight-meteors", "background:flight-stardust", "background:flight-moon", "background:flight-sky", "background:shot-festival-night"]);
+
 export const COLORS = {
   space900: "#2a1f5c",
   space700: "#3d2f7d",
@@ -65,7 +137,7 @@ export function drawSpace(ctx, t, scroll = 0) {
 }
 
 // ── マスコット（背景を抜いた画像。素材は切り抜きと縮小のみ） ──
-const mascotImg = new Image();
+const mascotImg = typeof Image === "undefined" ? {} : new Image();
 /** マスコットの画像が読めたら解決する（一覧やきせかえの絵を描き直すため） */
 export const mascotReady = new Promise((resolve) => {
   mascotImg.onload = resolve;
