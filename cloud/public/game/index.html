@@ -12,10 +12,11 @@
 </head>
 <body>
 <main id="hub" class="view" hidden>
-  <header class="top">
-    <a class="back" href="/">← 呼び出し状況</a>
-    <span class="logo"><img src="/brand/logo.webp" alt="やきとり TORI♡CO" width="480" height="477"></span>
+  <header class="top brand">
+    <span class="logo"><img src="/brand/logo.webp" alt="" width="480" height="477"></span>
+    <div><b>やきとり TORI♡CO</b><p>津田沼祭 11/21・22</p></div>
   </header>
+  <a class="back status-back" href="/">← 呼び出し状況</a>
   <a id="my-order" class="order" href="/" hidden>
     <span class="label">あなたの番号</span>
     <b id="my-order-number"></b>
@@ -29,13 +30,15 @@
       <p id="owned-count" class="small"></p>
     </div>
   </section>
+  <h1 class="title">どっちで あそぶ？</h1>
+  <ul id="games" class="games"></ul>
   <div class="menu3">
-    <button class="btn cyan" type="button" data-go="gacha">ガチャ</button>
-    <button class="btn ghost" type="button" data-go="shop">ショップ</button>
-    <button class="btn ghost" type="button" data-go="dress">きせかえ</button>
+    <button class="btn ghost" type="button" data-go="gacha"><img src="/game/img/ui-gacha-capsule.svg" alt="">ガチャ</button>
+    <button class="btn ghost" type="button" data-go="shop"><img src="/game/img/ui-star.svg" alt="">ショップ</button>
+    <button class="btn ghost" type="button" data-go="dress"><img src="/game/img/ui-heart.svg" alt="">きせかえ</button>
   </div>
   <button id="hub-ranking" class="card hub-ranking" type="button" hidden>
-    <svg class="trophy" viewBox="0 0 32 32" aria-hidden="true"><path d="M9 5H4v5c0 5 4 7 8 7m11-12h5v5c0 5-4 7-8 7" fill="none" stroke="currentColor" stroke-width="3"/><path d="M8 3h16v8c0 6-4 10-8 10s-8-4-8-10z" fill="var(--beak)" stroke="currentColor" stroke-width="2"/><path d="M16 21v6m-6 2h12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+    <img class="trophy" src="/game/img/ui-trophy.svg" alt="">
     <span class="hub-ranking-content">
       <span class="hub-ranking-title">ランキング</span>
       <span class="hub-ranking-label">今日の トップ3</span>
@@ -45,8 +48,6 @@
     </span>
     <span class="hub-ranking-arrow" aria-hidden="true">›</span>
   </button>
-  <h1 class="title">ミニゲーム</h1>
-  <ul id="games" class="games"></ul>
   <p class="small center">あそぶと やきとりポイントが たまるよ。ガチャで きせかえ、ショップで ゲームを つよく しよう</p>
 </main>
 
@@ -74,11 +75,14 @@
     </div>
     </template>
   </div>
+  <h1 class="title">とりこショット</h1>
+  <p class="small center">星を あつめて 20面を めざそう</p>
   <p id="shot-total" class="center"></p>
   <div class="shot-route">
     <svg aria-hidden="true" preserveAspectRatio="none"><path/></svg>
     <div id="shot-stages" class="shot-stages" aria-label="ステージマップ"></div>
   </div>
+  <aside class="shot-next-panel"><b id="shot-next-label"></b><p id="shot-next-note" class="small"></p><button id="shot-map-play" class="btn pink" type="button"></button></aside>
 </main>
 <main id="shot-result" class="view" hidden>
   <section class="card center">
@@ -123,7 +127,7 @@
 
 <main id="play" class="view play" hidden>
   <canvas id="stage" aria-label="ゲーム画面"></canvas>
-  <button id="pause" type="button" aria-label="いちじていし" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="3" width="4" height="14" rx="1.5" fill="currentColor"/><rect x="12" y="3" width="4" height="14" rx="1.5" fill="currentColor"/></svg></button>
+  <button id="pause" type="button" aria-label="いちじていし" hidden><img src="/game/img/ui-pause.svg" alt=""></button>
   <div id="ready" class="overlay">
     <div class="card">
       <h2 id="ready-title"></h2>
@@ -138,8 +142,10 @@
 </main>
 
 <main id="result" class="view" hidden>
+  <header class="top"><button class="back" type="button" data-go="hub">← ゲームをえらぶ</button></header>
   <section class="card center">
     <p id="result-game" class="label"></p>
+    <p class="result-label">スコア</p>
     <p id="result-score" class="score"></p>
     <p id="result-best" class="best"></p>
     <p id="result-points" class="small"></p>
@@ -148,7 +154,7 @@
   <section class="card">
     <h2>ランキングに のせる</h2>
     <form id="submit-form" class="row">
-      <input id="name" maxlength="10" placeholder="なまえ（10もじまで）" autocomplete="nickname" enterkeyhint="send">
+      <input aria-label="ランキングに のせる なまえ" id="name" maxlength="10" placeholder="なまえ（10もじまで）" autocomplete="nickname" enterkeyhint="send">
       <button class="btn pink" type="submit">のせる</button>
     </form>
     <p id="submit-msg" class="small" aria-live="polite"></p>

@@ -205,3 +205,89 @@ button { cursor: pointer; touch-action: manipulation; }
 .ready-skill canvas { width: 36px; height: 36px; flex-shrink: 0; }
 
 #vibration-toggle { padding: 6px 12px; margin: 4px auto 12px; border: 1px solid currentColor; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+
+/* 片手でえらべる共通の操作部。 */
+.view:not(.play) { gap: 1.125rem; padding-top: max(1rem, env(safe-area-inset-top)); }
+button, .btn, a.back { transition: transform 180ms ease; }
+button:active, .btn:active, .hub-ranking:active { transform: scale(.96); }
+:focus-visible { outline: 3px solid var(--cyan); outline-offset: 4px; }
+.card input:focus-visible { outline-color: var(--magenta); }
+.back { min-width: 44px; padding: .25rem .5rem; border-radius: 14px; background: #ffffff0d; }
+.brand { justify-content: flex-start; gap: .875rem; }
+.brand .logo { width: 4rem; flex-shrink: 0; }
+.brand b { font-size: 1.125rem; }
+.brand p { margin: .25rem 0 0; font-size: .75rem; color: var(--lav-300); }
+.status-back { align-self: flex-start; font-size: .875rem; }
+#hub { gap: .875rem; }
+#hub .title { text-align: left; font-size: 1.5rem; }
+#hub .me { padding: .625rem .875rem; gap: .5rem; background: #fffaff; }
+.me canvas { width: 5.5rem; height: 5.5rem; }
+.me .label { font-size: .875rem; }
+.me .small { font-size: .75rem; line-height: 1.5; }
+.points { font-size: 1.875rem; }
+.games { gap: 1rem; }
+.game { position: relative; overflow: hidden; gap: .25rem .5rem; min-height: 164px; padding: 1rem; color: #fff; border: 1px solid var(--lav-300); background: linear-gradient(90deg, #2a1f5ccc, #2a1f5c66), url('/game/img/flight-sky.webp') center 40% / cover; }
+.game-shot { background-image: linear-gradient(90deg, #2a1f5cee, #2a1f5c88), url('/game/img/shot-festival-night.webp'); background-position: center 65%; }
+.game h2 { grid-column: 1 / -1; font-size: clamp(1.375rem, 6vw, 1.625rem); }
+.game .best { grid-column: 1 / -1; color: var(--cyan); font-size: .875rem; }
+.game p:last-child { grid-row: 2; font-size: .8125rem; }
+.game .btn { grid-row: 4; grid-column: 2; min-height: 44px; min-width: 7.5rem; border-radius: 999px; background: var(--cyan); color: var(--space-900); box-shadow: 0 3px 0 #3bb9c2; }
+.game .rank-link { grid-row: 4; min-height: 44px; padding: .3rem .5rem; border: 1px solid #c9b3e666; color: #fff; background: #2a1f5c99; font-size: .75rem; }
+.menu3 .btn { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: .25rem; min-height: 96px; border: 0; border-radius: 24px; font-size: 1rem; }
+.menu3 img { width: 36px; height: 36px; }
+.hub-ranking { border: 1px solid var(--lav-300); padding: .875rem; }
+.hub-ranking-title { font-size: 1.125rem; }
+.hub-ranking .trophy { align-self: flex-start; width: 2.25rem; height: 2.25rem; }
+.btn { min-height: 56px; }
+.card h2::before { content: none; }
+.order { border: 1px solid var(--lav-300); font-size: .8125rem; }
+.order.done { background: #fff; color: var(--ink); border: 3px solid var(--cyan); }
+#result { background: linear-gradient(#2a1f5c66, #2a1f5caa), url('/game/img/flight-sky.webp') center / cover; min-height: 100dvh; }
+#result > .card:first-of-type { padding: 1.5rem 1rem; }
+#result-game { font-size: 1.5rem; margin-bottom: 1rem; }
+.result-label { margin: 0; font-size: 1.125rem; }
+#result-score { font-size: clamp(4rem, 23vw, 6rem); color: var(--magenta); background: none; overflow-wrap: anywhere; }
+#result-score small { display: block; font-size: 1.375rem; margin: .25rem 0 .875rem; }
+#result-best { background: #80f7fd40; border-radius: 18px 18px 0 0; padding: .75rem .5rem .25rem; margin: 0; }
+#result-points { background: #80f7fd40; border-radius: 0 0 18px 18px; padding: 0 .5rem .75rem; font-size: .8125rem; }
+#submit-msg:not(:empty) { margin-top: .75rem; }
+.ranking li.small { display: block; }
+.ranking li { min-height: 36px; align-items: center; font-size: .875rem; }
+#vibration-toggle { min-height: 44px; }
+#pause { border: 0; background: none; }
+#pause img { width: 48px; height: 48px; }
+.capsule { border: 0; border-radius: 0; background: url('/game/img/ui-gacha-capsule.svg') center / contain no-repeat; overflow: visible; }
+.capsule span { display: none; }
+.capsule.r2 { background: url('/game/img/ui-gacha-capsule.svg') center / contain no-repeat; filter: hue-rotate(100deg); }
+.capsule.r3 { background: url('/game/img/ui-gacha-capsule.svg') center / contain no-repeat; filter: hue-rotate(295deg); box-shadow: none; }
+.call { background: #2a1f5cee; }
+.call .card { border: 4px solid var(--cyan); }
+.call h2 { color: var(--ink); }
+
+/* 背景をルートの最後まで繰り返す。 */
+#shot-map { background: linear-gradient(var(--space-900), var(--space-700)); padding-bottom: calc(205px + env(safe-area-inset-bottom)); }
+#shot-map .title { margin: 1rem 0 .5rem; }
+.shot-scenery { background-image: linear-gradient(#2a1f5c33, #2a1f5c66), url('/game/img/shot-festival-night.webp'); background-size: 100% 844px; background-repeat: repeat-y; }
+.shot-moon { display: none; }
+.shot-landscape { opacity: .35; }
+#shot-total { top: 1rem; font-size: .875rem; border-color: var(--lav-300); background: #2a1f5cdd; }
+.shot-route { margin-top: 40px; }
+.shot-route > svg > path { stroke: #ffd873aa; stroke-width: 4; }
+.shot-stages button { border: 3px solid var(--lav-300); background: var(--space-500); color: #fff; box-shadow: 0 4px 0 #2a1f5c; transition: scale 180ms ease; scroll-margin-block: 150px 230px; }
+.shot-stages button:active { transform: translate(-50%, -50%); scale: .96; }
+.shot-stages b { text-shadow: none; }
+.shot-stages .cleared { border-color: #ffd873; background: linear-gradient(var(--pink-400), var(--magenta)); box-shadow: 0 4px 0 #8c2f6e; }
+.shot-stages .next { background: var(--magenta); border-color: #ffd873; outline: 5px solid var(--cyan); outline-offset: 5px; animation: none; box-shadow: 0 0 24px #80f7fd44; }
+.shot-stages button:disabled { border-color: #9374ab; color: var(--lav-300); background: var(--space-500); box-shadow: 0 4px 0 #2a1f5c; }
+.shot-stages button:disabled span { color: var(--lav-300); }
+.lock { width: 18px; height: 15px; border: 2px solid var(--lav-300); border-radius: 4px; background: var(--space-900); }
+.lock::before { content: ''; position: absolute; width: 10px; height: 10px; border: 2px solid var(--lav-300); border-bottom: 0; border-radius: 8px 8px 0 0; top: -9px; left: 2px; }
+.shot-stages .shot-boss { background: linear-gradient(var(--space-500), var(--space-900)); border-color: #ffd873; }
+.shot-stages .shot-goal { border-color: #ffd873; background: var(--space-500); }
+.shot-next-panel { position: fixed; z-index: 5; bottom: max(.75rem, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(calc(100% - 2rem), 28rem); padding: 1rem 1.25rem 1.25rem; border-radius: 26px; color: var(--ink); background: #fffaff; box-shadow: 0 6px 0 #2a1f5c, 0 -6px 30px #2a1f5c55; }
+.shot-next-panel b { font-size: 1.375rem; }
+.shot-next-panel p { font-size: .8125rem; margin: .25rem 0 .875rem; }
+.shot-next-panel .btn { width: 100%; }
+#shot-result .card { margin-top: 1rem; }
+#shot-result h1 { color: var(--magenta); }
+@media (prefers-reduced-motion: reduce) { button, .btn, a.back { transition: none; } }

@@ -75,11 +75,48 @@ export const PAGE_HTML = `<!doctype html>
   .closed h2 { margin: 0 0 0.5rem; font-size: 1.5rem; }
   .closed p { margin: 0; }
   .closed p + p { margin-top: 0.75rem; }
+
+  .brand { display: flex; align-items: center; gap: 0.875rem; text-align: left; padding: 0.25rem 0; }
+  .brand .logo { width: 4rem; flex: 0 0 4rem; margin: 0; }
+  .brand b { font-size: 1.125rem; }
+  .brand p { margin: 0.25rem 0 0; font-size: 0.75rem; color: var(--lav-300); }
+  main { gap: 1.25rem; padding-top: max(1rem, env(safe-area-inset-top)); }
+  .page-title { margin: 0.5rem 0; font-size: 1.5rem; }
+  #mine { padding: 1.25rem; border: 4px solid transparent; }
+  #mine-view { display: flex; flex-direction: column; align-items: stretch; gap: 0.75rem; }
+  .state { margin: 0 0 0.25rem; padding: 0.625rem 0.5rem; background: #fff7e2; color: #b4541c; font-size: clamp(1.125rem, 5.5vw, 1.375rem); white-space: normal; }
+  .state.done { background: linear-gradient(180deg, #48c58a, var(--ok)); color: #fff; }
+  .state.plain { font-size: 1.125rem; }
+  .my-label { font-size: 1.125rem; }
+  .my-number { font-size: clamp(7.5rem, 34vw, 9rem); line-height: 1.05; color: var(--magenta); background: none; overflow-wrap: anywhere; }
+  .stats { gap: 0.625rem; }
+  .stat { padding: 0.875rem 0.25rem; background: var(--lav-100); color: var(--ink); }
+  .stat p { font-size: 0.75rem; }
+  .stat b { color: var(--ink); font-size: 1.875rem; margin-top: 0.25rem; }
+  .detail { line-height: 1.7; font-size: 0.9375rem; }
+  .link { margin: 0; color: var(--ink); }
+  body.done #mine { border-color: var(--cyan); box-shadow: 0 6px 0 #3bb9c255, 0 0 30px #80f7fd22; }
+  body.done .detail { padding: 1rem; border-radius: 20px; background: var(--lav-100); font-size: 1.375rem; }
+  .game { display: grid; place-items: center; min-height: 4.25rem; padding: 0.875rem 0.5rem; background: linear-gradient(var(--pink-400), var(--magenta)); color: #fff; box-shadow: 0 5px 0 #8c2f6e; font-size: clamp(1rem, 4.8vw, 1.25rem); }
+  body.done .game { background: #fff; border: 3px solid var(--lav-300); color: var(--ink); box-shadow: 0 5px 0 var(--lav-300); font-size: 1.0625rem; min-height: 3.5rem; }
+  button, a.game { transition: transform 180ms ease; }
+  button:active, a.game:active { transform: scale(0.96); }
+  a.game:active { box-shadow: 0 2px 0 #8c2f6e; }
+  body.done a.game:active { box-shadow: 0 2px 0 var(--lav-300); }
+  :focus-visible { outline: 3px solid var(--cyan); outline-offset: 4px; }
+  #mine :focus-visible { outline-color: var(--magenta); }
+  .list { text-align: left; padding: 1rem; border: 1px solid #c9b3e644; }
+  .list h2 { font-size: 1rem; }
+  .list .nums { justify-content: flex-start; }
+  .mascot { width: 5rem; }
+  #updated { line-height: 1.7; color: var(--lav-300); }
+  @media (prefers-reduced-motion: reduce) { button, a.game { transition: none; } }
 </style>
 </head>
 <body>
 <main>
-  <span class="logo"><img src="/brand/logo.webp" alt="やきとり TORI♡CO" width="480" height="477"></span>
+  <header class="brand"><span class="logo"><img src="/brand/logo.webp" alt="" width="480" height="477"></span><div><b>やきとり TORI♡CO</b><p>津田沼祭 11/21・22</p></div></header>
+  <h1 class="page-title">ご注文のやきとり</h1>
 
   <section id="closed" class="card closed" hidden>
     <h2>ありがとうございました！</h2>
@@ -97,20 +134,19 @@ export const PAGE_HTML = `<!doctype html>
       <p class="hint">整理券のQRコードを読み取ると、自動で入ります</p>
     </form>
     <div id="mine-view" hidden aria-live="polite">
+      <p id="my-state" class="state plain"></p>
       <p class="my-label">あなたの番号</p>
       <p id="my-number" class="my-number"></p>
-      <p id="my-state" class="state plain"></p>
+      <div id="stats" class="stats" hidden>
+        <div class="stat"><p>前に待っている組数</p><b id="ahead"></b></div>
+        <div class="stat"><p>待ち時間のめやす</p><b id="eta"></b></div>
+      </div>
       <p id="my-detail" class="detail"></p>
       <button id="change" class="link" type="button">番号を変える</button>
     </div>
   </section>
 
-  <div id="stats" class="stats" hidden>
-    <div class="stat"><p>前に待っている組数</p><b id="ahead"></b></div>
-    <div class="stat"><p>待ち時間のめやす</p><b id="eta"></b></div>
-  </div>
-
-  <a class="game" href="/game/">▶ 待っている間にミニゲーム</a>
+  <a class="game" href="/game/">待っている間にミニゲーム</a>
 
   <p id="stale" hidden>最新の状況を取得できていません。店頭の画面をご確認ください</p>
 

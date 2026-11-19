@@ -76,12 +76,12 @@ function renderHub() {
   list.textContent = "";
   for (const g of GAMES) {
     const li = document.createElement("li");
-    li.className = "game";
+    li.className = `game game-${g.META.id}`;
     const best = save.best[g.META.id];
     li.innerHTML = `<h2></h2><p class="best"></p><button class="btn pink" type="button">あそぶ</button><button class="rank-link" type="button">${trophyIcon}ランキング</button><p></p>`;
     li.querySelector("h2").textContent = g.META.title;
     li.querySelector(".best").textContent = g.META.mode === "map" ? `★ ${shotTotal()} / ${shot.STAGE_COUNT * 3}` : best ? `じこベスト ${best.toLocaleString()}点` : "まだ あそんでいない";
-    li.querySelector("p:last-child").textContent = g.META.howto;
+    li.querySelector("p:last-child").textContent = g === flight ? "タップで はばたく 宇宙の ぼうけん" : "引っぱって はなして 砦を くずそう";
     li.querySelector("button").addEventListener("click", () => g.META.mode === "map" ? show("shot-map") : openGame(g));
     if (g.META.mode === "map") li.querySelector(".rank-link").remove();
     else li.querySelector(".rank-link").addEventListener("click", () => openRanking(g));
@@ -139,6 +139,11 @@ function renderShotMap() {
   $("shot-total").textContent = `★ ${shotTotal()} / ${shot.STAGE_COUNT * 3}`;
   $("shot-stages").textContent = "";
   const firstUncleared = save.shot.stars.findIndex((n) => n === 0);
+  const complete = firstUncleared < 0;
+  $("shot-next-label").textContent = complete ? "ぜんぶ クリア！" : `つぎは ${firstUncleared + 1}面`;
+  $("shot-next-note").textContent = complete ? "星を あつめて もういちど あそぼう" : "星を あつめて つぎの面へ！";
+  $("shot-map-play").textContent = complete ? "エンディングを見る" : `${firstUncleared + 1}面を あそぶ`;
+  $("shot-map-play").onclick = () => openGame(shot, complete ? shot.STAGE_COUNT - 1 : firstUncleared, complete);
   const originalPositions = [20, 48, 78, 70, 40, 18, 46, 78, 70, 40, 18, 32, 64, 78, 48, 20];
   const continuation = [32, 64, 78, 48, 20, 32, 64, 78];
   const positions = Array.from({ length: shot.STAGE_COUNT }, (_, i) =>
@@ -166,12 +171,12 @@ function renderShotMap() {
     button.className = stars ? "cleared" : button.disabled ? "locked" : "next";
     button.style.setProperty("--stage-x", `${points[stage].x}%`);
     button.style.setProperty("--stage-y", `${points[stage].y}px`);
-    button.innerHTML = `<b>${stage + 1}</b><span>${shotStars(stars)}</span>${button.disabled ? '<i aria-hidden="true">🔒</i>' : ''}`;
+    button.innerHTML = `<b>${stage + 1}</b><span>${shotStars(stars)}</span>${button.disabled ? '<i class="lock" aria-hidden="true"></i>' : ''}`;
     if (stage === shot.STAGE_COUNT - 1) {
       button.classList.add("shot-boss");
       button.insertAdjacentHTML("afterbegin", '<svg viewBox="0 0 64 40" aria-hidden="true"><path d="M18 15 14 3 26 9 32 0 38 9 50 3 46 15" fill="#edd263" stroke="#382b41"/><ellipse cx="32" cy="23" rx="21" ry="13" fill="#9654b5"/><ellipse cx="32" cy="30" rx="29" ry="8" fill="#763c9c" stroke="#edc77f"/><path d="m20 18 8 4m8 0 8-4" stroke="#fff0cf" stroke-width="3"/></svg>');
     }
-    button.setAttribute("aria-label", `${stage + 1} ${shotStars(stars)}${button.disabled ? " 🔒" : ""}`);
+    button.setAttribute("aria-label", `${stage + 1} ${shotStars(stars)}${button.disabled ? " まだ あそべません" : ""}`);
     if (!stars && !button.disabled) button.setAttribute("aria-current", "step");
     button.addEventListener("click", () => openGame(shot, stage));
     $("shot-stages").appendChild(button);
@@ -592,7 +597,10 @@ function finish(score) {
   writeSave(save);
 
   $("result-game").textContent = current.META.title;
-  $("result-score").textContent = `${score.toLocaleString()}点`;
+  $("result-score").textContent = score.toLocaleString();
+  const unit = document.createElement("small");
+  unit.textContent = "点";
+  $("result-score").appendChild(unit);
   $("result-best").textContent = score > prevBest && prevBest > 0 ? "じこベスト こうしん！" : `じこベスト ${Math.max(prevBest, score).toLocaleString()}点`;
   $("result-points").textContent = `やきとりポイント +${gained.toLocaleString()} pt（ぜんぶで ${save.points.toLocaleString()} pt）`;
   $("result-unlock").hidden = save.points < GACHA_COST;
