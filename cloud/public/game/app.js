@@ -73,6 +73,8 @@ function renderHub() {
   $("points").textContent = `${save.points.toLocaleString()} pt`;
   $("owned-count").textContent = `きせかえ ${save.owned.length - 1} / ${COSTUMES.length - 1}${save.points >= GACHA_COST ? "・ガチャが まわせるよ！" : ""}`;
   paintMascot($("me"), save.costume);
+  paintMascot($("hub-costume"), save.costume);
+  $("hub-gacha-ready").hidden = save.points < GACHA_COST;
   const list = $("games");
   list.textContent = "";
   for (const g of GAMES) {

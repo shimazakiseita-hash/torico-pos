@@ -237,8 +237,13 @@ button:active, .btn:active, .hub-ranking:active { transform: scale(.96); }
 .game p:last-child { grid-row: 2; font-size: .8125rem; }
 .game .btn { grid-row: 4; grid-column: 2; min-height: 44px; min-width: 7.5rem; border-radius: 999px; background: var(--cyan); color: var(--space-900); box-shadow: 0 3px 0 #3bb9c2; }
 .game .rank-link { grid-row: 4; min-height: 44px; padding: .3rem .5rem; border: 1px solid #c9b3e666; color: #fff; background: #2a1f5c99; font-size: .75rem; }
-.menu3 .btn { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: .25rem; min-height: 96px; border: 0; border-radius: 24px; font-size: 1rem; }
-.menu3 img { width: 36px; height: 36px; }
+.menu3 .btn { position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: .25rem; min-height: 96px; border: 0; border-radius: 24px; font-size: 1rem; }
+.menu3 img, .menu3 canvas { width: 48px; height: 48px; object-fit: contain; }
+.menu3 canvas { width: 66px; height: 66px; margin: -9px 0; }
+.menu3 [data-go="gacha"] { background: var(--pink-100); }
+.menu3 [data-go="shop"] { background: color-mix(in srgb, var(--beak) 24%, white); }
+.menu3 [data-go="dress"] { background: var(--lav-100); }
+.tile-badge { position: absolute; top: -7px; right: 4px; padding: 2px 7px; border-radius: 999px; background: var(--magenta); color: #fff; font-size: .625rem; line-height: 1.5; white-space: nowrap; }
 .hub-ranking { border: 1px solid var(--lav-300); padding: .875rem; }
 .hub-ranking-title { font-size: 1.125rem; }
 .hub-ranking .trophy { align-self: flex-start; width: 2.25rem; height: 2.25rem; }
