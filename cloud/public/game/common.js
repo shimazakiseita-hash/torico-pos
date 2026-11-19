@@ -140,6 +140,7 @@ export function drawSpace(ctx, t, scroll = 0) {
 const mascotImg = typeof Image === "undefined" ? {} : new Image();
 /** マスコットの画像が読めたら解決する（一覧やきせかえの絵を描き直すため） */
 export const mascotReady = new Promise((resolve) => {
+  if (typeof Image === "undefined") { resolve(); return; }
   mascotImg.onload = resolve;
   mascotImg.onerror = resolve;
 });
@@ -148,20 +149,22 @@ mascotImg.src = "/brand/mascot.webp";
 /** きせかえ（ガチャで出る。rarity は ★の数。0 は はじめから持っている） */
 export const COSTUMES = [
   { id: "none", name: "そのまま", rarity: 0 },
-  { id: "hachimaki", name: "ねじりはちまき", rarity: 1 },
-  { id: "star", name: "星のヘアピン", rarity: 1 },
-  { id: "ribbon", name: "ハートのリボン", rarity: 1 },
-  { id: "sunglasses", name: "サングラス", rarity: 1 },
-  { id: "bowtie", name: "ちょうネクタイ", rarity: 1 },
-  { id: "negi", name: "ねぎぼうし", rarity: 1 },
-  { id: "wizard", name: "まほうつかい", rarity: 2 },
-  { id: "crown", name: "王かん", rarity: 2 },
-  { id: "chef", name: "コックさん", rarity: 2 },
-  { id: "halo", name: "天使のわっか", rarity: 2 },
-  { id: "helmet", name: "うちゅうヘルメット", rarity: 3 },
-  { id: "rainbow", name: "にじいろオーラ", rarity: 3 },
-  { id: "comet", name: "流れ星のしっぽ", rarity: 3 },
+  { id: "hachimaki", layer: "front", name: "ねじりはちまき", rarity: 1 },
+  { id: "star", layer: "front", name: "星のヘアピン", rarity: 1 },
+  { id: "ribbon", layer: "front", name: "ハートのリボン", rarity: 1 },
+  { id: "sunglasses", layer: "front", name: "サングラス", rarity: 1 },
+  { id: "bowtie", layer: "front", name: "ちょうネクタイ", rarity: 1 },
+  { id: "negi", layer: "front", name: "ねぎぼうし", rarity: 1 },
+  { id: "wizard", layer: "front", name: "まほうつかい", rarity: 2 },
+  { id: "crown", layer: "front", name: "王かん", rarity: 2 },
+  { id: "chef", layer: "front", name: "コックさん", rarity: 2 },
+  { id: "halo", layer: "front", name: "天使のわっか", rarity: 2 },
+  { id: "helmet", layer: "front", name: "うちゅうヘルメット", rarity: 3 },
+  { id: "rainbow", layer: "back", scale: 1.45, dx: 0, dy: 0, name: "にじいろオーラ", rarity: 3 },
+  { id: "comet", layer: "back", scale: 1.45, dx: -0.04, dy: 0, name: "流れ星のしっぽ", rarity: 3 },
 ];
+
+export const costumeArtReady = preloadArt(COSTUMES.filter((c) => c.layer).map((c) => `costume-${c.id}-${c.layer}`));
 
 /** 前の版（ポイントの累計で もらえた）で 持っていた きせかえ */
 const LEGACY_UNLOCK = { hachimaki: 300, star: 800, ribbon: 1500, wizard: 2500, crown: 4000, halo: 6000, helmet: 9000, rainbow: 13000 };
@@ -171,6 +174,13 @@ export function drawMascot(ctx, x, y, r, costume = "none", opts = {}) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(tilt);
+  const art = COSTUMES.find((c) => c.id === costume);
+  const w = r * 2.3, h = w * 286 / 300;
+  const scale = art?.scale ?? 1;
+  const raster = art?.layer ? artRaster(`costume-${costume}-${art.layer}`, w * scale, h * scale) : null;
+  const overlayReady = !!raster;
+  const overlay = () => ctx.drawImage(raster, -w * scale / 2 + w * (art.dx ?? 0), -h * scale / 2 - r * 0.08 + h * (art.dy ?? 0), w * scale, h * scale);
+  if (overlayReady && art.layer === "back") overlay();
   if (costume === "rainbow") {
     // 色が変わる、ふんわりした光（輪郭は付けない）
     const hue = (t * 120) % 360;
@@ -180,7 +190,7 @@ export function drawMascot(ctx, x, y, r, costume = "none", opts = {}) {
     ctx.fillStyle = g;
     ctx.fillRect(-r * 1.6, -r * 1.6, r * 3.2, r * 3.2);
   }
-  if (costume === "comet") {
+  if (costume === "comet" && !overlayReady) {
     // うしろに ながれる 星のしっぽ
     for (let i = 0; i < 6; i++) {
       const k = (t * 1.5 + i / 6) % 1;
@@ -189,7 +199,7 @@ export function drawMascot(ctx, x, y, r, costume = "none", opts = {}) {
       ctx.fill();
     }
   }
-  if (costume === "halo") {
+  if (costume === "halo" && !overlayReady) {
     ctx.strokeStyle = COLORS.beak;
     ctx.lineWidth = r * 0.12;
     ctx.beginPath();
@@ -203,7 +213,8 @@ export function drawMascot(ctx, x, y, r, costume = "none", opts = {}) {
     const h = mascotImg.naturalHeight * s;
     ctx.drawImage(mascotImg, -w / 2, -h / 2 - r * 0.08, w, h);
   }
-  drawAccessory(ctx, r, costume);
+  if (overlayReady && art.layer === "front") overlay();
+  if (!overlayReady) drawAccessory(ctx, r, costume);
   ctx.restore();
 }
 

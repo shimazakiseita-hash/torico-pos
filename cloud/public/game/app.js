@@ -1,6 +1,6 @@
 // ミニゲームの画面の切り替え（えらぶ → あそぶ → 結果・ランキング）と、ガチャ・ショップ・きせかえ
 
-import { COSTUMES, H, W, drawMascot, gameArtReady, mascotReady, view, fetchRanking, loadSave, startSession, submitScore, writeSave } from "./common.js";
+import { COSTUMES, H, W, buzz, costumeArtReady, drawMascot, gameArtReady, mascotReady, view, fetchRanking, loadSave, startSession, submitScore, writeSave } from "./common.js";
 import { GACHA_COST, GACHA_REFUND, UPGRADES, buy, level, nextCost, pull } from "./shop.js";
 import * as flight from "./flight.js";
 import * as shot from "./shot.js";
@@ -38,6 +38,7 @@ $("hub-ranking").addEventListener("click", () => openRanking(RANKED_GAMES[0]));
 // ── 画面の切り替え ──
 function show(view) {
   for (const id of ["hub", "dress", "gacha", "shop", "play", "result", "rank", "shot-map", "shot-result"]) $(id).hidden = id !== view;
+  if (pulling) finishPull?.();
   if (view === "shot-map") renderShotMap();
   if (view === "hub") renderHub();
   if (view === "dress") renderDress();
@@ -62,7 +63,7 @@ function paintMascot(canvas, costume) {
   canvas.height = size * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, size, size);
-  drawMascot(ctx, size / 2, size * 0.56, size * 0.3, costume, { t: performance.now() / 1000 });
+  drawMascot(ctx, size / 2, size * 0.56, size * 0.27, costume, { t: performance.now() / 1000 });
 }
 
 const stars = (n) => "★".repeat(n);
@@ -198,6 +199,10 @@ function renderShotMap() {
 
 function renderDress() {
   $("dress-points").textContent = `やきとりポイント ${save.points.toLocaleString()} pt`;
+  const selected = COSTUMES.find((c) => c.id === save.costume);
+  paintMascot($("dress-preview"), save.costume);
+  $("dress-name").textContent = selected.name;
+  $("dress-stars").textContent = stars(selected.rarity);
   const list = $("costumes");
   list.textContent = "";
   for (const c of COSTUMES) {
@@ -212,7 +217,13 @@ function renderDress() {
     label.innerHTML = `<span class="stars"></span><br><span class="nm"></span>`;
     label.querySelector(".stars").textContent = stars(c.rarity);
     label.querySelector(".nm").textContent = open ? c.name : "？？？";
-    b.append(cv, label);
+    if (open) b.append(cv, label);
+    else {
+      const locked = document.createElement("img");
+      locked.src = "/game/img/gacha-locked-silhouette.svg";
+      locked.alt = "まだ もっていない きせかえ";
+      b.append(locked, label);
+    }
     b.addEventListener("click", () => {
       save.costume = c.id;
       writeSave(save);
@@ -220,22 +231,24 @@ function renderDress() {
     });
     li.appendChild(b);
     list.appendChild(li);
-    // まだ持っていない きせかえは、そのままの とりを うすく見せる
-    requestAnimationFrame(() => paintMascot(cv, open ? c.id : "none"));
+    if (open) requestAnimationFrame(() => paintMascot(cv, c.id));
   }
 }
 
 // ── ガチャ ──
 let pulling = false;
+let finishPull = null;
+let gachaHasResult = false;
 function renderGacha(reset) {
   $("gacha").querySelector(".gacha-points").textContent = `やきとりポイント ${save.points.toLocaleString()} pt`;
   $("pull").disabled = pulling || save.points < GACHA_COST;
-  $("pull").textContent = save.points < GACHA_COST ? `ポイントが たりないよ（${GACHA_COST} pt）` : `ガチャを まわす（${GACHA_COST} pt）`;
+  $("pull").textContent = save.points < GACHA_COST ? `ポイントが たりないよ（${GACHA_COST} pt）` : gachaHasResult ? "もういちど まわす" : `ガチャを まわす（${GACHA_COST} pt）`;
   if (reset) {
-    $("capsule").hidden = false;
-    $("capsule").className = "capsule";
-    $("gacha-prize").hidden = true;
+    gachaHasResult = false;
+    $("gacha-stage").dataset.phase = "idle";
+    for (const id of ["capsule", "gacha-prize", "gacha-rays", "gacha-confetti", "gacha-skip", "gacha-dress"]) $(id).hidden = true;
     $("gacha-result").textContent = `1かい ${GACHA_COST} pt。なにが でるかな？`;
+    $("pull").textContent = save.points < GACHA_COST ? `ポイントが たりないよ（${GACHA_COST} pt）` : `ガチャを まわす（${GACHA_COST} pt）`;
   }
 }
 
@@ -245,32 +258,49 @@ $("pull").addEventListener("click", () => {
   if (!got) return;
   writeSave(save);
   pulling = true;
+  const rarity = got.costume.rarity;
+  const stage = $("gacha-stage");
   const cap = $("capsule");
-  cap.hidden = false;
-  $("gacha-prize").hidden = true;
-  cap.className = `capsule r${got.costume.rarity}`;
-  void cap.offsetWidth; // アニメーションを最初から
-  cap.classList.add("shake");
-  $("gacha-result").textContent = "ころころ…";
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const timers = [];
+  const later = (fn, ms) => timers.push(setTimeout(fn, reduced ? ms * 0.08 : ms));
+  stage.dataset.phase = "machine";
+  stage.style.setProperty("--shakes", String(3 + rarity * 2));
+  for (const id of ["capsule", "gacha-prize", "gacha-rays", "gacha-confetti", "gacha-dress"]) $(id).hidden = true;
+  $("gacha-skip").hidden = false;
+  for (const [selector, part] of [[".closed", "closed"], [".top-half", "top"], [".bottom-half", "bottom"]]) cap.querySelector(selector).src = `/game/img/gacha-capsule-${rarity}-${part}.svg`;
+  $("gacha-rays").src = `/game/img/gacha-rays-${rarity}.svg`;
+  $("gacha-confetti").src = `/game/img/gacha-confetti-${rarity}.svg`;
+  $("gacha-result").textContent = "なにが でるかな？";
   renderGacha(false);
-  setTimeout(() => {
+  finishPull = () => {
+    if (!pulling) return;
+    timers.forEach(clearTimeout);
+    pulling = false;
+    finishPull = null;
+    gachaHasResult = true;
+    stage.dataset.phase = "result";
     cap.hidden = true;
-    const cv = $("gacha-prize");
-    cv.hidden = false;
-    paintMascot(cv, got.costume.id);
+    $("gacha-skip").hidden = true;
+    for (const id of ["gacha-prize", "gacha-rays", "gacha-confetti", "gacha-dress"]) $(id).hidden = false;
+    paintMascot($("gacha-prize"), got.costume.id);
+    buzz(rarity === 1 ? 20 : rarity === 2 ? [30, 40, 30] : [60, 40, 60, 40, 120]);
     const el = $("gacha-result");
     el.innerHTML = `<span class="stars"></span><br><b></b><br><span class="note"></span>`;
-    el.querySelector(".stars").textContent = stars(got.costume.rarity);
+    el.querySelector(".stars").textContent = stars(rarity);
     el.querySelector("b").textContent = got.costume.name;
-    el.querySelector(".note").textContent = got.dup ? `もっていたので ${GACHA_REFUND} pt もどったよ` : "あたらしい きせかえ！ きせかえから つけられるよ";
+    el.querySelector(".note").textContent = got.dup ? `もっていたので ${GACHA_REFUND} pt もどったよ` : "あたらしい きせかえ！";
     if (!got.dup) {
       save.costume = got.costume.id;
       writeSave(save);
     }
-    pulling = false;
     renderGacha(false);
-  }, 1200);
+  };
+  later(() => { stage.dataset.phase = "capsule"; cap.hidden = false; }, 420);
+  later(() => { stage.dataset.phase = "opening"; }, 980 + rarity * 320);
+  later(() => finishPull?.(), 1300 + rarity * 320);
 });
+$("gacha-stage").addEventListener("click", () => finishPull?.());
 
 // ── ショップ ──
 function renderShop() {
@@ -281,7 +311,7 @@ function renderShop() {
     const lv = level(save, u.id);
     const cost = nextCost(save, u.id);
     const li = document.createElement("li");
-    li.innerHTML = `<h3><span class="nm"></span> <span class="lv"></span><br><span class="game-name"></span></h3><p></p><button class="btn pink" type="button"></button>`;
+    li.innerHTML = `<img class="shop-icon" src="/game/img/shop-${u.id}.svg" alt=""><h3><span class="nm"></span> <span class="lv"></span><br><span class="game-name"></span></h3><p></p><button class="btn pink" type="button"></button>`;
     li.querySelector(".nm").textContent = u.name;
     li.querySelector(".lv").textContent = u.costs.length > 1 ? `Lv${lv}/${u.costs.length}` : lv ? "✔" : "";
     li.querySelector(".game-name").textContent = GAMES.find((g) => g.META.id === u.game)?.META.title ?? "";
@@ -734,4 +764,9 @@ mascotReady.then(() => {
 
 gameArtReady.then(() => {
   if (!$("play").hidden && current === shot) { renderShotHowto(); fit(); }
+});
+
+Promise.all([mascotReady, costumeArtReady]).then(() => {
+  if (!$("hub").hidden) renderHub();
+  if (!$("dress").hidden) renderDress();
 });

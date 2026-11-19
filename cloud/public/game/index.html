@@ -102,6 +102,12 @@
   <header class="top"><button class="back" type="button" data-go="hub">← もどる</button></header>
   <h1 class="title">きせかえ</h1>
   <p id="dress-points" class="center"></p>
+  <div class="card dress-preview center">
+    <p class="small">いま つけている</p>
+    <canvas id="dress-preview" aria-label="いまの きせかえ"></canvas>
+    <b id="dress-name"></b><span id="dress-stars" class="stars"></span>
+  </div>
+  <p class="small">もっている きせかえ</p>
   <ul id="costumes" class="costumes"></ul>
 </main>
 
@@ -110,10 +116,18 @@
   <h1 class="title">きせかえガチャ</h1>
   <p class="center gacha-points"></p>
   <div class="card center gacha-box">
-    <div id="capsule" class="capsule" aria-hidden="true"><span></span></div>
-    <canvas id="gacha-prize" hidden></canvas>
+    <div id="gacha-stage" class="gacha-stage" data-phase="idle">
+      <img class="gacha-pedestal" src="/game/img/gacha-pedestal.svg" alt="">
+      <img class="gacha-machine" src="/game/img/gacha-machine.svg" alt="ガチャマシン">
+      <img id="gacha-rays" class="gacha-rays" alt="" hidden>
+      <div id="capsule" class="gacha-capsule" hidden><img class="closed" alt=""><img class="top-half" alt=""><img class="bottom-half" alt=""></div>
+      <canvas id="gacha-prize" hidden></canvas>
+      <img id="gacha-confetti" class="gacha-confetti" alt="" hidden>
+      <button id="gacha-skip" class="back" type="button" hidden>タップで スキップ</button>
+    </div>
     <p id="gacha-result" class="gacha-result" aria-live="polite">1かい 100 pt。なにが でるかな？</p>
     <button id="pull" class="btn pink" type="button">ガチャを まわす（100 pt）</button>
+    <button id="gacha-dress" class="btn ghost" type="button" data-go="dress" hidden>きせかえを みる</button>
   </div>
   <p class="small center">★ よく出る ／ ★★ ときどき ／ ★★★ めったに出ない。もっているものが出たら 30 pt もどるよ</p>
 </main>

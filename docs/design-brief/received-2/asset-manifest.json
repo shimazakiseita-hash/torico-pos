@@ -1,0 +1,91 @@
+{
+  "overlayCanvas": [
+    300,
+    286
+  ],
+  "pngExport": [
+    900,
+    858
+  ],
+  "zIndex": {
+    "back": [
+      "rainbow",
+      "comet"
+    ],
+    "front": [
+      "hachimaki",
+      "star",
+      "ribbon",
+      "sunglasses",
+      "bowtie",
+      "negi",
+      "wizard",
+      "crown",
+      "chef",
+      "halo",
+      "helmet"
+    ]
+  },
+  "rarity": {
+    "oneStar": [
+      "hachimaki",
+      "star",
+      "ribbon",
+      "sunglasses",
+      "bowtie",
+      "negi"
+    ],
+    "twoStar": [
+      "wizard",
+      "crown",
+      "chef",
+      "halo"
+    ],
+    "threeStar": [
+      "helmet",
+      "rainbow",
+      "comet"
+    ]
+  },
+  "files": [
+    "costumes/costume-bowtie-front.svg",
+    "costumes/costume-chef-front.svg",
+    "costumes/costume-comet-back.svg",
+    "costumes/costume-crown-front.svg",
+    "costumes/costume-hachimaki-front.svg",
+    "costumes/costume-halo-front.svg",
+    "costumes/costume-helmet-front.svg",
+    "costumes/costume-negi-front.svg",
+    "costumes/costume-rainbow-back.svg",
+    "costumes/costume-ribbon-front.svg",
+    "costumes/costume-star-front.svg",
+    "costumes/costume-sunglasses-front.svg",
+    "costumes/costume-wizard-front.svg",
+    "gacha-shop-overview.svg",
+    "gacha/gacha-capsule-1-bottom.svg",
+    "gacha/gacha-capsule-1-closed.svg",
+    "gacha/gacha-capsule-1-top.svg",
+    "gacha/gacha-capsule-2-bottom.svg",
+    "gacha/gacha-capsule-2-closed.svg",
+    "gacha/gacha-capsule-2-top.svg",
+    "gacha/gacha-capsule-3-bottom.svg",
+    "gacha/gacha-capsule-3-closed.svg",
+    "gacha/gacha-capsule-3-top.svg",
+    "gacha/gacha-confetti-1.svg",
+    "gacha/gacha-confetti-2.svg",
+    "gacha/gacha-confetti-3.svg",
+    "gacha/gacha-locked-silhouette.svg",
+    "gacha/gacha-machine.svg",
+    "gacha/gacha-pedestal.svg",
+    "gacha/gacha-rays-1.svg",
+    "gacha/gacha-rays-2.svg",
+    "gacha/gacha-rays-3.svg",
+    "mockups/04_dress.svg",
+    "mockups/05_gacha.svg",
+    "mockups/06_gacha_result.svg",
+    "mockups/07_shop.svg",
+    "shop/shop-flightGun.svg",
+    "shop/shop-flightLuck.svg",
+    "shop/shop-flightShield.svg"
+  ]
+}
