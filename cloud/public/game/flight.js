@@ -95,6 +95,8 @@ export function createGame({ costume, up = {} }) {
   // 2しゅうめからは、どのステージでも すきまが動き、UFO が出る
   const move = () => (lap() > 0 ? Math.max(stage().move, 50) : stage().move);
   const ufoRate = () => (lap() > 0 ? Math.max(stage().ufo, 0.35) : stage().ufo);
+  const meteorInterval = () => stage().meteor || (lap() > 1 ? 1.6 : 0);
+  const canSpawnEnemies = () => ufoRate() > 0 || meteorInterval() !== 0;
 
   function banner(text) {
     state.banner = { text, age: 0 };
@@ -113,9 +115,9 @@ export function createGame({ costume, up = {} }) {
     // アイテム運の強化で、串以外のアイテムが出やすくなる
     const table = [
       ["gold", 0.05],
-      ["gun", 0.07],
+      ["gun", canSpawnEnemies() ? 0.07 : 0],
       ["shield", state.shield ? 0 : 0.05],
-      ["bomb", 0.04],
+      ["bomb", canSpawnEnemies() ? 0.04 : 0],
       ["glide", 0.04],
       ["small", 0.04],
     ];
@@ -370,7 +372,7 @@ export function createGame({ costume, up = {} }) {
       }
 
       // 小いん石（りゅうせいぐん）
-      const mInterval = state.boss ? 0 : stage().meteor || (lap() > 1 ? 1.6 : 0);
+      const mInterval = state.boss ? 0 : meteorInterval();
       if (mInterval) {
         state.meteorIn -= dt;
         if (state.meteorIn <= 0) {
@@ -582,13 +584,18 @@ export function createGame({ costume, up = {} }) {
       ctx.fillText(`${lap() > 0 ? `${lap() + 1}しゅうめ ` : ""}${stage().name}`, 14, 46);
       if (!state.boss) {
         let by = 70;
-        for (const [v, max, color, label] of [
-          [state.gun, gunSeconds, "#b4541c", "たれビーム"],
-          [state.glide, ITEM_SECONDS, "#c9b3e6", "ふわふわ"],
-          [state.small, ITEM_SECONDS, COLORS.beak, "しいたけ"],
+        for (const [v, max, color, kind] of [
+          [state.gun, gunSeconds, "#b4541c", "gun"],
+          [state.glide, ITEM_SECONDS, "#c9b3e6", "glide"],
+          [state.small, ITEM_SECONDS, COLORS.beak, "small"],
         ]) {
           if (v <= 0) continue;
-          bar(ctx, 14, by, 120, v / max, color, label);
+          ctx.save();
+          ctx.translate(24, by + 9);
+          ctx.scale(0.5, 0.5);
+          drawItem(ctx, kind, 0, 0, state.t);
+          ctx.restore();
+          bar(ctx, 40, by, 120, v / max, color);
           by += 24;
         }
       }
@@ -644,11 +651,13 @@ function bar(ctx, x, y, w, ratio, color, label) {
   ctx.beginPath();
   ctx.roundRect(x, y, Math.max(0, w * ratio), 18, 9);
   ctx.fill();
-  ctx.font = `900 12px ${FONT}`;
-  ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  ctx.fillStyle = "#fff";
-  ctx.fillText(label, x + 8, y + 9.5);
+  if (label) {
+    ctx.font = `900 12px ${FONT}`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#fff";
+    ctx.fillText(label, x + 8, y + 9.5);
+  }
 }
 
 /** ステージごとの遠くの景色 */
@@ -721,10 +730,19 @@ function drawItem(ctx, kind, x, y, t) {
     ctx.stroke();
     ctx.fillStyle = "#fff";
     ctx.fillRect(x - 5, y - 18, 10, 7);
-    ctx.font = `900 10px ${FONT}`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("たれ", x, y + 2);
+    ctx.fillStyle = "#f3e2c7";
+    ctx.beginPath();
+    ctx.roundRect(x - 7, y - 4, 14, 14, 3);
+    ctx.fill();
+    ctx.fillStyle = "#7d3510";
+    ctx.beginPath();
+    ctx.moveTo(x, y - 2);
+    ctx.bezierCurveTo(x - 9, y + 8, x + 9, y + 8, x, y - 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.beginPath();
+    ctx.roundRect(x - 7, y - 9, 3, 8, 1.5);
+    ctx.fill();
   } else if (kind === "bomb") {
     // つくねばくだん：つくねに 導火線
     ctx.fillStyle = "#4e2410";
