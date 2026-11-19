@@ -64,7 +64,7 @@ export const PAGE_HTML = `<!doctype html>
   .list { padding: 0.875rem; border-radius: 28px; background: rgb(255 255 255 / 0.12); }
   .list h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 900; }
   .nums { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
-  .nums li { min-width: 3.25rem; padding: 0.125rem 0.625rem; border-radius: 12px; background: #fff; color: var(--ink); font-size: 1.625rem; font-weight: 900; }
+  .nums li { min-width: 3.25rem; text-align: center; padding: 0.125rem 0.625rem; border-radius: 12px; background: #fff; color: var(--ink); font-size: 1.625rem; font-weight: 900; }
   .ready li { background: linear-gradient(180deg, var(--pink-400), var(--magenta)); box-shadow: 0 4px 0 #8c2f6e; color: #fff; font-size: 2rem; }
   .nums li.me { outline: 4px solid var(--cyan); outline-offset: 2px; }
   .empty { margin: 0; opacity: 0.75; }
