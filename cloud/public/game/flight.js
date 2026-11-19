@@ -722,7 +722,7 @@ function drawScenery(ctx, i, scroll, t) {
 
 function drawItem(ctx, kind, x, y, t) {
   const name = { skewer: "skewer", gold: "golden-skewer", gun: "sauce", shield: "barrier", bomb: "tsukune-bomb", glide: "feather", small: "shiitake" }[kind];
-  if (drawArt(ctx, `flight-item-${name}`, x - 16, y - 16, 32, 32)) return;
+  if (drawArt(ctx, `flight-item-${name}`, x - 22, y - 22, 44, 44)) return;
   if (kind === "skewer") {
     drawSkewer(ctx, x, y, -Math.PI / 2, ["tare", "negi", "tare"], 0.85);
   } else if (kind === "gold") {
