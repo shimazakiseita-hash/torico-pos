@@ -95,10 +95,10 @@ const STAGES = [
 ];
 
 export const SKILLS = [
-  { id: "boom", name: "どかーん", color: "#ffbf69", stage: -1 },
-  { id: "dash", name: "ぎゅーん", color: "#79e2ee", stage: 1 },
-  { id: "drop", name: "ずしーん", color: "#c5afff", stage: 3 },
-  { id: "split", name: "ぶんしん", color: "#ffabd4", stage: 5 },
+  { id: "boom", name: "どかーん", desc: "その場で ばくはつ！ まわりを ふきとばす", color: "#ffbf69", stage: -1 },
+  { id: "dash", name: "ぎゅーん", desc: "いっきに スピードアップ！ かべを つきやぶる", color: "#79e2ee", stage: 1 },
+  { id: "drop", name: "ずしーん", desc: "まっすぐ 下へ ドスン！ 上から おしつぶす", color: "#c5afff", stage: 3 },
+  { id: "split", name: "ぶんしん", desc: "3わに わかれて ひろく あたる", color: "#ffabd4", stage: 5 },
 ];
 export function drawSkillIcon(ctx, id, x, y, size = 24) {
   if (drawArt(ctx, `ability-${({ boom: "blast", dash: "dash", drop: "drop", split: "clone" })[id]}`, x - size / 2, y - size / 2, size, size)) return;

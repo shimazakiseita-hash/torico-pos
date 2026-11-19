@@ -184,8 +184,10 @@ button { cursor: pointer; touch-action: manipulation; }
 
 #shot-unlock { margin: 1rem auto; padding: 1rem; border: 2px solid #e6b86d; border-radius: 24px 8px 24px 8px; background: #fff3d9; color: #603d65; box-shadow: 0 4px 0 #edd0a5; }
 #shot-unlock-skills { margin: .6rem 0 0; font-size: 1.3rem; font-weight: 900; }
-#shot-unlock-skills span { display: inline-flex; align-items: center; gap: .4rem; }
-#shot-unlock-skills canvas { width: 40px; height: 40px; }
+#shot-unlock-skills > span { display: flex; align-items: center; gap: .4rem; margin-top: .5rem; }
+#shot-unlock-skills > span > span { min-width: 0; }
+#shot-unlock-skills small { display: block; font-size: .8rem; font-weight: 700; }
+#shot-unlock-skills canvas { width: 40px; height: 40px; flex-shrink: 0; }
 
 .shot-stages .shot-goal { background: radial-gradient(ellipse at 50% 35%, #ce884e, #7c413a); border-color: #ffe8a8; box-shadow: 0 4px 0 #543242, 0 0 24px #ffbf6799, inset 0 0 18px #ffc577; }
 .shot-goal svg { width: 60px; height: 60px; }
@@ -200,7 +202,9 @@ button { cursor: pointer; touch-action: manipulation; }
 #ready { overflow-y: auto; padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
 #ready .card { max-height: 100%; overflow-y: auto; }
 #shot-howto { text-align: left; font-size: .9rem; }
-#shot-howto ol { margin: 0 0 .5rem; padding-left: 1.5rem; line-height: 1.7; }
+#shot-howto h3 { margin: .35rem 0; font-size: .95rem; }
+#shot-howto p { margin: .35rem 0; }
+#shot-howto ol { margin: 0 0 .5rem; padding-left: 1.5rem; line-height: 1.5; }
 .ready-skill { display: flex; align-items: center; gap: .5rem; margin-top: .5rem; font-size: .8rem; }
 .ready-skill canvas { width: 36px; height: 36px; flex-shrink: 0; }
 

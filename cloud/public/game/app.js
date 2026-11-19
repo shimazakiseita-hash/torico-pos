@@ -140,9 +140,9 @@ function renderShotMap() {
   $("shot-stages").textContent = "";
   const firstUncleared = save.shot.stars.findIndex((n) => n === 0);
   const complete = firstUncleared < 0;
-  $("shot-next-label").textContent = complete ? "ぜんぶ クリア！" : `つぎは ${firstUncleared + 1}面`;
-  $("shot-next-note").textContent = complete ? "星を あつめて もういちど あそぼう" : "星を あつめて つぎの面へ！";
-  $("shot-map-play").textContent = complete ? "エンディングを見る" : `${firstUncleared + 1}面を あそぶ`;
+  $("shot-next-label").textContent = complete ? "ぜんぶ クリア！" : `つぎは ステージ${firstUncleared + 1}`;
+  $("shot-next-note").textContent = complete ? "星を あつめて もういちど あそぼう" : "星を あつめて つぎの ステージへ！";
+  $("shot-map-play").textContent = complete ? "エンディングを見る" : `ステージ${firstUncleared + 1}を あそぶ`;
   $("shot-map-play").onclick = () => openGame(shot, complete ? shot.STAGE_COUNT - 1 : firstUncleared, complete);
   const originalPositions = [20, 48, 78, 70, 40, 18, 46, 78, 70, 40, 18, 32, 64, 78, 48, 20];
   const continuation = [32, 64, 78, 48, 20, 32, 64, 78];
@@ -176,7 +176,7 @@ function renderShotMap() {
       button.classList.add("shot-boss");
       button.insertAdjacentHTML("afterbegin", '<svg viewBox="0 0 64 40" aria-hidden="true"><path d="M18 15 14 3 26 9 32 0 38 9 50 3 46 15" fill="#edd263" stroke="#382b41"/><ellipse cx="32" cy="23" rx="21" ry="13" fill="#9654b5"/><ellipse cx="32" cy="30" rx="29" ry="8" fill="#763c9c" stroke="#edc77f"/><path d="m20 18 8 4m8 0 8-4" stroke="#fff0cf" stroke-width="3"/></svg>');
     }
-    button.setAttribute("aria-label", `${stage + 1} ${shotStars(stars)}${button.disabled ? " まだ あそべません" : ""}`);
+    button.setAttribute("aria-label", `ステージ${stage + 1} ${shotStars(stars)}${button.disabled ? " まだ あそべません" : ""}`);
     if (!stars && !button.disabled) button.setAttribute("aria-current", "step");
     button.addEventListener("click", () => openGame(shot, stage));
     $("shot-stages").appendChild(button);
@@ -371,9 +371,15 @@ function openGame(g, stage = shotStage, endingOnly = false) {
 
 function renderShotHowto() {
   const box = $("shot-howto");
-  box.innerHTML = `<ol><li>引っぱる（どこでもOK）</li><li>はなすと とぶ</li><li>とんでいる とちゅうで タップ → わざ</li></ol><p class="small">★ 少ない 玉で クリアするほど ★が ふえる<br>1発目で クリア → ★★★</p>`;
-  const descriptions = { boom: "ばくはつして まわりを ふきとばす", dash: "いっきに かそくして つきぬける", drop: "まっすぐ 下に おちて おしつぶす", split: "3わに わかれる" };
-  for (const skill of shot.SKILLS.filter((s) => shotSkills().includes(s.id))) {
+  const skills = shot.SKILLS.filter((s) => shotSkills().includes(s.id));
+  box.innerHTML = `<h3>あそびかた</h3><ol><li>引っぱって はなすと とぶ<br><small>（どこを 引っぱっても OK）</small></li><li>とんでいる あいだに 画面を タップ → わざが でる！</li></ol><p class="small">★ 少ない 玉で クリアするほど ★が ふえる<br>（1発目で クリア → ★★★）</p><h3>わざ</h3>`;
+  if (skills.length > 1) {
+    const note = document.createElement("p");
+    note.className = "small";
+    note.textContent = "とばす まえに、下の まるい ボタンで えらべるよ";
+    box.append(note);
+  }
+  for (const skill of skills) {
     const row = document.createElement("div");
     row.className = "ready-skill";
     const icon = document.createElement("canvas");
@@ -385,7 +391,7 @@ function renderShotHowto() {
     const label = document.createElement("span");
     const name = document.createElement("b");
     name.textContent = skill.name;
-    label.append(name, document.createElement("br"), descriptions[skill.id]);
+    label.append(name, document.createElement("br"), skill.desc);
     row.append(icon, label);
     box.append(row);
   }
@@ -577,7 +583,13 @@ function finishShot() {
     const ctx = icon.getContext("2d");
     ctx.fillStyle = ctx.strokeStyle = "#603d65";
     shot.drawSkillIcon(ctx, skill.id, 32, 32, 48);
-    badge.append(icon, document.createTextNode(skill.name));
+    const label = document.createElement("span");
+    const name = document.createElement("b");
+    name.textContent = skill.name;
+    const description = document.createElement("small");
+    description.textContent = skill.desc;
+    label.append(name, description);
+    badge.append(icon, label);
     $("shot-unlock-skills").appendChild(badge);
   }
   $("shot-next").hidden = !cleared || stage === shot.STAGE_COUNT - 1;
