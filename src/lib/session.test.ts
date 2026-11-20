@@ -22,7 +22,7 @@ describe("createSession / verifySession", () => {
     expect((await verifySession(SECRET, "abc", T0)).ok).toBe(false);
   });
 
-  it("期限（6時間）を過ぎると通らない", async () => {
+  it("期限（30分）を過ぎると通らない", async () => {
     const token = await createSession(SECRET, T0, ID);
     expect((await verifySession(SECRET, token, T0 + SESSION_TTL_MS - 1)).ok).toBe(true);
     expect(await verifySession(SECRET, token, T0 + SESSION_TTL_MS + 1)).toEqual({ ok: false, reason: "expired" });

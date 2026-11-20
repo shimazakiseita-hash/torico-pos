@@ -57,11 +57,24 @@ export const publicSyncReportSchema = z.object({
 
 export const gameIdSchema = z.enum(GAME_IDS);
 
+const flightCount = (max: number) => z.number().int().min(0).max(max);
+export const flightStatsSchema = z.object({
+  passed: z.number().int().min(0).max(2400),
+  skewer: flightCount(2400),
+  gold: flightCount(2400),
+  ufo: flightCount(2404),
+  meteor: flightCount(5000),
+  bossHit: flightCount(25000),
+  bossBomb: flightCount(5000),
+  bosses: z.array(z.object({ lap: z.number().int().min(0).max(59), defeated: z.boolean() })).max(60),
+});
+
 export const rankingSubmitSchema = z.object({
   game: gameIdSchema,
   player: z.string().regex(/^[a-z0-9]{8,32}$/), // スマホごとのID
   name: z.string().max(40), // 長さの本当の上限は normalizeName（10文字）で見る
   score: z.number().int().min(0).max(100000),
+  stats: flightStatsSchema,
   session: z.string().max(200), // ゲーム開始時にサーバーが発行する、その場かぎりの合言葉（遊んだ時間はサーバーが測る）
 });
 

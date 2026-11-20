@@ -7,9 +7,8 @@
 //
 // 点数（src/lib/ranking.ts の MAX_POINTS_PER_SECOND.flight の根拠）
 //   すきま 10、串 30、金の串 100（1つのすきまに アイテムは1つまで）、UFO 20、小いん石 10、ボスに1発 2・たおす 150＋50×周回
-//   すきまの間隔 210px、速さは最大 270px/秒 → 1つに最低0.78秒。1つのすきまで 10＋100＋UFO 20＋小いん石 10×2 = 150 → 約190点/秒
-//   ボス戦は 1秒に約5.5発 × 2 ＝ 11点/秒 ＋ たおしたとき 1回だけ
-//   （上限は余裕をみて200）
+//   実ゲームのボット1,000回で最大46.46点/秒（開始10秒以降）。上限は50×1.5＋100点。
+//   scripts/flight-simulate.mjs で再計測。強化最大・衝突無敵の30分走行20回でも内訳と上限を検証。
 
 import { artRaster, drawArt, drawArtBackground, buzz, COLORS, FONT, H, Popups, W, drawHud, drawMascot, drawSkewer, drawSpace, heart, star, view } from "./common.js";
 
@@ -57,6 +56,7 @@ export function createGame({ costume, up = {} }) {
   let R = BASE_R;
   const state = {
     score: 0,
+    stats: { passed: 0, skewer: 0, gold: 0, ufo: 0, meteor: 0, bossHit: 0, bossBomb: 0, bosses: [] },
     y: H * 0.42,
     vy: 0,
     flying: false, // 最初のタップまでは浮いて待つ
@@ -154,6 +154,7 @@ export function createGame({ costume, up = {} }) {
   const bossAmp = (FLOOR - 70 - 190) / 2;
 
   function startBoss() {
+    state.stats.bosses.push({ lap: lap(), defeated: false });
     const kind = BOSSES[lap() % BOSSES.length];
     const hp = 30 + lap() * 12;
     state.boss = { ...kind, x: W + 120, y: bossMid, hp, max: hp, time: BOSS_SECONDS, fire: 2, phase: 0, leaving: 0, hit: 0, charge: 0, nextCharge: 5 };
@@ -175,12 +176,14 @@ export function createGame({ costume, up = {} }) {
       if (u.hp > 0 && u.x < W + 20) {
         u.hp = 0;
         gain += 20;
+        state.stats.ufo++;
       }
     }
     for (const m of state.meteors) {
       if (m.hp > 0) {
         m.hp = 0;
         gain += 10;
+        state.stats.meteor++;
       }
     }
     state.beams = [];
@@ -193,12 +196,14 @@ export function createGame({ costume, up = {} }) {
       b.hp -= 5;
       b.hit = 0.2;
       state.score += 10;
+      state.stats.bossBomb++;
       if (b.hp <= 0) endBoss(true);
     }
   }
 
   function endBoss(defeated) {
     const b = state.boss;
+    state.stats.bosses.at(-1).defeated = defeated;
     if (defeated) {
       buzz([80, 40, 80, 40, 160]);
       const bonus = 150 + 50 * lap();
@@ -242,10 +247,12 @@ export function createGame({ costume, up = {} }) {
     if (kind === "skewer") {
       buzz(10);
       state.score += 30;
+      state.stats.skewer++;
       pop.add("+30", x, y - 24, COLORS.beak, 22);
     } else if (kind === "gold") {
       buzz([20, 30, 20]);
       state.score += 100;
+      state.stats.gold++;
       pop.add("金の串！ +100", x, y - 24, COLORS.beak, 24);
     } else if (kind === "bomb") {
       explode();
@@ -352,6 +359,7 @@ export function createGame({ costume, up = {} }) {
           state.passed++;
           state.sinceStage++;
           state.score += 10;
+          state.stats.passed++;
           if (state.sinceStage >= PER_STAGE) {
             if (state.stageIndex % STAGES.length === STAGES.length - 1) startBoss();
             else nextStage();
@@ -414,6 +422,7 @@ export function createGame({ costume, up = {} }) {
             u.hp = 0;
             s.dead = true;
             state.score += 20;
+            state.stats.ufo++;
             pop.add("+20", u.x, u.y - 20, COLORS.cyan, 20);
           }
         }
@@ -423,6 +432,7 @@ export function createGame({ costume, up = {} }) {
             m.hp = 0;
             s.dead = true;
             state.score += 10;
+            state.stats.meteor++;
             pop.add("+10", m.x, m.y - 16, "#fff", 18);
           }
         }
@@ -432,6 +442,7 @@ export function createGame({ costume, up = {} }) {
           b.hp--;
           b.hit = 0.08;
           state.score += 2;
+          state.stats.bossHit++;
           if (b.hp <= 0) endBoss(true);
         }
       }

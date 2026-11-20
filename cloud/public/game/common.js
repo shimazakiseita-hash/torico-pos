@@ -637,11 +637,11 @@ export async function fetchRanking(game, board) {
   return (await res.json()).top ?? [];
 }
 
-export async function submitScore(body) {
+export async function submitScore({ game, player, name, score, stats, session }) {
   const res = await fetch("/api/ranking", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ game, player, name, score, stats, session }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.ok) throw new Error(data.error ?? "のせられませんでした");

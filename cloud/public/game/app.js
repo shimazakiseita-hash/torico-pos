@@ -28,6 +28,7 @@ let current = null; // 遊んでいるゲームのモジュール
 let session = null;
 let started = false; // スタートを押したか（ひとやすみから戻るときは合言葉を取り直さない）
 let lastScore = 0;
+let lastStats = null;
 let board = "today";
 let rankGame = GAMES[0];
 let rankBoard = "today";
@@ -632,6 +633,7 @@ $("shot-again").addEventListener("click", () => openGame(shot, shotStage));
 
 function finish(score) {
   lastScore = score;
+  lastStats = structuredClone(game.state.stats);
   const id = current.META.id;
   const prevBest = save.best[id] ?? 0;
   const gained = Math.max(1, Math.round(score * current.META.pointRate));
@@ -744,7 +746,7 @@ $("submit-form").addEventListener("submit", async (e) => {
   }
   btn.disabled = true;
   try {
-    const r = await submitScore({ game: current.META.id, player: save.player, name, score: lastScore, session });
+    const r = await submitScore({ game: current.META.id, player: save.player, name, score: lastScore, stats: lastStats, session });
     save.name = name;
     writeSave(save);
     $("submit-msg").textContent = `のせたよ！ 今日 ${r.rank}位・歴代 ${r.allRank}位`;

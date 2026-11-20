@@ -51,15 +51,13 @@ export const GAME_NAMES: Record<GameId, string> = {
   flight: "とりこフライト",
 };
 
-/**
- * 1秒あたりに取りうる点数の上限（ゲームの作りから出した理論上の最大。各ゲームのファイルの先頭に計算を書いてある）。
- * ゲームの点数の付け方を変えたら、ここも見直す
- */
+/** 実ゲームのボット1,000回で最大46.46点/秒（開始10秒以降）。50×1.5＋100点で余裕を持たせる。
+ * 再計測: Node 24で node scripts/flight-simulate.mjs（強化最大・衝突無敵の30分走行も検証）。 */
 export const MAX_POINTS_PER_SECOND: Record<GameId, number> = {
-  flight: 200,
+  flight: 50,
 };
 
-/** 開始から seconds 秒で取りうる点数の上限（理論上の最大に1.5倍＋100点の余裕） */
+/** 開始から seconds 秒で取りうる点数の上限（測定値を切り上げて1.5倍＋100点の余裕） */
 export function maxPlausibleScore(game: GameId, seconds: number): number {
   return Math.round(Math.max(0, seconds) * MAX_POINTS_PER_SECOND[game] * 1.5 + 100);
 }
@@ -67,6 +65,43 @@ export function maxPlausibleScore(game: GameId, seconds: number): number {
 /** 遊んだ時間（サーバーが測ったもの）に対してありえない点数を弾く */
 export function isPlausibleScore(game: GameId, score: number, playMs: number): boolean {
   return score >= 0 && playMs >= 0 && score <= maxPlausibleScore(game, playMs / 1000);
+}
+
+export type FlightStats = {
+  passed: number;
+  skewer: number;
+  gold: number;
+  ufo: number;
+  meteor: number;
+  bossHit: number;
+  bossBomb: number;
+  bosses: { lap: number; defeated: boolean }[];
+};
+
+export function flightScoreFromStats(stats: FlightStats): number {
+  return stats.passed * 10 + stats.skewer * 30 + stats.gold * 100 + stats.ufo * 20
+    + stats.meteor * 10 + stats.bossHit * 2 + stats.bossBomb * 10
+    + stats.bosses.reduce((sum, b) => sum + (b.defeated ? 150 + 50 * b.lap : 0), 0);
+}
+
+export function isPlausibleFlightStats(stats: FlightStats, playMs: number): boolean {
+  if (!Number.isFinite(playMs) || playMs < 0) return false;
+  const seconds = playMs / 1000;
+  // 間隔210px・最高270px/秒。アイテム取得は通過判定より先なので1本分を許す。
+  if (stats.passed > seconds * 270 / 210 + 2 || stats.skewer + stats.gold > stats.passed + 1) return false;
+  // 金は最大0.05×1.6、UFOは最大0.55。先行出現分と、平均＋8σ＋10の余裕を持たせる。
+  const luckyMax = (n: number, p: number) => n * p + 8 * Math.sqrt(n * p * (1 - p)) + 10;
+  if (stats.gold > luckyMax(stats.passed + 1, 0.08)
+    || stats.ufo > Math.min(stats.passed + 4, luckyMax(stats.passed + 4, 0.55))) return false;
+  // 40本ごとにボス。戦闘中の終了も記録し、爆弾の最後の一撃による最大4HPの超過を許す。
+  if (stats.bosses.length > Math.floor(stats.passed / 40)) return false;
+  if (stats.bosses.some((b, i) => b.lap !== i)) return false;
+  const hp = stats.bosses.reduce((sum, b) => sum + 30 + 12 * b.lap + 4, 0);
+  if (stats.bossHit + stats.bossBomb * 5 > hp) return false;
+  // 小いん石は最短0.66秒、岩ボスは35秒間に最短1.1秒ごと3個。各戦に初回分も加える。
+  const rockBosses = stats.bosses.filter((b) => b.lap % 3 === 1).length;
+  if (stats.meteor > seconds / (1.1 * 0.6) + 2 + rockBosses * (Math.ceil(35 / 1.1) + 1) * 3) return false;
+  return true;
 }
 
 /** プレイヤーごとに1件。点数が上がったときだけ記録を更新し、名前はいつでも最新にする */

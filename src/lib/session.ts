@@ -4,8 +4,8 @@
  * 開始時刻を書き換えたり、合言葉を自分で作ったりはできない。1回きりかどうかはサーバー側で覚えておく
  */
 
-/** 発行から登録までの期限（遊んだ時間＋名前を入れる時間。待ち時間に開いたままにしても切れないよう長めに） */
-export const SESSION_TTL_MS = 6 * 60 * 60 * 1000;
+/** 発行から登録までの期限（遊んだ時間＋名前を入れる時間） */
+export const SESSION_TTL_MS = 30 * 60 * 1000;
 
 export type VerifiedSession = { ok: true; id: string; startedAt: number } | { ok: false; reason: "invalid" | "expired" };
 

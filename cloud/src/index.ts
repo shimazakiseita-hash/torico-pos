@@ -11,6 +11,8 @@ import {
   allowSubmission,
   containsNgWord,
   isPlausibleScore,
+  flightScoreFromStats,
+  isPlausibleFlightStats,
   jstDateKey,
   mergeBoards,
   normalizeName,
@@ -251,7 +253,11 @@ export default {
       }
       if (request.method === "POST") {
         // お客さん（子どもも）に見せるメッセージなので、ひらがなでやさしく
-        const parsed = rankingSubmitSchema.safeParse(await readJson(request));
+        const body = await readJson(request);
+        if (body && typeof body === "object" && !("stats" in body)) {
+          return json({ error: "ページを よみこみなおして もういちど あそんでね" }, 400);
+        }
+        const parsed = rankingSubmitSchema.safeParse(body);
         if (!parsed.success) return json({ error: "形式が不正です" }, 400);
         const { game, player, score } = parsed.data;
         const name = normalizeName(parsed.data.name);
@@ -265,7 +271,9 @@ export default {
           return json({ error: expired ? "じかんが たちすぎたよ。もういっかい あそんでね" : "きろくを たしかめられなかったよ" }, 400);
         }
         const playMs = now - session.startedAt;
-        if (!isPlausibleScore(game, score, playMs)) return json({ error: "きろくを たしかめられなかったよ" }, 400);
+        if (flightScoreFromStats(parsed.data.stats) !== score
+          || !isPlausibleFlightStats(parsed.data.stats, playMs)
+          || !isPlausibleScore(game, score, playMs)) return json({ error: "きろくを たしかめられなかったよ" }, 400);
         const ip = request.headers.get("CF-Connecting-IP") ?? "local";
         const result = await store.submit(game, { player, name, score, at: new Date(now).toISOString() }, ip, session.id);
         return result.ok ? json(result) : json({ error: result.error }, 400);

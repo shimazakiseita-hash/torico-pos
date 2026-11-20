@@ -5,6 +5,9 @@ import {
   allowSubmission,
   containsNgWord,
   isPlausibleScore,
+  flightScoreFromStats,
+  isPlausibleFlightStats,
+  type FlightStats,
   jstDateKey,
   maxPlausibleScore,
   mergeBoards,
@@ -59,12 +62,12 @@ describe("containsNgWord", () => {
 describe("maxPlausibleScore / isPlausibleScore", () => {
   it("遊んだ時間に比例して上限が上がる", () => {
     expect(maxPlausibleScore("flight", 0)).toBe(100);
-    expect(maxPlausibleScore("flight", 60)).toBe(60 * 200 * 1.5 + 100);
+    expect(maxPlausibleScore("flight", 60)).toBe(60 * 50 * 1.5 + 100);
     expect(maxPlausibleScore("flight", 30)).toBeLessThan(maxPlausibleScore("flight", 60));
   });
 
   it("時間に見合わない点数・マイナスの点数は通らない", () => {
-    expect(isPlausibleScore("flight", 5000, 60_000)).toBe(true);
+    expect(isPlausibleScore("flight", 4500, 60_000)).toBe(true);
     expect(isPlausibleScore("flight", 10000, 30_000)).toBe(false);
     expect(isPlausibleScore("flight", 1300, 3_000)).toBe(false);
     expect(isPlausibleScore("flight", -1, 30_000)).toBe(false);
@@ -100,7 +103,7 @@ describe("jstDateKey", () => {
 
 describe("rankingSubmitSchema", () => {
   it("ゲーム・プレイヤーID・名前・点数・合言葉を受け付ける（遊んだ時間は受け取らない）", () => {
-    const ok = { game: "flight", player: "a1b2c3d4e5f6", name: "とりこ", score: 5, session: "0123456789abcdef.1790000000000.sig" };
+    const ok = { game: "flight", player: "a1b2c3d4e5f6", name: "とりこ", score: 5, stats: emptyStats(), session: "0123456789abcdef.1790000000000.sig" };
     expect(rankingSubmitSchema.safeParse(ok).success).toBe(true);
     for (const game of ["tsumi", "shot", "catch"]) {
       expect(rankingSubmitSchema.safeParse({ ...ok, game }).success).toBe(false);
@@ -143,3 +146,48 @@ describe("siteConfigSchema", () => {
   });
 });
 
+
+function emptyStats(overrides: Partial<FlightStats> = {}): FlightStats {
+  return { passed: 0, skewer: 0, gold: 0, ufo: 0, meteor: 0, bossHit: 0, bossBomb: 0, bosses: [], ...overrides };
+}
+
+describe("フライトの内訳", () => {
+  it("全種類と撃破ボーナスを合計する。逃げたボスにはボーナスを付けない", () => {
+    expect(flightScoreFromStats(emptyStats({ passed: 80, skewer: 20, gold: 5, ufo: 10, meteor: 12,
+      bossHit: 40, bossBomb: 2, bosses: [{ lap: 0, defeated: true }, { lap: 1, defeated: false }, { lap: 2, defeated: true }] })))
+      .toBe(800 + 600 + 500 + 200 + 120 + 80 + 20 + 150 + 250);
+  });
+
+  it("正直な内訳・通過直前のアイテム・爆弾のHP超過を許す", () => {
+    expect(isPlausibleFlightStats(emptyStats({ skewer: 1 }), 3000)).toBe(true);
+    const stats = emptyStats({ passed: 40, skewer: 20, gold: 8, ufo: 12, meteor: 30,
+      bossHit: 29, bossBomb: 1, bosses: [{ lap: 0, defeated: true }] });
+    expect(isPlausibleFlightStats(stats, 90_000)).toBe(true);
+    expect(isPlausibleScore("flight", flightScoreFromStats(stats), 90_000)).toBe(true);
+  });
+
+  it("長時間待ってもありえない通過数・金の串・UFO・いん石・ボス・HPは弾く", () => {
+    for (const stats of [
+      emptyStats({ passed: 2400 }),
+      emptyStats({ passed: 100, skewer: 102 }),
+      emptyStats({ passed: 100, gold: 100 }),
+      emptyStats({ passed: 100, ufo: 105 }),
+      emptyStats({ meteor: 3000 }),
+      emptyStats({ bosses: [{ lap: 0, defeated: true }] }),
+      emptyStats({ passed: 40, bosses: [{ lap: 1, defeated: true }] }),
+      emptyStats({ passed: 40, bossHit: 35, bosses: [{ lap: 0, defeated: false }] }),
+    ]) expect(isPlausibleFlightStats(stats, 1_799_000)).toBe(false);
+    expect(isPlausibleFlightStats(emptyStats(), -1)).toBe(false);
+    expect(isPlausibleFlightStats(emptyStats(), NaN)).toBe(false);
+    expect(isPlausibleScore("flight", 1000000, 1_799_000)).toBe(false);
+  });
+
+  it("内訳なし・不正な型・過大な配列は受け付けない", () => {
+    const body = { game: "flight", player: "a1b2c3d4e5f6", name: "とりこ", score: 0, session: "test" };
+    expect(rankingSubmitSchema.safeParse(body).success).toBe(false);
+    for (const stats of [null, {}, emptyStats({ gold: -1 }), emptyStats({ ufo: 0.5 }),
+      emptyStats({ meteor: 25001 }), emptyStats({ bosses: Array.from({ length: 61 }, () => ({ lap: 0, defeated: true })) })]) {
+      expect(rankingSubmitSchema.safeParse({ ...body, stats }).success).toBe(false);
+    }
+  });
+});
