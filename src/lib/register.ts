@@ -1,10 +1,10 @@
-import { SKUS, skuKey, SEASONING_IDS, type ItemId, type SkuCounts, type SkuKey } from "./menu";
+import { DEFAULT_PRICE_MODE, SKUS, skuKey, SEASONING_IDS, type ItemId, type PriceMode, type SkuCounts, type SkuKey } from "./menu";
 import { MAX_ORDER_QTY, MAX_TENDERED, calcAmount } from "./pricing";
 import { sum } from "./summary";
 import type { OrderItem } from "./types";
 
 /** 預かり金額のワンタップボタン（円） */
-export const TENDER_PRESETS = [1000, 5000, 10000] as const;
+export const TENDER_PRESETS = [500, 1000, 5000, 10000] as const;
 
 /** 預かり金額の指定。exact は「ちょうど」（合計が変わっても追従する） */
 export type Tender = { kind: "exact" } | { kind: "amount"; value: number } | null;
@@ -21,10 +21,10 @@ export type Checkout =
   | { state: "ok"; amount: number; tendered: number; change: number };
 
 /** 会計確定できるか。ok のときだけ確定ボタンを押せる */
-export function checkout(cart: SkuCounts, tender: Tender): Checkout {
+export function checkout(cart: SkuCounts, tender: Tender, mode: PriceMode = DEFAULT_PRICE_MODE): Checkout {
   const totalQty = sum(cart);
   if (totalQty === 0) return { state: "empty" };
-  const amount = calcAmount(totalQty);
+  const amount = calcAmount(totalQty, mode);
   const tendered = tenderedOf(tender, amount);
   if (tendered === null) return { state: "needTender", amount };
   if (tendered < amount) return { state: "short", amount, tendered, short: amount - tendered };

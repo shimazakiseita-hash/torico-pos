@@ -23,7 +23,7 @@ export function GET(request: NextRequest) {
 
 export function POST(request: Request) {
   return handle(async () => {
-    const { items, tendered } = await parseBody(request, createOrderSchema);
-    return Response.json(createOrder(getDb(), items, tendered), { status: 201 });
+    const { items, tendered, priceMode } = await parseBody(request, createOrderSchema);
+    return Response.json(createOrder(getDb(), items, tendered, new Date(), priceMode), { status: 201 });
   });
 }

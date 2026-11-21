@@ -25,6 +25,7 @@ describe("totalSettings", () => {
     soldout: ["momo:tare"],
     cashFloat,
     targetQty: 1500,
+    priceMode: "two",
   });
 
   it("準備金と目標は2日分を足し、上限と売り切れは持たない", () => {

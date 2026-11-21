@@ -12,6 +12,21 @@ describe("calcAmount", () => {
     expect(calcAmount(qty)).toBe(amount);
   });
 
+  it.each([
+    ["two", 1, 100],
+    ["two", 2, 100],
+    ["two", 3, 200],
+    ["two", 4, 200],
+    ["three", 2, 200],
+    ["three", 3, 100],
+    ["three", 4, 200],
+    ["three", 5, 300],
+    ["three", 6, 200],
+    ["three", 50, 1800],
+  ] as const)("%s：%i本 → %i円（あまりは1本100円）", (mode, qty, amount) => {
+    expect(calcAmount(qty, mode)).toBe(amount);
+  });
+
   it("不正な本数は例外", () => {
     expect(() => calcAmount(-1)).toThrow();
     expect(() => calcAmount(1.5)).toThrow();

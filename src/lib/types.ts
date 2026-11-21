@@ -1,4 +1,4 @@
-import type { ItemId, SeasoningId, SkuKey } from "./menu";
+import type { ItemId, PriceMode, SeasoningId, SkuKey } from "./menu";
 import type { OrderStatus } from "./status";
 
 export type OrderItem = { item: ItemId; seasoning: SeasoningId; qty: number };
@@ -26,6 +26,7 @@ export type DaySettings = {
   soldout: SkuKey[];
   cashFloat: number;
   targetQty: number;
+  priceMode: PriceMode;
 };
 
 export type CreatedOrder = {

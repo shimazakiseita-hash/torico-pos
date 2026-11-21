@@ -3,7 +3,21 @@ import fs from "node:fs";
 import path from "node:path";
 import { businessDayOf } from "./businessDay";
 import { DomainError } from "./errors";
-import { DEFAULT_CAPACITY, DEFAULT_TARGET_QTY, ITEM_IDS, SEASONING_IDS, SKU_KEYS, SKUS, skuKey, type ItemId, type SkuKey } from "./menu";
+import {
+  DEFAULT_CAPACITY,
+  DEFAULT_PRICE_MODE,
+  DEFAULT_TARGET_QTY,
+  ITEM_IDS,
+  PRICE_MODES,
+  PRICE_MODE_INFO,
+  SEASONING_IDS,
+  SKU_KEYS,
+  SKUS,
+  skuKey,
+  type ItemId,
+  type PriceMode,
+  type SkuKey,
+} from "./menu";
 import { normalizeItems } from "./order";
 import { calcAmount, calcChange } from "./pricing";
 import { STATUS_LABELS, canTransition, type OrderStatus } from "./status";
@@ -105,14 +119,30 @@ const SKU_ORDER = new Map<SkuKey, number>(SKUS.map((s, i) => [s.key, i]));
 const bySkuOrder = (a: OrderItem, b: OrderItem) =>
   SKU_ORDER.get(skuKey(a.item, a.seasoning))! - SKU_ORDER.get(skuKey(b.item, b.seasoning))!;
 
-/** 注文を作る。金額とお釣りはここで計算し直す。番号は営業日ごとの連番 */
-export function createOrder(db: DB, rawItems: readonly OrderItem[], tendered: number, now: Date = new Date()): CreatedOrder {
+/**
+ * 注文を作る。金額とお釣りはその時点の値段の決め方でここで計算し直す。番号は営業日ごとの連番。
+ * expectedMode（受付の画面が表示していた値段）が今の値段と違えば、お客さんに伝えた金額と変わるので 409
+ */
+export function createOrder(
+  db: DB,
+  rawItems: readonly OrderItem[],
+  tendered: number,
+  now: Date = new Date(),
+  expectedMode?: PriceMode,
+): CreatedOrder {
   const { items, totalQty } = normalizeItems(rawItems);
-  const amount = calcAmount(totalQty);
-  const changeDue = calcChange(amount, tendered);
   const businessDay = businessDayOf(now);
 
   const tx = db.transaction((): CreatedOrder => {
+    const { priceMode } = getDaySettings(db, businessDay);
+    if (expectedMode !== undefined && expectedMode !== priceMode) {
+      throw new DomainError(
+        "INVALID_TRANSITION",
+        `値段が「${PRICE_MODE_INFO[priceMode].label}」に切り替わりました。合計を確かめてから、もう一度会計してください`,
+      );
+    }
+    const amount = calcAmount(totalQty, priceMode);
+    const changeDue = calcChange(amount, tendered);
     const { next } = readNumbering(db, businessDay);
     const result = db
       .prepare(
@@ -196,9 +226,10 @@ export type DaySettingsPatch = {
   soldout?: SkuKey[];
   cashFloat?: number;
   targetQty?: number;
+  priceMode?: PriceMode;
 };
 
-/** 営業日の設定。未設定の項目は初期値（上限は DEFAULT_CAPACITY、売り切れなし、準備金0円） */
+/** 営業日の設定。未設定の項目は初期値（上限は DEFAULT_CAPACITY、売り切れなし、準備金0円、1本100円） */
 export function getDaySettings(db: DB, day: string): DaySettings {
   const rows = db.prepare("SELECT key, value FROM day_settings WHERE business_day = ?").all(day) as {
     key: string;
@@ -209,12 +240,14 @@ export function getDaySettings(db: DB, day: string): DaySettings {
   const saved = (map.get("capacity") ?? {}) as Partial<Record<string, number | null>>;
   for (const k of ITEM_IDS) if (typeof saved[k] === "number" || saved[k] === null) capacity[k] = saved[k];
   const soldout = ((map.get("soldout") ?? []) as string[]).filter((k): k is SkuKey => SKU_KEYS.includes(k as SkuKey));
+  const savedMode = map.get("price_mode");
   return {
     businessDay: day,
     capacity,
     soldout,
     cashFloat: (map.get("cash_float") as number | undefined) ?? 0,
     targetQty: (map.get("target_qty") as number | undefined) ?? DEFAULT_TARGET_QTY,
+    priceMode: PRICE_MODES.includes(savedMode as PriceMode) ? (savedMode as PriceMode) : DEFAULT_PRICE_MODE,
   };
 }
 
@@ -235,6 +268,7 @@ export function putDaySettings(db: DB, day: string, patch: DaySettingsPatch): Da
     }
     if (patch.cashFloat !== undefined) upsert.run(day, "cash_float", JSON.stringify(patch.cashFloat));
     if (patch.targetQty !== undefined) upsert.run(day, "target_qty", JSON.stringify(patch.targetQty));
+    if (patch.priceMode !== undefined) upsert.run(day, "price_mode", JSON.stringify(patch.priceMode));
   }).immediate();
   return getDaySettings(db, day);
 }

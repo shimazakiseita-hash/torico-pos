@@ -9,6 +9,11 @@ function cart(patch: Partial<SkuCounts>): SkuCounts {
 describe("checkout", () => {
   const five = cart({ "momo:tare": 2, "kawa:shio": 3 });
 
+  it("値段の決め方に合わせて合計を出す：5本を2本で100円 → 300円", () => {
+    expect(checkout(five, { kind: "exact" }, "two")).toEqual({ state: "ok", amount: 300, tendered: 300, change: 0 });
+    expect(checkout(five, { kind: "amount", value: 500 }, "three")).toEqual({ state: "ok", amount: 300, tendered: 500, change: 200 });
+  });
+
   it("5本・1,000円預かり → お釣り500円で確定できる", () => {
     expect(checkout(five, { kind: "amount", value: 1000 })).toEqual({ state: "ok", amount: 500, tendered: 1000, change: 500 });
   });

@@ -12,8 +12,8 @@ import { TenkeyDialog } from "@/components/TenkeyDialog";
 import { Toast, useToast } from "@/components/Toast";
 import { dayLabel } from "@/lib/businessDay";
 import { sendJson, setOrderStatus } from "@/lib/client";
-import { ITEMS, SEASONINGS, SEASONING_BY_ID, SKUS, UNIT_PRICE, emptySkuCounts, skuKey, skuName, type SkuCounts, type SkuKey } from "@/lib/menu";
-import { MAX_ORDER_QTY } from "@/lib/pricing";
+import { DEFAULT_PRICE_MODE, ITEMS, PRICE_MODE_INFO, SEASONINGS, SEASONING_BY_ID, SKUS, UNIT_PRICE, emptySkuCounts, skuKey, skuName, type SkuCounts, type SkuKey } from "@/lib/menu";
+import { MAX_ORDER_QTY, calcAmount } from "@/lib/pricing";
 import { TENDER_PRESETS, availability, cartItems, checkout, type SkuAvailability, type Tender } from "@/lib/register";
 import { STATUS_LABELS } from "@/lib/status";
 import { sum, type Summary } from "@/lib/summary";
@@ -45,7 +45,9 @@ export function RegisterScreen() {
   const [cancelling, setCancelling] = useState(false);
 
   const totalQty = sum(cart);
-  const co = checkout(cart, tender);
+  // 値段の決め方は管理画面で切り替わる。会計時に送り、サーバー側と違えば会計し直してもらう
+  const priceMode = summary.data?.priceMode ?? DEFAULT_PRICE_MODE;
+  const co = checkout(cart, tender, priceMode);
   const avail = availability(cart, summary.data?.remainingByItem ?? {}, summary.data?.soldOut ?? []);
   const connError = orders.error || summary.error || numbering.error;
 
@@ -62,7 +64,7 @@ export function RegisterScreen() {
     if (sending.current || numberSending.current || co.state !== "ok") return;
     sending.current = true;
     setSubmitting(true);
-    const res = await sendJson<CreatedOrder>("POST", "/api/orders", { items: cartItems(cart), tendered: co.tendered });
+    const res = await sendJson<CreatedOrder>("POST", "/api/orders", { items: cartItems(cart), tendered: co.tendered, priceMode });
     sending.current = false;
     setSubmitting(false);
     if (res.ok) setIssued(res.data);
@@ -167,13 +169,19 @@ export function RegisterScreen() {
               <button type="button" disabled={!numbering.data || numberBusy || submitting} onClick={() => void numberAction("skip")} className="btn-ghost min-h-16 px-4 text-lg">飛ばす</button>
               {numbering.data?.canUndo && <button type="button" disabled={numberBusy || submitting} onClick={() => void numberAction("undo")} className="btn-ghost min-h-16 px-4 text-lg">戻す</button>}
             </div>
+            {priceMode !== "single" && (
+              <p className="rounded-[18px] bg-magenta px-4 py-2 text-center text-white">
+                <span className="text-3xl font-black">いま {PRICE_MODE_INFO[priceMode].label}</span>
+                <span className="block text-base font-bold">あまりは1本100円</span>
+              </p>
+            )}
             <ul className="min-h-0 flex-1 overflow-y-auto text-xl">
               {SKUS.filter((s) => cart[s.key] > 0).map((s) => (
                 <li key={s.key} className="flex justify-between border-b-2 border-dashed border-pink-200 py-1">
                   <span>
                     {skuName(s.item, s.seasoning)} ×{cart[s.key]}
                   </span>
-                  <span className="tabular-nums">{(cart[s.key] * UNIT_PRICE).toLocaleString()}</span>
+                  {priceMode === "single" && <span className="tabular-nums">{(cart[s.key] * UNIT_PRICE).toLocaleString()}</span>}
                 </li>
               ))}
               {totalQty === 0 && <li className="text-lav-500">串のボタンを押してください</li>}
@@ -182,10 +190,10 @@ export function RegisterScreen() {
               <span className="text-2xl">
                 {totalQty}本{totalQty >= MAX_ORDER_QTY && <span className="ml-1 text-base text-danger">（上限）</span>}
               </span>
-              <span className="text-grad text-7xl leading-none font-black tabular-nums">{yen(totalQty * UNIT_PRICE)}</span>
+              <span className="text-grad text-7xl leading-none font-black tabular-nums">{yen(calcAmount(totalQty, priceMode))}</span>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               <TenderButton active={tenderIs({ kind: "exact" })} disabled={totalQty === 0} onClick={() => setTender({ kind: "exact" })}>
                 ちょうど
               </TenderButton>
@@ -206,7 +214,7 @@ export function RegisterScreen() {
               >
                 テンキー
               </TenderButton>
-              <button type="button" onClick={clear} disabled={totalQty === 0 || submitting} className="btn-ghost min-h-16 text-xl">
+              <button type="button" onClick={clear} disabled={totalQty === 0 || submitting} className="btn-ghost col-span-2 min-h-16 text-xl">
                 クリア
               </button>
             </div>

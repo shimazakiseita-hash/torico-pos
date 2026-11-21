@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { businessDaySchema, createOrderSchema, putSettingsSchema } from "../schemas";
 import { DomainError } from "../errors";
-import { ITEM_IDS } from "../menu";
+import { DEFAULT_PRICE_MODE, ITEM_IDS, PRICE_MODES } from "../menu";
 import { ORDER_STATUSES } from "../status";
 import { emptyState, type DemoState } from "./store";
 
@@ -12,7 +12,7 @@ const orderSchema = createOrderSchema.extend({
   changeDue: z.number().int().nonnegative(), createdAt: z.iso.datetime(),
   readyAt: z.iso.datetime().nullable(), servedAt: z.iso.datetime().nullable(), cancelledAt: z.iso.datetime().nullable(),
 });
-const stateSchema = z.object({ skipped: z.record(businessDaySchema, z.array(z.number().int().positive())).default({}), orders: z.array(orderSchema), settings: z.record(businessDaySchema, putSettingsSchema.required().extend({ businessDay: businessDaySchema, capacity: z.record(z.enum(ITEM_IDS), z.number().int().nonnegative().nullable()) })) });
+const stateSchema = z.object({ skipped: z.record(businessDaySchema, z.array(z.number().int().positive())).default({}), orders: z.array(orderSchema), settings: z.record(businessDaySchema, putSettingsSchema.required().extend({ businessDay: businessDaySchema, capacity: z.record(z.enum(ITEM_IDS), z.number().int().nonnegative().nullable()), priceMode: z.enum(PRICE_MODES).default(DEFAULT_PRICE_MODE) })) });
 
 export function readState(): DemoState {
   try {

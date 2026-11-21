@@ -1,5 +1,5 @@
 import { EVENT_DAYS, dayLabel } from "./businessDay";
-import { ITEM_IDS, type ItemId } from "./menu";
+import { DEFAULT_PRICE_MODE, ITEM_IDS, type ItemId } from "./menu";
 import type { DaySettings } from "./types";
 
 /** 管理画面の「合計」（2日間）を表すキー。API の day=total と同じ */
@@ -22,6 +22,7 @@ export function totalSettings(days: readonly DaySettings[]): DaySettings {
     soldout: [],
     cashFloat: days.reduce((a, d) => a + d.cashFloat, 0),
     targetQty: days.reduce((a, d) => a + d.targetQty, 0),
+    priceMode: DEFAULT_PRICE_MODE,
   };
 }
 

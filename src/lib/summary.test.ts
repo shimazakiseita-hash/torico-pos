@@ -29,7 +29,7 @@ function order(status: OrderStatus, items: OrderItem[], opts: Partial<Order> = {
 
 function settings(patch: Partial<DaySettings> = {}): DaySettings {
   const capacity = { momo: null, kawa: null, negima: null, tsukune: null, bonjiri: null };
-  return { businessDay: "2026-11-21", capacity, soldout: [], cashFloat: 0, targetQty: 300, ...patch };
+  return { businessDay: "2026-11-21", capacity, soldout: [], cashFloat: 0, targetQty: 300, priceMode: "single", ...patch };
 }
 
 const momoTare = (qty: number): OrderItem => ({ item: "momo", seasoning: "tare", qty });

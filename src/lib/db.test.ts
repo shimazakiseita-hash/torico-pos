@@ -82,6 +82,25 @@ describe("createOrder", () => {
     expect(listOrders(db, "2026-11-22").map((o) => o.number)).toEqual([1, 2]);
     expect(listOrders(db, null)).toHaveLength(4);
   });
+
+  it("その営業日の値段の決め方で金額を計算する（品目をまたいで総本数で数える）", () => {
+    putDaySettings(db, "2026-11-21", { priceMode: "three" });
+    const r = createOrder(db, [{ item: "momo", seasoning: "tare", qty: 2 }, { item: "kawa", seasoning: "shio", qty: 2 }], 500, DAY1, "three");
+    expect(r).toMatchObject({ amount: 200, changeDue: 300 });
+    expect(createOrder(db, one, 100, DAY2).amount).toBe(100); // 2日目は1本100円のまま
+  });
+
+  it("受付が表示していた値段と今の値段が違えば 409 で、注文も番号も作らない", () => {
+    putDaySettings(db, "2026-11-21", { priceMode: "two" });
+    expectDomainError(() => createOrder(db, [{ item: "momo", seasoning: "tare", qty: 2 }], 200, DAY1, "single"), "INVALID_TRANSITION");
+    expect(listOrders(db, "2026-11-21")).toHaveLength(0);
+    expect(createOrder(db, [{ item: "momo", seasoning: "tare", qty: 2 }], 100, DAY1, "two")).toMatchObject({ number: 1, amount: 100 });
+  });
+
+  it("預かりが値段の切り替え後の金額に足りなければ INVALID_INPUT", () => {
+    putDaySettings(db, "2026-11-21", { priceMode: "two" });
+    expectDomainError(() => createOrder(db, [{ item: "momo", seasoning: "tare", qty: 3 }], 100, DAY1, "two"), "INVALID_INPUT");
+  });
 });
 
 describe("createOrder（別プロセスから同時に注文）", () => {
@@ -156,7 +175,13 @@ describe("day_settings", () => {
   it("初期値：上限は もも500・ほか250（たれ・塩の合計）、目標はその合計、売り切れなし・準備金0円", () => {
     const s = getDaySettings(db, "2026-11-21");
     expect(s.capacity).toEqual({ momo: 500, kawa: 250, negima: 250, tsukune: 250, bonjiri: 250 });
-    expect(s).toMatchObject({ businessDay: "2026-11-21", soldout: [], cashFloat: 0, targetQty: 1500 });
+    expect(s).toMatchObject({ businessDay: "2026-11-21", soldout: [], cashFloat: 0, targetQty: 1500, priceMode: "single" });
+  });
+
+  it("値段の決め方は営業日ごとに保存される", () => {
+    expect(putDaySettings(db, "2026-11-22", { priceMode: "three" }).priceMode).toBe("three");
+    expect(putDaySettings(db, "2026-11-22", { cashFloat: 1000 }).priceMode).toBe("three");
+    expect(getDaySettings(db, "2026-11-21").priceMode).toBe("single");
   });
 
   it("営業日ごとに保存され、capacity は串ごとに上書き・null で上限なし", () => {

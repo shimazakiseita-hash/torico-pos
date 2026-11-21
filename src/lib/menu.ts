@@ -59,6 +59,16 @@ export function emptySkuCounts(): SkuCounts {
 /** 1本の値段（円）。全品同じ */
 export const UNIT_PRICE = 100;
 
+/** 値段の決め方。まとめ売りは「bundle本で UNIT_PRICE 円」、まとめきれないあまりは1本 UNIT_PRICE 円。管理画面で営業日ごとに切り替える */
+export const PRICE_MODES = ["single", "two", "three"] as const;
+export type PriceMode = (typeof PRICE_MODES)[number];
+export const PRICE_MODE_INFO: Record<PriceMode, { bundle: number; label: string }> = {
+  single: { bundle: 1, label: "1本100円" },
+  two: { bundle: 2, label: "2本で100円" },
+  three: { bundle: 3, label: "3本で100円" },
+};
+export const DEFAULT_PRICE_MODE: PriceMode = "single";
+
 /** 1日の販売上限（本、たれ・塩の合計）。営業日ごとに変更可 */
 export const DEFAULT_CAPACITY: Record<ItemId, number> = { momo: 500, kawa: 250, negima: 250, tsukune: 250, bonjiri: 250 };
 

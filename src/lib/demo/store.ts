@@ -1,20 +1,22 @@
 import { businessDayOf } from "../businessDay";
 import { DomainError } from "../errors";
-import { DEFAULT_CAPACITY, DEFAULT_TARGET_QTY, SKU_KEYS, type ItemId, type SkuKey } from "../menu";
+import { DEFAULT_CAPACITY, DEFAULT_PRICE_MODE, DEFAULT_TARGET_QTY, PRICE_MODE_INFO, SKU_KEYS, type ItemId, type PriceMode, type SkuKey } from "../menu";
 import { normalizeItems } from "../order";
 import { calcAmount, calcChange } from "../pricing";
 import { canTransition, STATUS_LABELS, type OrderStatus } from "../status";
 import type { CreatedOrder, DaySettings, Numbering, Order, OrderItem } from "../types";
 
 export type DemoState = { orders: Order[]; settings: Record<string, DaySettings>; skipped: Record<string, number[]> };
-export type SettingsPatch = { capacity?: Partial<Record<ItemId, number | null>>; soldout?: SkuKey[]; cashFloat?: number; targetQty?: number };
+export type SettingsPatch = { capacity?: Partial<Record<ItemId, number | null>>; soldout?: SkuKey[]; cashFloat?: number; targetQty?: number; priceMode?: PriceMode };
 export const emptyState = (): DemoState => ({ orders: [], settings: {}, skipped: {} });
 
-export function createOrder(state: DemoState, rawItems: readonly OrderItem[], tendered: number, now: Date = new Date()): { state: DemoState; value: CreatedOrder } {
+export function createOrder(state: DemoState, rawItems: readonly OrderItem[], tendered: number, now: Date = new Date(), expectedMode?: PriceMode): { state: DemoState; value: CreatedOrder } {
   const { items, totalQty } = normalizeItems(rawItems);
-  const amount = calcAmount(totalQty);
-  const changeDue = calcChange(amount, tendered);
   const businessDay = businessDayOf(now);
+  const { priceMode } = getDaySettings(state, businessDay);
+  if (expectedMode !== undefined && expectedMode !== priceMode) throw new DomainError("INVALID_TRANSITION", `値段が「${PRICE_MODE_INFO[priceMode].label}」に切り替わりました。合計を確かめてから、もう一度会計してください`);
+  const amount = calcAmount(totalQty, priceMode);
+  const changeDue = calcChange(amount, tendered);
   const id = Math.max(0, ...state.orders.map((o) => o.id)) + 1;
   const number = getNumbering(state, businessDay).next;
   const value = { id, businessDay, number, amount, tendered, changeDue };
@@ -44,7 +46,7 @@ export function updateStatus(state: DemoState, id: number, to: OrderStatus, now:
 }
 
 export function getDaySettings(state: DemoState, day: string): DaySettings {
-  return structuredClone(state.settings[day] ?? { businessDay: day, capacity: { ...DEFAULT_CAPACITY }, soldout: [], cashFloat: 0, targetQty: DEFAULT_TARGET_QTY });
+  return structuredClone(state.settings[day] ?? { businessDay: day, capacity: { ...DEFAULT_CAPACITY }, soldout: [], cashFloat: 0, targetQty: DEFAULT_TARGET_QTY, priceMode: DEFAULT_PRICE_MODE });
 }
 
 export function putDaySettings(state: DemoState, day: string, patch: SettingsPatch): { state: DemoState; value: DaySettings } {

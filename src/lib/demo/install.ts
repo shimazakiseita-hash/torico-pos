@@ -25,8 +25,8 @@ export async function respond(request: Request): Promise<Response> {
       return Response.json(listOrders(readState(), day, parsed.data));
     }
     if (path === "/api/orders" && method === "POST") {
-      const { items, tendered } = await parseBody(request, createOrderSchema);
-      const result = createOrder(readState(), items, tendered);
+      const { items, tendered, priceMode } = await parseBody(request, createOrderSchema);
+      const result = createOrder(readState(), items, tendered, new Date(), priceMode);
       writeState(result.state);
       return Response.json(result.value, { status: 201 });
     }

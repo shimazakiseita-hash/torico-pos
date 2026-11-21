@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { isBusinessDay } from "./businessDay";
-import { ITEM_IDS, SEASONING_IDS, SKU_KEYS } from "./menu";
+import { ITEM_IDS, PRICE_MODES, SEASONING_IDS, SKU_KEYS } from "./menu";
 import { MAX_ORDER_QTY, MAX_TENDERED } from "./pricing";
 import { GAME_IDS } from "./ranking";
 import { ORDER_STATUSES } from "./status";
@@ -19,6 +19,8 @@ export const createOrderSchema = z.object({
     .min(1)
     .max(SKU_KEYS.length * 2),
   tendered: z.number().int().min(0).max(MAX_TENDERED),
+  // 受付の画面が表示していた値段の決め方。今の値段と違えば 409（お客さんに伝えた金額が変わるため）
+  priceMode: z.enum(PRICE_MODES).optional(),
 });
 
 /** 営業日 YYYY-MM-DD */
@@ -35,6 +37,7 @@ export const putSettingsSchema = z.object({
   soldout: z.array(z.enum(SKU_KEYS)).max(SKU_KEYS.length).optional(),
   cashFloat: z.number().int().min(0).max(MAX_TENDERED * 10).optional(),
   targetQty: z.number().int().min(1).max(99999).optional(),
+  priceMode: z.enum(PRICE_MODES).optional(),
 });
 
 // 1日分のお渡し済み番号も送れるよう、各状態の番号は10000件まで受け付ける。

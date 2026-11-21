@@ -1,4 +1,4 @@
-import { ITEMS, SEASONINGS, SKUS, SKU_KEYS, emptySkuCounts, skuKey, type ItemId, type SeasoningId, type SkuCounts, type SkuKey } from "./menu";
+import { ITEMS, SEASONINGS, SKUS, SKU_KEYS, emptySkuCounts, skuKey, type ItemId, type PriceMode, type SeasoningId, type SkuCounts, type SkuKey } from "./menu";
 import type { DaySettings, Order, OrderItem } from "./types";
 
 const AVG_WAIT_SAMPLE = 10;
@@ -31,6 +31,8 @@ export type Summary = {
   /** 完成のペース（1件あたり秒）。お客さん向けの待ち時間のめやすに使う。完成が3件未満なら null */
   secondsPerOrder: number | null;
   targetQty: number;
+  /** いまの値段の決め方（受付の合計とお釣りの計算に使う） */
+  priceMode: PriceMode;
 };
 
 function addItems(counts: SkuCounts, items: readonly OrderItem[]): void {
@@ -106,6 +108,7 @@ export function computeSummary(orders: readonly Order[], settings: DaySettings):
     avgWaitSeconds: averageWaitSeconds(orders),
     secondsPerOrder: secondsPerOrder(orders),
     targetQty: settings.targetQty,
+    priceMode: settings.priceMode,
   };
 }
 

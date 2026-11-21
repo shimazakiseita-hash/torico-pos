@@ -8,7 +8,7 @@ import { Heart } from "@/components/Heart";
 import { Toast, useToast } from "@/components/Toast";
 import { TOTAL, cashDifference, dayTabs, parseCount } from "@/lib/admin";
 import { businessDayOf, dayLabel } from "@/lib/businessDay";
-import { ITEMS, SEASONINGS, skuKey, type ItemId, type SkuKey } from "@/lib/menu";
+import { ITEMS, PRICE_MODES, PRICE_MODE_INFO, SEASONINGS, skuKey, type ItemId, type PriceMode, type SkuKey } from "@/lib/menu";
 import type { PublicSyncHealth } from "@/lib/publicSync";
 import type { ServerInfo } from "@/lib/serverInfo";
 import type { Summary } from "@/lib/summary";
@@ -224,6 +224,7 @@ function DayView({ day, onError }: { day: string; onError: (message: string) => 
       <SalesCard s={s} />
       <CashCard day={day} s={s} total={total} save={save} />
       <BreakdownCard s={s} />
+      {!total && settings.data && <PriceCard settings={settings.data} save={save} />}
       {!total && settings.data && s && <StockCard settings={settings.data} s={s} save={save} />}
       <Card title="待ち状況">
         <dl className="grid grid-cols-3 gap-2 text-center">
@@ -440,6 +441,39 @@ function BreakdownCard({ s }: { s: Summary | null }) {
           </tr>
         </tfoot>
       </table>
+    </Card>
+  );
+}
+
+/** 値段の切り替え（1本100円／2本で100円／3本で100円）。受付の合計とお釣りは次の会計から変わる */
+function PriceCard({ settings, save }: { settings: DaySettings; save: (patch: Record<string, unknown>) => Promise<boolean> }) {
+  const [busy, setBusy] = useState(false);
+  const choose = async (mode: PriceMode) => {
+    if (mode === settings.priceMode) return;
+    setBusy(true);
+    await save({ priceMode: mode });
+    setBusy(false);
+  };
+  return (
+    <Card title="値段">
+      <p className="mb-3 text-base text-lav-500">押すとすぐ受付の値段が変わります。まとめきれないあまりは1本100円です</p>
+      <div className="grid grid-cols-3 gap-2">
+        {PRICE_MODES.map((mode) => {
+          const on = settings.priceMode === mode;
+          return (
+            <button
+              key={mode}
+              type="button"
+              aria-pressed={on}
+              disabled={busy}
+              onClick={() => void choose(mode)}
+              className={`min-h-16 px-1 text-lg leading-tight ${on ? "btn-pink" : "btn-ghost"}`}
+            >
+              {PRICE_MODE_INFO[mode].label}
+            </button>
+          );
+        })}
+      </div>
     </Card>
   );
 }
